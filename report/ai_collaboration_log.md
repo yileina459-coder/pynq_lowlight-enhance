@@ -84,3 +84,49 @@
 **人工判断**
 - 边界策略（水平复制、垂直用上一帧行）由模型提出、队员确认：它直接决定"能否和软件参考逐位对上"
 - 比对标准定为 **bit-exact（0 个通道不一致）**，不接受 PSNR 阈值
+
+---
+
+## 2026-10-18 / P3a DMA 版 overlay（不需要显示器的验证路线）
+
+### 交互：继续自主推进
+
+**提示词**
+> （目标轮次自动继续）继续完成项目
+
+**模型产出**
+- `build/overlay_dma/`：一条 `build.bat` 走完 解包 HLS IP → 建块设计（PS + AXI DMA + sobel_stream）→
+  实现 → 出位流 → 从 XSA 拆出 `sobel_dma.bit` / `sobel_dma.hwh`
+- `board/dma_sobel/`：上板脚本 `sobel_dma.py`（逐行 DMA）、`demo.ipynb`、README
+- `sim/sobel/test_sobel_dma_offline.py`：用 numpy 假 DMA 复现核行为，**在主机侧先验证上板脚本**
+- `skill/overlay_check/`：上板前离线校验 `.hwh`
+
+**实测结果**（`build/overlay_dma/out/`）：WNS **+3.086 ns**（100 MHz 下满足时序）、
+LUT 4027（7.57%）、FF 5645（5.31%）、BRAM 3.5（2.5%）、DSP 3（1.36%）。
+
+**错误与纠正（第四次～第八次，全部是工具链细节，但每一条都能卡住一天）**
+
+1. `CONFIG.c_m_axis_s2mm_tdata_width` 不存在（CRITICAL WARNING: Parameter does not exist）。
+   AXI DMA 的 S2MM 流位宽参数叫 `c_s_axis_s2mm_tdata_width`（slave 侧）。
+   修正方式：先用一个 60 行的探测脚本把 IP 的合法参数全打印出来，再改，而不是靠猜。
+
+2. `set_property offset ... [get_bd_addr_segs ...]` 报 `Cannot change read-only property 'offset'`。
+   修正：删掉手工地址，交给 `assign_bd_address` 自动分配——PYNQ 是从 `.hwh` 读真实地址的，
+   手工指定只会增加冲突风险。
+
+3. `validate_bd_design` 失败：`/ps7/M_AXI_GP0_ACLK` 与 `/ps7/S_AXI_HP0_ACLK` 没有时钟。
+   PS 的 AXI 端口也要显式接 `FCLK_CLK0`，不只是从设备要接。
+
+4. `Expand-Archive` 拒绝解压 `.xsa`（只认 `.zip`）。XSA 本质是 zip，改用
+   `System.IO.Compression.ZipFile::ExtractToDirectory`。
+
+5. `.hwh` 解析失败：2026.1 的属性是大写 `INSTANCE`/`MODTYPE`，时钟频率放在
+   `<PORT CLKFREQUENCY="...">` 而不是 `<CLOCK>` 元素。第一版解析器按旧格式写，输出全空。
+   修正后兼容两种写法——这也是 `skill/overlay_check` 要打印原始清单的原因。
+
+6. PYNQ 版本差异：`ol.axi_dma_0` 在某些版本是 `DefaultIP`（没有 `sendchannel`）。
+   `find_dma()` 改成"拿不到 DMA 驱动就用 `pynq.lib.dma.DMA` 包一层"，避免版本差异直接崩。
+
+**人工判断**
+- 主路线仍是 HDMI 流式；DMA 版是"没有显示器也能证明硬件正确"的过渡验证
+- DMA 按行传输的帧率**不代表**最终性能，只用于功能验证；真实性能在 P3b 测

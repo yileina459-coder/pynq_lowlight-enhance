@@ -8,12 +8,12 @@ Skill 单独加分。
 
 | Skill | 状态 | 一句话 |
 | --- | --- | --- |
+| [`overlay_check/`](overlay_check/README.md) | 已验证 | Overlay 上板前离线校验：IP 清单、寄存器地址、时钟频率、bit/hwh 配对 |
 | [`golden_compare/`](golden_compare/README.md) | 已验证 | 硬件输出与黄金参考的逐位比对，报出第一个不一致像素的坐标 |
 | [`perf_collect/`](perf_collect/README.md) | 已验证 | 测量数据统一入库（CSV）并生成报告用的 markdown 表 |
-| `overlay_check/` | 计划中 | Overlay 加载与校验流程：IP 清单、地址映射、时钟、DMA 通道自检 |
 | `dma_stream/` | 计划中 | DMA 搬运与缓存一致性封装，含按行流式传输与超时定位 |
 
-后两个要等 DMA 版 overlay 上板跑通之后再写 —— 那时的"已验证效果"才有真实数据，
+`dma_stream` 要等 DMA 版 overlay 上板跑通之后再写 —— 那时的"已验证效果"才有真实数据，
 而不是先写文档再补证据。
 
 ## 这些 Skill 从哪来

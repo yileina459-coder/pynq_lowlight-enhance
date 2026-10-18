@@ -55,8 +55,10 @@ if not exist "%OUTDIR%\design_1.xsa" (
 set STAGE=%OUTDIR%\xsa_stage
 if exist "%STAGE%" rmdir /s /q "%STAGE%"
 mkdir "%STAGE%"
+rem Expand-Archive refuses non-.zip extensions, and the XSA is just a zip
+rem archive, so use the .NET API instead of the cmdlet.
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "Expand-Archive -LiteralPath '%OUTDIR%\design_1.xsa' -DestinationPath '%STAGE%' -Force"
+  "Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory('%OUTDIR%\design_1.xsa', '%STAGE%')"
 if errorlevel 1 (
   echo ERROR: failed to unpack the XSA
   exit /b 1
@@ -64,10 +66,18 @@ if errorlevel 1 (
 
 if not exist "%BOARD_DIR%" mkdir "%BOARD_DIR%"
 
-rem The .bit inside the XSA keeps the wrapper name; the .hwh keeps the block
-rem design name. PYNQ needs both to share one base name.
-copy /y "%STAGE%\design_1_wrapper.bit" "%BOARD_DIR%\sobel_dma.bit" >nul
-copy /y "%STAGE%\design_1.hwh"  "%BOARD_DIR%\sobel_dma.hwh" >nul
+rem The .bit inside the XSA may carry either the wrapper or the block design
+rem name depending on the Vivado version, so take whichever is there. PYNQ needs
+rem the .bit and .hwh to share one base name, which is what the copy enforces.
+set BITSRC=
+for %%f in ("%STAGE%\*.bit") do set BITSRC=%%f
+if "%BITSRC%"=="" (
+  echo ERROR: no .bit inside the XSA
+  dir /b "%STAGE%"
+  exit /b 1
+)
+copy /y "%BITSRC%" "%BOARD_DIR%\sobel_dma.bit" >nul
+copy /y "%STAGE%\design_1.hwh" "%BOARD_DIR%\sobel_dma.hwh" >nul
 if errorlevel 1 (
   echo ERROR: expected design_1_wrapper.bit and design_1.hwh inside the XSA
   dir /b /s "%STAGE%"
