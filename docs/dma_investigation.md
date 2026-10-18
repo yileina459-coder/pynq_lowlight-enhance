@@ -3,8 +3,9 @@
 > **状态：已解决。** 根因是「流结束时流水线不排空」。修法是给 DMA 路线单独做一个
 > 有界循环（`ap_ctrl_hs` + `n_pixels`）的核：`src/hls/sobel/sobel_bounded.cpp`，
 > 并把它接上 AXI-Lite 控制（第一版漏接了，导致 `ap_start` 写不进去）。
-> 修好后板上实测：**COMPARE PASS（bit-exact，0/2764800 通道不一致）**，
-> 659 ms/帧。详见文末「解决」一节。
+> 修好后板上实测：**COMPARE PASS（bit-exact，0/2764800 通道不一致）**。
+> 逐行传输 659 ms/帧；改成整帧一次传输后 **15.8 ms/帧（63.45 fps）**，
+> 相对 PS numpy（3108 ms/帧）为 196.7×。修复细节见文末「解决」一节。
 
 板卡：PYNQ-Z2，镜像 **PYNQ 3.1.1**（`/usr/local/share/pynq-venv`，内核 `6.6.10-xilinx-v2024.1`）。
 

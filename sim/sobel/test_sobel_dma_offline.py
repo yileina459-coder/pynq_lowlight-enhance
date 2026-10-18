@@ -178,6 +178,7 @@ def main() -> int:
         "--width", str(FAKE_W),
         "--height", str(FAKE_H),
         "--frames", "3",
+        "--per-row",   # the fake DMA models per-row transfers
         "--metrics", metrics,
     ])
 

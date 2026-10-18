@@ -36,6 +36,16 @@
 | II 达不到 1 | 行缓冲每周期被读多次 | `csynth` 报告里的 II 与资源 | 每行加 3 抽头移位寄存器，使每个行缓冲每周期只读 1 次 |
 | Fmax 差一点点不收敛 | 约束给的目标不是实际时钟（如按 100 MHz 综合、实际跑 142.86 MHz） | 对比 `create_clock` 与实际时钟 | 直接按最严时钟综合（本项目 7 ns），一份 IP 覆盖两条通路 |
 
+## 3.5 AXI DMA 与板上调试
+
+| 现象 | 触发条件 | 定位方法 | 修复 |
+| --- | --- | --- | --- |
+| 传输永不完成，每次正好差一个 burst（16 字） | 流式核在输入停止后不排空流水线，TLAST 没有送出 | 按不同长度各传一次，看「差多少」是否恒定 | 换成有界循环（`ap_ctrl_hs` + 像素数）的核；HDMI 路线不受影响 |
+| `ValueError: Transfer size ... exceeds the maximum DMA buffer size 16383` | AXI DMA 的 `c_sg_length_width` 默认 14 位，只允许 16 KB | 报错原文 | 块设计里把 `CONFIG.c_sg_length_width` 设为 23（8 MB） |
+| `ol.ip_dict` 里找不到自己加的 IP | IP 的 AXI-Lite 控制口没接到互联上 | 打印 `ip_dict`、查 `.hwh` 的 MEMRANGE | 控制互联多留一路主口接 `s_axi_control`，并让 `assign_bd_address` 分配地址 |
+| `RuntimeError: No Devices Found` | SSH 登录后直接用 python3，没有 XRT 环境，或不是 root | 报错 + `XILINX_XRT` 是否为空 | `sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:... /usr/local/share/pynq-venv/bin/python3 ...` |
+| `ModuleNotFoundError: No module named pydantic` | 用了 `/usr/bin/python3` 而不是 venv | `which -a python3` | PYNQ 3.1 的包在 `/usr/local/share/pynq-venv` |
+
 ## 4. Vivado 块设计
 
 | 现象 | 触发条件 | 定位方法 | 修复 |

@@ -26,10 +26,12 @@
 // -----------------------------------------------------------------------------
 #include "sobel.hpp"
 
-void sobel_bounded(sobel_stream_t& s_in, sobel_stream_t& s_out, int n_pixels) {
+void sobel_bounded(sobel_stream_t& s_in, sobel_stream_t& s_out,
+                   int n_pixels, int line_width) {
 #pragma HLS INTERFACE axis port = s_in
 #pragma HLS INTERFACE axis port = s_out
 #pragma HLS INTERFACE s_axilite port = n_pixels bundle = control
+#pragma HLS INTERFACE s_axilite port = line_width bundle = control
 #pragma HLS INTERFACE s_axilite port = return bundle = control
 
     static ap_uint<8> lbuf[3][SOBEL_MAX_W];
@@ -105,7 +107,22 @@ loop_pixels:
 
         s_out.write(pout);
 
-        if (pin.last) {
+        // Line boundaries are counted, not taken from TLAST.
+        //
+        // With one DMA transfer per row the two agree, but a whole-frame
+        // transfer only asserts TLAST at the very end, and a free-running
+        // column counter would wrap in the middle of the frame. Counting
+        // line_width beats per line makes the kernel independent of how the
+        // software chops the transfer up, which is what allows a single
+        // 921600-beat transfer per frame.
+        if (line_width > 0) {
+            if ((int)col + 1 >= line_width) {
+                col = 0;
+                phase = (phase == 2) ? ap_uint<2>(0) : ap_uint<2>(phase + 1);
+            } else {
+                col++;
+            }
+        } else if (pin.last) {
             col = 0;
             phase = (phase == 2) ? ap_uint<2>(0) : ap_uint<2>(phase + 1);
         } else {

@@ -52,14 +52,17 @@ sudo env XILINX_XRT=/usr \
 如果你就在 Jupyter 的 Notebook / Terminal 里跑，环境已经是对的，直接
 `python3 sobel_dma.py` 即可。
 
-期望最后几行：
+期望最后几行（板上实测，2026-10-18）：
 
 ```text
   kernel control: yes (bounded, ap_ctrl_hs)
-mismatched channels: 0 / 2764800, max |diff| = 0
+  frame 3/3: 15.7 ms (58.80 Mpixel/s)
 COMPARE PASS (bit-exact)
-throughput: ...
+throughput: 63.45 frame/s, 58.47 Mpixel/s
 ```
+
+默认是**整帧一次传输**（1 次核启动 + 2 次 DMA 传输）。想复现早期的逐行模式、
+对比软件开销，加 `--per-row`：那种模式是 659 ms/帧，慢 41 倍。
 
 ## 为什么要"有界"版本的核
 

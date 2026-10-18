@@ -5,3 +5,6 @@ timestamp,design,metric,value,unit,conditions,evidence
 2026-10-18T22:50:25,ps_numpy,frame_time_mean,3108.4,ms,"PYNQ-Z2 ARM Cortex-A9, 1280x720, numpy Sobel, PYNQ 3.1.1",board/dma_sobel/evidence/ps_sobel_out.png
 2026-10-18T22:50:25,ps_numpy,frame_rate,0.32,fps,"PYNQ-Z2 ARM Cortex-A9, 1280x720, numpy Sobel, PYNQ 3.1.1",board/dma_sobel/evidence/ps_sobel_out.png
 2026-10-18T22:50:25,ps_numpy,throughput,0.3,Mpixel/s,"PYNQ-Z2 ARM Cortex-A9, 1280x720, numpy Sobel, PYNQ 3.1.1",board/dma_sobel/evidence/ps_sobel_out.png
+2026-10-18T23:18:22,pl_dma_whole,frame_time_mean,15.8,ms,"PYNQ-Z2 xc7z020, 1280x720, 100 MHz PL, whole-frame DMA (1 kernel call + 2 transfers/frame), PYNQ 3.1.1",board/dma_sobel/metrics.csv
+2026-10-18T23:18:22,pl_dma_whole,frame_rate,63.45,fps,"PYNQ-Z2 xc7z020, 1280x720, 100 MHz PL, whole-frame DMA (1 kernel call + 2 transfers/frame), PYNQ 3.1.1",board/dma_sobel/metrics.csv
+2026-10-18T23:18:22,pl_dma_whole,throughput,58.47,Mpixel/s,"PYNQ-Z2 xc7z020, 1280x720, 100 MHz PL, whole-frame DMA (1 kernel call + 2 transfers/frame), PYNQ 3.1.1",board/dma_sobel/metrics.csv

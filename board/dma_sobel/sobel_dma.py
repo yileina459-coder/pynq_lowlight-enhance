@@ -85,12 +85,15 @@ class HlsKernelCtl:
 
     CTRL = 0x00        # ap_ctrl: bit0 ap_start, bit1 ap_done, bit2 ap_idle
     N_PIXELS = 0x10    # first scalar argument
+    LINE_WIDTH = 0x18  # second scalar argument
 
     def __init__(self, ip):
         self._ip = ip
 
-    def start(self, n_pixels: int) -> None:
+    def start(self, n_pixels: int, line_width: int = 0) -> None:
+        """line_width=0 makes the kernel use TLAST for line ends (per-row mode)."""
         self._ip.mmio.write(self.N_PIXELS, int(n_pixels))
+        self._ip.mmio.write(self.LINE_WIDTH, int(line_width))
         self._ip.mmio.write(self.CTRL, 0x1)
 
     def wait_done(self, timeout: float = 2.0) -> None:
@@ -128,15 +131,42 @@ def _transfer(channel, buf, start_bytes: int, nbytes: int) -> None:
         channel.transfer(buf[start_bytes // itemsize:(start_bytes + nbytes) // itemsize])
 
 
-def run_frame(dma, in_buf, out_buf, width: int, height: int, kernel=None) -> float:
-    """Push one frame row by row. Returns elapsed seconds."""
+def run_frame(dma, in_buf, out_buf, width: int, height: int, kernel=None,
+              whole_frame: bool = True) -> float:
+    """Push one frame. Returns elapsed seconds.
+
+    whole_frame=True sends the frame as a single DMA transfer (one kernel call,
+    two transfers). That is far faster than per-row because the per-transfer
+    Python overhead disappears, and the kernel counts line_width beats itself, so
+    a single TLAST at the end of the frame is enough.
+
+    whole_frame=False keeps the per-row mode: 720 kernel starts and 1440
+    transfers per frame. It is kept because it was the first working mode and is
+    a useful comparison point, not because it is faster.
+    """
+    if whole_frame:
+        n_bytes = width * height * 4
+        in_buf.flush()
+        t0 = time.perf_counter()
+        if kernel is not None:
+            kernel.start(width * height, width)
+        _transfer(dma.sendchannel, in_buf, 0, n_bytes)
+        _transfer(dma.recvchannel, out_buf, 0, n_bytes)
+        dma.sendchannel.wait()
+        dma.recvchannel.wait()
+        if kernel is not None:
+            kernel.wait_done(timeout=5.0)
+        elapsed = time.perf_counter() - t0
+        out_buf.invalidate()
+        return elapsed
+
     row_bytes = width * 4
     in_buf.flush()
     t0 = time.perf_counter()
     for row in range(height):
         offset = row * row_bytes
         if kernel is not None:
-            kernel.start(width)          # bounded kernel: one call per row
+            kernel.start(width, 0)       # 0 => use TLAST for line ends
         _transfer(dma.sendchannel, in_buf, offset, row_bytes)
         _transfer(dma.recvchannel, out_buf, offset, row_bytes)
         dma.sendchannel.wait()
@@ -158,6 +188,8 @@ def main(argv=None) -> int:
     ap.add_argument("--width", type=int, default=1280)
     ap.add_argument("--height", type=int, default=720)
     ap.add_argument("--frames", type=int, default=3)
+    ap.add_argument("--per-row", action="store_true",
+                    help="use 720 kernel starts + 1440 transfers instead of one transfer per frame")
     ap.add_argument("--no-compare", action="store_true")
     ap.add_argument("--metrics", default="metrics.csv")
     args = ap.parse_args(argv)
@@ -187,7 +219,8 @@ def main(argv=None) -> int:
 
     times = []
     for f in range(args.frames):
-        dt = run_frame(dma, in_buf, out_buf, w, h, kernel=kernel)
+        dt = run_frame(dma, in_buf, out_buf, w, h, kernel=kernel,
+                       whole_frame=not args.per_row)
         times.append(dt)
         print(f"  frame {f + 1}/{args.frames}: {dt * 1000:.1f} ms "
               f"({w * h / dt / 1e6:.2f} Mpixel/s)")

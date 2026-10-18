@@ -68,10 +68,13 @@ PS Python <-> DDR <-> AXI DMA (MM2S/S2MM) <-> sobel_stream
 - 离线预演：`sim/sobel/test_sobel_dma_offline.py`（假 DMA 用 numpy 复现核行为，先验证主机侧脚本）
 - 验收：板上 `COMPARE PASS`（0 个通道不一致），`metrics.csv` 有第一条真实数据
 - 限制：按行传输，DMA 每次传输的固定开销会让帧率显著低于真实流式性能
-- **DONE（板卡实测）**：位流 WNS +3.086 ns；板上 `COMPARE PASS (bit-exact)`，
-  0/2764800 通道不一致；PL 659 ms/帧 vs PS numpy 3108 ms/帧（同板同图）→ **4.7×**
-- 关键修复：DMA 路线改用有界核 `sobel_bounded`（`ap_ctrl_hs` + `n_pixels`），
-  否则自由运行核在流结束时不排空流水线，传输永远收不了尾（见 `docs/dma_investigation.md`）
+- **DONE（板卡实测）**：位流 WNS +3.086 ns；板上 `COMPARE PASS (bit-exact)`，0/2764800 不一致；
+  逐行传输 659 ms/帧、**整帧传输 15.8 ms/帧（63.45 fps、58.5 Mpixel/s）**，
+  相对 PS numpy（3108 ms/帧）为 **4.7× / 196.7×**
+- 关键修复三步：① 自由运行核在流结束时不排空 → 换有界核 `sobel_bounded`（`ap_ctrl_hs`）；
+  ② 有界核的 AXI-Lite 控制口漏接 → 控制互联加第二路主口；
+  ③ DMA 长度寄存器默认 14 位（16 KB）→ 改为 23 位，才可能整帧传输
+  （完整记录见 `docs/dma_investigation.md`）
 
 #### P3b HDMI 流式 overlay（主展示形态，需要显示/采集）
 
