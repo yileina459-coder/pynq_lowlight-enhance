@@ -108,3 +108,18 @@ def make_test_image(width: int = 1280, height: int = 720) -> np.ndarray:
     img[380:740, 80:560] = np.dstack([rings, rings, rings])[380:740, 80:560]
 
     return img
+
+
+def sharpen(rgb: np.ndarray, border: str = "replicate") -> np.ndarray:
+    """3x3 sharpen, per channel: 5*centre - (up + down + left + right).
+
+    The kernel clamps to 0..255 rather than wrapping, and so does this model -
+    that is where hardware and software most often disagree on this operator.
+    """
+    out = np.empty_like(rgb)
+    for ch in range(3):
+        plane = rgb[:, :, ch].astype(np.int32)
+        t0, t1, t2, m0, m1, m2, b0, b1, b2 = _window(plane, border)
+        acc = 5 * m1 - t1 - b1 - m0 - m2
+        out[:, :, ch] = np.clip(acc, 0, 255).astype(np.uint8)
+    return out
