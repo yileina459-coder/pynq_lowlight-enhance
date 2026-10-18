@@ -43,6 +43,26 @@ RESULT: OK
 - **输入源**：笔记本的 HDMI 输出（或相机）接到板子的 HDMI IN。
 - **输出**：接显示器/电视；没有显示器就用 HDMI 采集卡（几十元）在笔记本上看。
 
+## 怎么确认位流里真的插了算子
+
+不用上板也能查。位流的块设计文件里能看到数据通路的连接：
+
+```powershell
+$bd = "build\overlay_hdmi\.work\tree\boards\Pynq-Z2\base\base\base.srcs\sources_1\bd\base\base.bd"
+Select-String -Path $bd -Pattern 'sobel_0_s_out|video_out_stream' -Context 0,2
+```
+
+本机实测输出（即 `board/hdmi_stream/sobel_hdmi.bit` 对应的连接）：
+
+```text
+"video_out_stream" : { "interface_ports": [ "sobel_0/s_in", "video/out_stream" ] }
+"sobel_0_s_out"    : { "interface_ports": [ "sobel_0/s_out", "video/in_stream" ] }
+```
+
+也就是 `HDMI IN → video/out_stream → sobel_0 → video/in_stream → HDMI OUT`，
+并且 `axi_vdma/S_AXIS_S2MM` 上**已经没有**任何流网络（帧缓冲环回被切断）。
+`sobel_0/ap_clk` 接的是 `ps7_0_FCLK_CLK1`（142.857 MHz），与 `.hwh` 里 `ap_clk` 报告一致。
+
 ## 这一版能验证什么、不能验证什么
 
 能验证：
