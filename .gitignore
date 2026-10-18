@@ -19,9 +19,28 @@ vivado.log
 *.gen/
 *.srcs/
 
+# Local scratch space (extracted PDF text, smoke runs, throwaway experiments)
+.tmp/
+
+# Generated build outputs (scripts and reports are tracked, artifacts are not)
+build/**/proj/
+build/**/export/
+**/*.dcp
+**/*.str
+**/*.wdb
+**/*.pb
+**/*.rpx
+**/*.ltx
+**/*.xpr
+**/*.jou
+**/*.log
+
 # OS
 .DS_Store
 Thumbs.db
+
+# Local machine diagnostics (contains host IDs / license paths)
+xlicdiag.rpt
 
 # IDE
 .vscode/

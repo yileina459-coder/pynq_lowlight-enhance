@@ -12,8 +12,10 @@
 
 ## 当前状态
 
-- [ ] 初始化仓库与目录结构
-- [ ] 搭建 Vivado / Vitis 与 PYNQ-Z2 环境
+进度主表见 [`docs/roadmap.md`](docs/roadmap.md)，环境事实见 [`docs/env.md`](docs/env.md)。
+
+- [x] 初始化仓库与目录结构
+- [ ] 搭建 Vivado / Vitis 与 PYNQ-Z2 环境（工具链已通，见 `docs/env.md`；板卡与镜像待确认）
 - [ ] 跑通官方 base overlay 的 HDMI 回环
 - [ ] 完成第一个 HLS 算子（Sobel）并上板验证
 - [ ] 完成全部算子并封装为 Overlay
@@ -35,13 +37,14 @@
 ```
 .
 ├── README.md                 # 项目简介 + 复现步骤
-├── docs/                     # 架构、接口、硬件搭建说明
+├── docs/                     # 架构、路线图、环境基线、参考资料
 ├── src/                      # RTL / HLS / PS 侧源码
 ├── sim/                      # 仿真与验证脚本及结果
 ├── build/                    # 可复现构建脚本 + 综合实现报告
 ├── board/                    # 上板工程、运行脚本与实测输出
 ├── data/                     # 测试数据与参考结果
 ├── skill/                    # 可复用 Skill 与工作流
+├── tools/                    # 本地工具链入口脚本（Vivado / Vitis HLS 包装）
 └── report/                   # 设计报告 + 大模型协作记录
 ```
 
