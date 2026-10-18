@@ -20,7 +20,8 @@
 #>
 param(
     [string]$Tag = "v3.1.2",
-    [string]$Dest = (Join-Path $PSScriptRoot ".work")
+    [string]$Dest = (Join-Path $PSScriptRoot ".work"),
+    [string]$ReuseFrom = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -32,9 +33,29 @@ $baseDir = Join-Path $treeDir "boards\Pynq-Z2\base"
 Write-Host "=== fetch PYNQ $Tag ==="
 if (-not (Test-Path (Join-Path $repoDir ".git"))) {
     New-Item -ItemType Directory -Force -Path $Dest | Out-Null
-    git -c http.sslBackend=openssl clone --depth 1 --filter=blob:none --sparse `
-        --branch $Tag https://github.com/Xilinx/PYNQ.git $repoDir
-    if ($LASTEXITCODE -ne 0) { throw "git clone failed" }
+
+    if ($ReuseFrom -and (Test-Path (Join-Path $ReuseFrom ".git"))) {
+        # Reuse an existing checkout instead of hitting the network again.
+        Write-Host "reusing existing checkout: $ReuseFrom"
+        Copy-Item $ReuseFrom $repoDir -Recurse
+    } else {
+        # GitHub occasionally resets the connection mid-clone; retry a few times
+        # before giving up, and say clearly what to do if it keeps failing.
+        $ok = $false
+        for ($i = 1; $i -le 3 -and -not $ok; $i++) {
+            Write-Host "clone attempt $i of 3"
+            if (Test-Path $repoDir) { Remove-Item $repoDir -Recurse -Force }
+            git -c http.sslBackend=openssl clone --depth 1 --filter=blob:none --sparse `
+                --branch $Tag https://github.com/Xilinx/PYNQ.git $repoDir
+            $ok = ($LASTEXITCODE -eq 0)
+            if (-not $ok) { Start-Sleep -Seconds 5 }
+        }
+        if (-not $ok) {
+            throw ("git clone failed after 3 attempts. " +
+                   "Re-run later, or clone PYNQ $Tag yourself and pass " +
+                   "-ReuseFrom <path-to-your-PYNQ-checkout>.")
+        }
+    }
 } else {
     Write-Host "already cloned: $repoDir"
 }

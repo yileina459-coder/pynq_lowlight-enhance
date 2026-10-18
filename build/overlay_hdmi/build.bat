@@ -90,7 +90,7 @@ if errorlevel 1 (
 )
 
 echo === [7/7] implement and export ===
-call "%REPO%\tools\env\vivado.bat" -mode batch -nojournal -nolog -source build_bitstream.tcl
+call "%REPO%\tools\env\vivado.bat" -mode batch -nojournal -nolog -source "%HERE%\build_bitstream.tcl"
 if errorlevel 1 (
   echo ERROR: bitstream build failed
   popd
@@ -100,10 +100,8 @@ if errorlevel 1 (
 popd
 
 if not exist "%OUT%" mkdir "%OUT%"
-copy /y "%BASE%\base.bit" "%OUT%\sobel_hdmi.bit" >nul
-copy /y "%BASE%\base.hwh" "%OUT%\sobel_hdmi.hwh" >nul
-if errorlevel 1 (
-  echo ERROR: base.bit / base.hwh not produced
+if not exist "%OUT%\sobel_hdmi.bit" (
+  echo ERROR: %OUT%\sobel_hdmi.bit was not produced
   exit /b 1
 )
 

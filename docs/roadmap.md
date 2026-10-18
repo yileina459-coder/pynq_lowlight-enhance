@@ -71,20 +71,31 @@ PS Python <-> DDR <-> AXI DMA (MM2S/S2MM) <-> sobel_stream
 - **当前状态**：位流已生成（WNS +3.086 ns，LUT 7.6%、BRAM 2.5%、DSP 1.4%），`.hwh`
   已通过离线校验，上板脚本已用假 DMA 离线验证 → **只等板卡侧跑一次 DMA 回环**
 
-#### P3b HDMI 流式 overlay（主展示形态，待采集卡/显示器）
+#### P3b HDMI 流式 overlay（主展示形态，需要显示/采集）
 
-预研结论见 `docs/p3b_plan.md`：官方 base overlay 是 4448 行、Vivado **2024.1** 生成的
-tcl，带版本门禁，直接放到 2026.1 跑会被拒；`pynq.lib.video` 依赖 dvi2rgb/v_tc/v_axi4s_vid_out/
-rgb2dvi/axi_dynclk 与三个 HLS IP（color_convert/pixel_pack/pixel_unpack）。两条路线与工作量
-估计都写在那个文件里。
+**已从"预研"推进到"可构建"**，详细结论见 `docs/p3b_plan.md`：
 
-- 构建：`build/overlay_hdmi/`
-- 产物：`board/hdmi_stream/`（`.bit`、`.hwh`、notebook、实测日志）
-- 验收：实时出图（≥ 30 fps @ 720p），时序 WNS ≥ 0，资源报告留档
+- base overlay（4448 行、Vivado 2024.1 生成）在 2026.1 里重建成功，只需 3 个补丁
+  （版本门禁、IP 仓库绝对路径、`PFM_NAME` 字面量）；
+- PYNQ 的 5 个 HLS 视频 IP 用 Vitis HLS 2026.1 重新打包通过；
+- Sobel 核直接对接 `pixel_pack` 的 32 位流（`SOBEL_PIX_W=32`），不需要位宽转换；
+- 切断 VDMA 环回，`video/hdmi_in/out_stream → sobel_0 → video/hdmi_out/in_stream`；
+- 内核在 7 ns 目标下估计 Fmax 194.59 MHz（视频时钟 142.86 MHz）。
+
+- 构建：`build/overlay_hdmi/build.bat`（拉源码 → 打补丁 → 重建 HLS IP → 块设计 → 插入 → 实现）
+- 产物：`board/hdmi_stream/`（`sobel_hdmi.bit`、`.hwh`、`hdmi_sobel.py`）
+- 验收：板上 overlay 能加载、HDMI 输入锁定、输出出图（需显示器或采集卡）
 
 ### P4 算子族 + 参数化 + UI
 
-- 统一寄存器映射（AXI-Lite）：算子选择、参数（阈值、核权重、增益）、旁路开关、状态
+- 已完成：Sobel、Gaussian 两个流式核（均 II=1、0 误差、7 ns 下 194 MHz）
+- 待做：锐化（3×3 拉普拉斯/非锐化掩模）、色彩空间转换
+- 参数化路线（二选一，倾向 A）：
+  - **A. 多核 + 流切换**：手写一个 AXI-Stream 3 选 1 切换器（带 AXI-Lite 寄存器），
+    4 个算子并排例化，PS 写寄存器切换。切换器是本项目唯一的手写 RTL，也是"自己设计硬件"的证据；
+  - B. 单核参数化：把阈值/增益做成 AXI-Lite 寄存器（要放弃 `ap_ctrl_none`，改动较大）。
+- 另一个确定的改进：**TLAST 生成器**（手写 RTL，按行宽计数插 `TLAST`），
+  让 DMA 版可以整帧传输而不是逐行传输，帧率预计提升一个数量级
 - PS 侧：`src/ps/` 下 overlay 驱动封装 + ipywidgets UI
 - 验收：UI 上切算子/调参，画面实时变化，无花屏无撕裂
 
@@ -100,7 +111,7 @@ rgb2dvi/axi_dynclk 与三个 HLS IP（color_convert/pixel_pack/pixel_unpack）�
 | 资源 | 综合/实现报告 LUT/FF/BRAM/DSP |
 | 功耗 | 板级输入功率（外部表或无表时的估算口径，需写清测量边界） |
 
-- 脚本：`sim/perf/` 与 `board/p5_metrics/`，输出 CSV + 自动生成对比表
+- 脚本：`skill/perf_collect`（入库）+ `sim/perf/make_comparison.py`（生成对比表，已完成并测过）
 - 验收：PS 软件版与 PL 加速版在同一输入下跑同一算子，数据可复现
 
 ### P6 交付物
