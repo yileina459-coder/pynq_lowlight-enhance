@@ -11,7 +11,7 @@
 | --- | --- | --- | --- | --- |
 | P0 | 工具链基线 | Vivado 综合 + HLS 仿真/综合/导出 IP 全通过 | 可复现性 | **DONE**（`build/smoke/`、`docs/env.md`） |
 | P1 | 官方 HDMI 回环 | 板子上 `hdmi_in.tie(hdmi_out)` 出图，记录分辨率/帧率证据 | 功能正确性 | 待板卡 |
-| P2 | 第一个 HLS 算子（Sobel） | C 仿真与 OpenCV 黄金参考逐像素一致；C 综合 II=1 | 功能正确性 | NEXT |
+| P2 | 第一个 HLS 算子（Sobel） | C 仿真与 OpenCV 黄金参考逐像素一致；C 综合 II=1 | 功能正确性 | **C 仿真 + 综合 DONE**，上板待 P3 |
 | P3 | 自定义 Overlay（流式主线） | HDMI-In → 自定义算子 → HDMI-Out 实时出图 | 创新性 + 完整度 | 未开始 |
 | P4 | 算子族 + 参数化 + UI | 4 个算子可由 PS 侧切换/调参，UI 可交互 | 完整度 + 创新 | 未开始 |
 | P5 | PS vs PL 对比数据 | 帧率/延迟/吞吐/资源/功耗对比表，脚本可复跑 | 性能与资源优化 20 分 | 未开始 |
@@ -44,13 +44,14 @@
 - 证据：`board/p1_loopback/` 下放 notebook、`hdmi_in.mode` 打印（分辨率/帧率/像素时钟）、屏幕拍照
 - 验收：显示器稳定出图 ≥ 10 分钟无闪断
 
-### P2 第一个 HLS 算子（Sobel）
+### P2 第一个 HLS 算子（Sobel）— C 仿真与综合 DONE
 
 - 代码：`src/hls/sobel/`（`sobel.cpp`、`sobel.hpp`、`tb_sobel.cpp`）
 - 构建：`build/hls/sobel/run_hls.tcl`
-- 验证：`sim/sobel/` 下用 Python/OpenCV 生成黄金参考，与 C 仿真输出逐像素比对
-- 验收：C 仿真 0 误差；C 综合 II=1、Fmax ≥ 100 MHz；导出 IP 可被 Vivado 导入
-- 产出：资源/时序报告留档，作为"优化前"基线
+- 验证：`sim/sobel/golden_sobel.py`（Python 黄金参考 + bit-exact 比对）
+- 结果：C 仿真 9216 拍 0 误差、侧带信号完好；II=1；Fmax≈141.9 MHz；
+  BRAM 3 / DSP 2 / FF 583 / LUT 809；IP 已导出
+- 剩余：上板（合并到 P3 一起验证）
 
 ### P3 自定义 Overlay（流式主线）
 

@@ -27,6 +27,22 @@ AMD 的 UG 系列手册作为工具参考书，按需查阅即可，不必通读
 | UG904 Vivado 实现用户指南 | <https://docs.amd.com/r/en-US/ug904-vivado-implementation> | 布局布线、时序收敛、实现报告 | 中 |
 | UG949 UltraFast 设计方法学指南 | <https://docs.amd.com/r/en-US/ug949-vivado-design-methodology> | 设计预算、资源/功耗/时序优化 | 中 |
 
+## 同类开源项目（重点参考）
+
+这三个是本项目路线最接近的公开实现，值得逐个读源代码而不是只读 README：
+
+| 项目 | 链接 | 为什么值得看 | 与本项目的差异 |
+| --- | --- | --- | --- |
+| PYNQ-Z2 + Sobel + HDMI 流式加速 | <https://github.com/aclich/PYNQ-Z2_sobel_filter_HDMI> | 同样是 PYNQ-Z2、同样把 Sobel 插在 HDMI 流里，处理 USB 摄像头到 HDMI 的实时链路 | 它偏"跑通"，我们要多做 PS/PL 对比数据、四个算子和通用 Skill |
+| XUP HLS 设计流程（Sobel/FIR） | <https://github.com/Xilinx/xup_high_level_synthesis_design_flow> | 官方 HLS 全流程：C 仿真 → 综合 → 导出 IP → Vivado 集成 → Jupyter 上板 | 官方示例走 DMA 批处理，我们要的是流式直通 |
+| PYNQ 官方仓库（base overlay 源码） | <https://github.com/Xilinx/PYNQ> | `boards/Pynq-Z2/base/` 是官方 HDMI 子系统的 Vivado 工程与 Tcl，P3 阶段要基于它改 | 官方基线不含自定义算子 |
+
+读这些项目时的三个检查点（也是我们踩过的坑）：
+
+1. 他们的 `.hwh` / `.bit` 是用哪个 Vivado 版本生成的，和 PYNQ 镜像版本是否一致；
+2. Sobel 的边界策略和亮度公式怎么定的 —— 直接决定能否和软件参考逐位对上；
+3. HDMI 时序（像素时钟、行宽、`TLAST` 语义）怎么保证，尤其是行首行尾的处理。
+
 ## 核心参考：XUP HLS Sobel
 
 XUP 教程定位为 Vitis HLS 2023.2 + Vivado 2023.2，支持 PYNQ-Z2 和 KV260。教程把实验拆成三部分：
