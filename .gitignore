@@ -25,6 +25,9 @@ vivado.log
 # Generated build outputs (scripts and reports are tracked, artifacts are not)
 build/**/proj/
 build/**/export/
+build/**/iprepo/
+build/**/out/*.xsa
+build/**/out/xsa_stage/
 **/*.dcp
 **/*.str
 **/*.wdb

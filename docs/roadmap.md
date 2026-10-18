@@ -53,16 +53,30 @@
   BRAM 3 / DSP 2 / FF 583 / LUT 809；IP 已导出
 - 剩余：上板（合并到 P3 一起验证）
 
-### P3 自定义 Overlay（流式主线）
+### P3 自定义 Overlay（拆成 3a / 3b 两步降风险）
 
-最硬的一步，单独拆成三步降风险：
+#### P3a DMA 版 overlay（进行中，先做，不需要显示器）
+
+目的：不用 HDMI、不用显示器，先证明算子在一块真板子上是对的，并拿到第一份真实性能数据。
+
+```text
+PS Python <-> DDR <-> AXI DMA (MM2S/S2MM) <-> sobel_stream
+```
+
+- 构建：`build/overlay_dma/build.bat`（一行命令：解包 HLS IP → 建块设计 → 实现 → 出位流 → 拆出 .bit/.hwh）
+- 上板：`board/dma_sobel/`（`sobel_dma.py` + `demo.ipynb`，逐行 DMA 传输，结果与黄金参考逐位比对）
+- 离线预演：`sim/sobel/test_sobel_dma_offline.py`（假 DMA 用 numpy 复现核行为，先验证主机侧脚本）
+- 验收：板上 `COMPARE PASS`（0 个通道不一致），`metrics.csv` 有第一条真实数据
+- 限制：按行传输，DMA 每次传输的固定开销会让帧率显著低于真实流式性能
+
+#### P3b HDMI 流式 overlay（主展示形态，待采集卡/显示器）
 
 1. 用 PYNQ 官方 base overlay 源码（`boards/Pynq-Z2/base`）在 2026.1 里重新打开并**原样重建**出可用位流，证明版本链能打通；
 2. 在 `pixel_pack` 之后 / `pixel_unpack` 之前插入 Sobel 核，保持 `TLAST/TUSER/TKEEP` 语义；
 3. 上板跑实时视频，记录帧率与时序收敛情况。
 
-- 构建：`build/overlay/`（tcl + 生成脚本）
-- 产物：`board/p3_stream/`（`.bit`、`.hwh`、notebook、实测日志）
+- 构建：`build/overlay_hdmi/`
+- 产物：`board/hdmi_stream/`（`.bit`、`.hwh`、notebook、实测日志）
 - 验收：实时出图（≥ 30 fps @ 720p），时序 WNS ≥ 0，资源报告留档
 
 ### P4 算子族 + 参数化 + UI
