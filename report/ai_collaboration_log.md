@@ -130,3 +130,31 @@ LUT 4027（7.57%）、FF 5645（5.31%）、BRAM 3.5（2.5%）、DSP 3（1.36%）
 **人工判断**
 - 主路线仍是 HDMI 流式；DMA 版是"没有显示器也能证明硬件正确"的过渡验证
 - DMA 按行传输的帧率**不代表**最终性能，只用于功能验证；真实性能在 P3b 测
+
+---
+
+## 2026-10-18 / P3a 收尾与 P3b 预研
+
+**模型产出**
+- DMA overlay 位流构建完成并入库（`board/dma_sobel/sobel_dma.bit`）：WNS **+3.086 ns**、
+  LUT 4027（7.6%）、FF 5645（5.3%）、BRAM 3.5（2.5%）、DSP 3（1.4%）
+- `board/ps_baseline/ps_sobel.py`：PS 侧 numpy 基线（与 PL 同算法同边界），
+  主机实测 1280x720 约 **40 ms/帧**（24.6 fps），板上 ARM 会慢数倍
+- `docs/p3b_plan.md`：查证 PYNQ v3.1.2 的 base overlay 源码（`boards/Pynq-Z2/base`，
+  4448 行、Vivado 2024.1 生成、带版本门禁），给出两条移植路线与风险
+
+**错误与纠正（第九次，这次是操作事故，不是代码 bug）**
+
+在 `.tmp/PYNQ` 里做稀疏检出时，有一条 `cd PYNQ` 因为上一步 clone 失败而没有生效，
+命令继续在 `.tmp` 下执行 `git sparse-checkout set boards/Pynq-Z2`。由于 `.tmp` 在仓库内部，
+git 向上找到了本仓库的 `.git`，于是**把比赛仓库本身设成了稀疏检出**，
+`src/ sim/ build/ skill/ report/ data/` 从工作区消失，并且因为 skip-worktree 位，
+`git status` 还显示"干净"——这是最危险的地方：不看文件系统就会误以为没事。
+
+恢复：`git sparse-checkout disable`，所有已提交文件原样回来（因为都已在 0b68874 里）。
+复核：`src/hls/sobel/*`、4 MB 位流、测试图都在。
+
+教训（值得写进踩坑清单）：
+1. 任何 `git` 子命令在仓库子目录里都可能作用于**整个仓库**，稀疏检出尤其危险；
+2. `git status` 显示干净 ≠ 文件都在，稀疏检出会用 skip-worktree 把缺失隐藏掉；
+   判断依据应该是 `git ls-files -v`（有 `S` 标记）与文件系统的交叉验证。
