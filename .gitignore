@@ -26,6 +26,7 @@ vivado.log
 build/**/proj/
 build/**/export/
 build/**/iprepo/
+build/overlay_hdmi/.work/
 build/**/out/*.xsa
 build/**/out/xsa_stage/
 **/*.dcp
