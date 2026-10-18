@@ -8,67 +8,96 @@
 
 作品名称：HDMI 实时视频处理流水线
 
-作品简介：HLS 实现卷积类算子（Sobel 边缘、高斯模糊、锐化、色彩空间转换）并封装为 Overlay，Python/Jupyter 侧做参数控制与 UI；完整跑通 HDMI 输入 -> PL 流水线处理 -> HDMI 输出，并给出 PS 软件处理与 PL 硬件加速的帧率、延迟、资源、功耗对比数据。
+作品简介：Vitis HLS 实现卷积类算子（Sobel 边缘、高斯模糊、锐化），色彩空间转换复用 PYNQ
+官方 IP，整体封装为 Overlay；Python/Jupyter 侧做配置与控制。提供两条通路：HDMI 实时流式
+（延迟约一行）与 AXI-DMA 批处理（可与黄金参考逐位比对）。同一算法另有 PS 纯软件实现，
+用于给出帧率、延迟、吞吐、资源、功耗的软硬件对比数据。
 
 ## 当前状态
 
-进度主表见 [`docs/roadmap.md`](docs/roadmap.md)，环境事实见 [`docs/env.md`](docs/env.md)。
+进度主表见 [`docs/roadmap.md`](docs/roadmap.md)，环境事实见 [`docs/env.md`](docs/env.md)，
+设计报告见 [`report/design_report.md`](report/design_report.md)。
 
 - [x] 初始化仓库与目录结构
-- [ ] 搭建 Vivado / Vitis 与 PYNQ-Z2 环境（工具链已通，见 `docs/env.md`；板卡与镜像待确认）
-- [ ] 跑通官方 base overlay 的 HDMI 回环
-- [ ] 完成第一个 HLS 算子（Sobel）并上板验证
-- [ ] 完成全部算子并封装为 Overlay
-- [ ] 完成 Python/Jupyter 参数控制与 UI
-- [ ] 完成 PS 与 PL 性能对比数据采集
-- [ ] 沉淀通用 PYNQ Skill
-- [ ] 完成大模型协作记录与设计报告
+- [x] 工具链打通（Vivado / Vitis HLS 2026.1，冒烟工程见 `build/smoke/`）
+- [x] 流式算子：Sobel、Gaussian、Sharpen（均 II=1、C 仿真 0 误差、7 ns 下估计 194.59 MHz）
+- [x] 黄金参考与逐位比对工具（`sim/common/image_ops.py` + 各算子的 `golden_*.py`）
+- [x] DMA 版 Overlay 位流（`board/dma_sobel/`，WNS +3.086 ns）
+- [x] HDMI 版 Overlay 构建流程（重建 PYNQ base overlay 并插入算子，`build/overlay_hdmi/`）
+- [x] 通用 PYNQ Skill 三件（`skill/`）
+- [ ] 板上实测：DMA 回环逐位比对、HDMI 实时出图（等板卡侧执行）
+- [ ] PS/PL 对比数据补齐（脚本已就位，数据待采）
+- [ ] 参数化与 UI（算子切换、阈值/增益调节）
+- [ ] 决赛用一页英文 A4 海报
 
 ## 技术栈
 
 - 硬件平台：PYNQ-Z2（Zynq-7000 XC7Z020）
-- 开发工具：Vivado / Vitis 2026.1（推荐）或 2025.2
-- PL 实现：Vitis HLS 或 Verilog/SystemVerilog RTL
+- 开发工具：Vivado / Vitis 2026.1（赛规允许 2025.2；本项目全程 2026.1）
+- PL 实现：Vitis HLS（3 个自研卷积核）+ PYNQ 官方 IP（HDMI 子系统、色彩空间转换）
 - PS 实现：Python、Jupyter Notebook、PYNQ Overlay
-- UI：ipywidgets
+- UI：ipywidgets（待做）
 
 ## 目录结构
 
 ```
 .
 ├── README.md                 # 项目简介 + 复现步骤
-├── docs/                     # 架构、路线图、环境基线、参考资料
-├── src/                      # RTL / HLS / PS 侧源码
-├── sim/                      # 仿真与验证脚本及结果
+├── docs/                     # 架构、路线图、环境基线、HDMI 移植记录、参考资料
+├── src/                      # HLS / PS 侧源码（sobel、gaussian、sharpen）
+├── sim/                      # 软件黄金模型、比对脚本、离线预演、性能对比表
 ├── build/                    # 可复现构建脚本 + 综合实现报告
-├── board/                    # 上板工程、运行脚本与实测输出
-├── data/                     # 测试数据与参考结果
-├── skill/                    # 可复用 Skill 与工作流
-├── tools/                    # 本地工具链入口脚本（Vivado / Vitis HLS 包装）
+│   ├── smoke/                # 工具链冒烟（Vivado / Vitis HLS）
+│   ├── hls/                  # 每个算子的 HLS 工程脚本
+│   ├── overlay_dma/          # DMA 版 overlay 构建
+│   └── overlay_hdmi/         # HDMI 版 overlay 构建（含 PYNQ base overlay 移植）
+├── board/                    # 上板脚本与实测输出
+│   ├── dma_sobel/            # DMA 版：逐位比对
+│   ├── hdmi_stream/          # HDMI 版：实时出图
+│   └── ps_baseline/          # PS 软件基线
+├── data/                     # 测试图与各算子的黄金参考
+├── skill/                    # 可复用 Skill（overlay_check / golden_compare / perf_collect）
+├── tools/                    # 工具链入口脚本（Vivado / Vitis HLS 包装）
 └── report/                   # 设计报告 + 大模型协作记录
 ```
 
-## 核心开发路线
+## 复现步骤
 
-1. 环境准备：安装 Vivado/Vitis，PYNQ-Z2 烧录官方镜像，验证 HDMI 输入输出链路。
-2. 算子设计：HLS/RTL 实现 Sobel、高斯模糊、锐化、色彩空间转换。
-3. 封装 Overlay：完成寄存器映射、DMA 通路与 bitstream 生成。
-4. PS 侧集成：Python/Jupyter 调用 Overlay，实现参数控制和 UI。
-5. 基线对比：同一算法分别实现 PS 软件版和 PL 加速版，采集帧率、延迟、吞吐、资源、功耗。
-6. 技能沉淀：把 Overlay 加载校验、DMA 封装、黄金参考比对、性能采集提炼为通用 Skill。
-7. 报告与开源：完成设计报告、大模型协作记录，确保他人可从零复现。
+前置：Vivado / Vitis HLS 2026.1，PYNQ-Z2 + PYNQ 3.1.x 镜像。环境细节与已知坑见
+[`docs/env.md`](docs/env.md)。
+
+```powershell
+# 1) 工具链冒烟（各约 1 分钟）
+cd build\smoke\vivado ; ..\..\..\tools\env\vivado.bat -mode batch -nojournal -nolog -source synth_smoke.tcl
+cd build\smoke\hls    ; ..\..\..\tools\env\vitis_hls.bat -f run_hls.tcl
+
+# 2) 三个算子（C 仿真 + 综合 + 导出 IP），每个约 1 分钟
+tools\env\vitis_hls.bat -f build\hls\sobel\run_hls.tcl
+tools\env\vitis_hls.bat -f build\hls\gaussian\run_hls.tcl
+tools\env\vitis_hls.bat -f build\hls\sharpen\run_hls.tcl
+
+# 3) 软件黄金参考
+python sim\sobel\golden_sobel.py  --generate-test-image data\images\test_720p.png
+python sim\sobel\golden_sobel.py    --input data\images\test_720p.png --reference data\reference\sobel_720p.png    --border wrap
+python sim\gaussian\golden_gaussian.py --input data\images\test_720p.png --reference data\reference\gaussian_720p.png --border wrap
+python sim\sharpen\golden_sharpen.py   --input data\images\test_720p.png --reference data\reference\sharpen_720p.png  --border wrap
+
+# 4) Overlay 位流（DMA 版约 12 分钟；HDMI 版约 60 分钟，含 PYNQ 源码拉取与 HLS IP 重建）
+build\overlay_dma\build.bat
+build\overlay_hdmi\build.bat
+
+# 5) 上板（把 board\<version>\ 下的文件传到板子同一目录）
+python3 sobel_dma.py                     # DMA 版：期望 COMPARE PASS (bit-exact)
+python3 hdmi_sobel.py --seconds 10       # HDMI 版：期望 RESULT: OK（画面需显示器/采集卡）
+python3 ps_sobel.py --input test_720p.png --metrics metrics.csv
+```
 
 ## 评分对应证据
 
 | 评分项 | 对应提交物 |
 | --- | --- |
-| 创新性与应用价值 30 | 完整 HDMI 视频处理系统 + 软硬件对比 |
-| 性能与资源优化 20 | PS vs PL 帧率/延迟/吞吐/资源/功耗对比表 |
-| 功能正确性与设计完整性 20 | 仿真结果、上板实测、算子正确性验证 |
-| 大模型协作与技能包 15 | 大模型交互记录 + `skill/` 可复用内容 |
-| 文档质量与可复现性 15 | README、Vivado tcl、设计报告、复现步骤 |
-
-## 复现入口
-
-环境搭建与复现步骤完成后在此处补充，保证其他队伍能够从零执行。
-
+| 创新性与应用价值 30 | 完整 HDMI 视频处理系统、双通路验证方法、软硬件对比 |
+| 性能与资源优化 20 | `sim/perf/make_comparison.py` 生成的对比表 + `metrics.csv` 原始数据 |
+| 功能正确性与设计完整性 20 | 三个算子的 C 仿真（0 误差）、综合报告、DMA 逐位比对、HDMI 上板 |
+| 大模型协作与技能包 15 | [`report/ai_collaboration_log.md`](report/ai_collaboration_log.md) + `skill/` |
+| 文档质量与可复现性 15 | 本 README + `docs/` + 全脚本化构建 + 设计报告 |
