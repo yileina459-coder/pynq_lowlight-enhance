@@ -25,6 +25,7 @@
 - [x] DMA 版 Overlay 位流（`board/dma_sobel/`，WNS +3.086 ns）
 - [x] HDMI 版 Overlay 构建流程（重建 PYNQ base overlay 并插入算子，`build/overlay_hdmi/`）
 - [x] 通用 PYNQ Skill 三件（`skill/`）
+- [x] HDMI 版 Overlay 位流（WNS +0.207 ns @142.857 MHz，`.hwh` 离线校验通过）
 - [ ] 板上实测：DMA 回环逐位比对、HDMI 实时出图（等板卡侧执行）
 - [ ] PS/PL 对比数据补齐（脚本已就位，数据待采）
 - [ ] 参数化与 UI（算子切换、阈值/增益调节）

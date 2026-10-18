@@ -116,6 +116,8 @@
 完整实现（DMA overlay，100 MHz）：LUT 4027（7.6%）、FF 5645（5.3%）、BRAM 3.5（2.5%）、DSP 3（1.4%），
 **WNS +3.086 ns**（`build/overlay_dma/out/timing_impl.rpt`）。
 
+完整实现（HDMI overlay = PYNQ base overlay + Sobel，142.857 MHz）：LUT 33098（62.2%）、FF 46563（43.8%）、BRAM 80.5（57.5%）、DSP 21（9.6%），**WNS +0.207 ns**、0 个失败端点（`board/hdmi_stream/timing_impl.rpt`）。资源占用主要来自 base overlay 的 MicroBlaze、音频、Arduino/Pmod/树莓派 IO 子系统，自研 Sobel 核本身只占约 1%——这组数字说明“把算子插进现成框架”的代价主要在框架，而不在算子。
+
 ### 4.3 PS 与 PL 对比（待板上实测补齐）
 
 对比脚本已就位（`sim/perf/make_comparison.py`），数据由 `board/ps_baseline/ps_sobel.py`

@@ -202,3 +202,37 @@ git 向上找到了本仓库的 `.git`，于是**把比赛仓库本身设成了�
 **人工判断**
 - 视频通路选择"绕过 VDMA 直通"，换来约一行延迟；代价是 PS 侧不能再 `readframe()`，
   这条取舍写进了 `board/hdmi_stream/README.md`
+
+---
+
+## 2026-10-18 / P3b 收尾：HDMI overlay 位流建成
+
+**提示词**
+> 运行失败的再尝试一次
+
+**结果**
+- `board/hdmi_stream/sobel_hdmi.bit`（3.9 MB）+ `sobel_hdmi.hwh`（4.3 MB）构建成功；
+- 实现结果：**WNS +0.207 ns**（142.857 MHz，0 个失败端点）；LUT 62.2%、FF 43.8%、
+  BRAM 57.5%、DSP 9.6%（框架占大头，Sobel 核约 1%）；
+- `.hwh` 通过 `skill/overlay_check`：188 个模块、`sobel_0` 在位、`ap_clk` = 142.857 MHz。
+
+**错误与纠正（第十六次～第十八次）**
+
+1. **OOC 综合的两种失败模式**。base overlay 有近 200 个 IP，默认每个 IP 一个
+   out-of-context 综合 run。
+   - `-jobs 4` 并发时，多个子进程同时加载 Vivado 的 Tcl app store，报
+     `Could not open 'C' for writing` / `tclapp::load_apps failed`；
+   - `-jobs 1` 不会撞，但在 32 核机器上串行跑 200 个 run 要几个小时（实测 95 分钟只完成 ~112 个）。
+   最终有效做法是**低并发重跑**：已完成的 run 走 IP 缓存，只剩上次失败的 4 个 run，
+   `-jobs 2` 大约 15 分钟就收敛到出位流。
+2. **"整体综合"这条路没走通**。原本想让所有 IP 走 `synth_checkpoint_mode None`，
+   避免逐 IP 的 OOC run；但 `get_ips` 对**块设计内部**的 IP 返回空列表，
+   脚本里那句计数打印出来是 `IPs switched to global synthesis: 0`，等于没生效。
+   这一点已写进 `build_bitstream.tcl` 的注释，避免下一个人以为它有用。
+3. **`axi_vdma` 不是 `axi_dma`**。`skill/overlay_check` 原来只认 AXI DMA，
+   对 HDMI overlay（用的是 VDMA）误报 FAIL。修正为两者都算 DMA 通道。
+
+**人工判断**
+- 接受 WNS 只有 +0.207 ns 的现实：视频时钟固定 142.857 MHz，base overlay 本身就吃掉大部分时序余量；
+  自研核在 7 ns 下估计 194.59 MHz，说明瓶颈在框架不在核。若要更大余量，得裁掉框架里用不到的
+  MicroBlaze/音频/IO 子系统（会破坏 PYNQ `BaseOverlay` 的 API，暂不做）。

@@ -84,6 +84,7 @@ PS Python <-> DDR <-> AXI DMA (MM2S/S2MM) <-> sobel_stream
 
 - 构建：`build/overlay_hdmi/build.bat`（拉源码 → 打补丁 → 重建 HLS IP → 块设计 → 插入 → 实现）
 - 产物：`board/hdmi_stream/`（`sobel_hdmi.bit`、`.hwh`、`hdmi_sobel.py`）
+- **构建完成**：`sobel_hdmi.bit` 已生成，WNS +0.207 ns @142.857 MHz，`.hwh` 离线校验通过
 - 验收：板上 overlay 能加载、HDMI 输入锁定、输出出图（需显示器或采集卡）
 
 ### P4 算子族 + 参数化 + UI

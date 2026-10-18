@@ -90,7 +90,9 @@ Sobel 核插在 `pixel_pack` → `pixel_unpack` 之间，视频流不经过 VDMA
 | 没有显示器，无法验证 HDMI 输出 | 只能靠采集卡 | 采集卡（几十元）或借一台显示器；数字证据由 DMA 版提供 |
 | VDMA 被断开，`readframe()` 不可用 | PS 不能回读帧 | 这是低延迟直通的取舍，已写入 `board/hdmi_stream/README.md` |
 
-## 当前状态
+## 当前状态：位流已生成
 
-- 移植脚本、补丁、插入逻辑、上板脚本全部就位（`build/overlay_hdmi/`、`board/hdmi_stream/`）；
-- 等位流实现完成，然后在板上跑 `hdmi_sobel.py` 确认 overlay 能加载、HDMI 输入能锁定。
+- `board/hdmi_stream/sobel_hdmi.bit` / `.hwh` 已构建：**WNS +0.207 ns**（142.857 MHz 视频时钟，0 个失败端点）；
+- 资源：LUT 62.2%、FF 43.8%、BRAM 57.5%、DSP 9.6%（base overlay 的 MicroBlaze/音频/IO 子系统占大头，Sobel 核本身约 1%）；
+- `.hwh` 通过 `skill/overlay_check`：188 个模块、`sobel_0` 在位、`ap_clk` 报告为 142.857 MHz；
+- 剩余：板上加载验证（`board/hdmi_stream/hdmi_sobel.py`），需显示器或采集卡看输出画面。
