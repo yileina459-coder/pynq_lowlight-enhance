@@ -1,0 +1,162 @@
+
+
+================================================================
+== Synthesis Summary Report of 'gaussian_stream'
+================================================================
++ General Information: 
+    * Date:           Sun Oct 18 16:58:54 2026
+    * Version:        2026.1 (Build 6493734 on Jun 16 2026)
+    * Project:        proj
+    * Solution:       solution1
+    * Product family: zynq
+    * Target device:  xc7z020-clg400-1
+    
+
+* Performance & Resource Estimates: 
++--------------------+--------+---------------+----------+---------+------+----------+---------+-----+-------+--------+----+------------+----------+-----+
+|       Modules      |  Issue |               | Iteration|         | Trip |          |    Latency    |       |        |    |            |          |     |
+|       & Loops      |  Type  | Violation Type|  Latency | Interval| Count| Pipelined| (cycles)| (ns)| Slack |  BRAM  | DSP|     FF     |    LUT   | URAM|
++--------------------+--------+---------------+----------+---------+------+----------+---------+-----+-------+--------+----+------------+----------+-----+
+|+ gaussian_stream   |  Timing|              -|         -|        -|     -|        no|        -|    -|  -0.03|  9 (3%)|   -|  1021 (~0%)|  986 (1%)|    -|
+| o VITIS_LOOP_55_1  |       -|              -|         8|        1|     -|       yes|        -|    -|   5.11|       -|   -|           -|         -|    -|
++--------------------+--------+---------------+----------+---------+------+----------+---------+-----+-------+--------+----+------------+----------+-----+
+    Name Prefix: '+' for module, 'o' for loop, '*' for dataflow
+
+
+================================================================
+== HW Interfaces
+================================================================
+* AXIS
++-----------+-----------+---------------+-------+-------+-----+-------+-------+--------+-------+-------+--------+
+| Interface | Direction | Register Mode | TDATA | TDEST | TID | TKEEP | TLAST | TREADY | TSTRB | TUSER | TVALID |
++-----------+-----------+---------------+-------+-------+-----+-------+-------+--------+-------+-------+--------+
+| s_in      | in        | both          | 32    | 1     | 1   | 4     | 1     | 1      | 4     | 1     | 1      |
+| s_out     | out       | both          | 32    | 1     | 1   | 4     | 1     | 1      | 4     | 1     | 1      |
++-----------+-----------+---------------+-------+-------+-----+-------+-------+--------+-------+-------+--------+
+
+* TOP LEVEL CONTROL
++-----------+--------------+----------+
+| Interface | Type         | Ports    |
++-----------+--------------+----------+
+| ap_clk    | clock        | ap_clk   |
+| ap_rst_n  | reset        | ap_rst_n |
+| ap_ctrl   | ap_ctrl_none |          |
++-----------+--------------+----------+
+
+
+================================================================
+== SW I/O Information
+================================================================
+* Top Function Arguments
++----------+-----------+------------------------------------------------------------------------------+
+| Argument | Direction | Datatype                                                                     |
++----------+-----------+------------------------------------------------------------------------------+
+| s_in     | in        | stream<hls::axis<ap_uint<32>, 1UL, 1UL, 1UL, (unsigned char)'8', false>, 0>& |
+| s_out    | out       | stream<hls::axis<ap_uint<32>, 1UL, 1UL, 1UL, (unsigned char)'8', false>, 0>& |
++----------+-----------+------------------------------------------------------------------------------+
+
+* SW-to-HW Mapping
++----------+--------------+-----------+
+| Argument | HW Interface | HW Type   |
++----------+--------------+-----------+
+| s_in     | s_in         | interface |
+| s_out    | s_out        | interface |
++----------+--------------+-----------+
+
+
+================================================================
+== Bind Op Report
+================================================================
++----------------------------+-----+--------+----------------+-----------+------------------------+---------+
+| Name                       | DSP | Pragma | Variable       | Op        | Impl                   | Latency |
++----------------------------+-----+--------+----------------+-----------+------------------------+---------+
+| + gaussian_stream          | 0   |        |                |           |                        |         |
+|   icmp_ln67_fu_313_p2      |     |        | icmp_ln67      | seteq     | auto                   | 0       |
+|   i_mid_fu_319_p2          |     |        | i_mid          | add       | fabric                 | 0       |
+|   i_mid_1_fu_325_p3        |     |        | i_mid_1        | select    | auto_sel               | 0       |
+|   icmp_ln68_fu_333_p2      |     |        | icmp_ln68      | seteq     | auto                   | 0       |
+|   i_bot_fu_339_p2          |     |        | i_bot          | add       | fabric                 | 0       |
+|   i_bot_1_fu_345_p3        |     |        | i_bot_1        | select    | auto_sel               | 0       |
+|   sparsemux_7_2_24_1_1_U1  |     |        | tmp_2          | sparsemux | onehotencoding_realdef | 0       |
+|   sparsemux_7_2_24_1_1_U2  |     |        | tmp_3          | sparsemux | onehotencoding_realdef | 0       |
+|   icmp_ln76_fu_384_p2      |     |        | icmp_ln76      | seteq     | auto                   | 0       |
+|   select_ln76_fu_464_p3    |     |        | select_ln76    | select    | auto_sel               | 0       |
+|   select_ln76_1_fu_470_p3  |     |        | select_ln76_1  | select    | auto_sel               | 0       |
+|   select_ln76_2_fu_476_p3  |     |        | select_ln76_2  | select    | auto_sel               | 0       |
+|   select_ln76_3_fu_482_p3  |     |        | select_ln76_3  | select    | auto_sel               | 0       |
+|   select_ln76_4_fu_488_p3  |     |        | select_ln76_4  | select    | auto_sel               | 0       |
+|   select_ln76_5_fu_494_p3  |     |        | select_ln76_5  | select    | auto_sel               | 0       |
+|   tmp1_fu_558_p2           |     |        | tmp1           | add       | fabric                 | 0       |
+|   tmp2_fu_568_p2           |     |        | tmp2           | add       | fabric                 | 0       |
+|   tmp25_fu_578_p2          |     |        | tmp25          | add       | fabric                 | 0       |
+|   add_ln28_fu_926_p2       |     |        | add_ln28       | add       | fabric                 | 0       |
+|   add_ln28_2_fu_584_p2     |     |        | add_ln28_2     | add       | fabric                 | 0       |
+|   add_ln28_3_fu_594_p2     |     |        | add_ln28_3     | add       | fabric                 | 0       |
+|   tmp9_fu_694_p2           |     |        | tmp9           | add       | fabric                 | 0       |
+|   tmp10_fu_704_p2          |     |        | tmp10          | add       | fabric                 | 0       |
+|   tmp63_fu_714_p2          |     |        | tmp63          | add       | fabric                 | 0       |
+|   add_ln28_5_fu_954_p2     |     |        | add_ln28_5     | add       | fabric                 | 0       |
+|   add_ln28_7_fu_720_p2     |     |        | add_ln28_7     | add       | fabric                 | 0       |
+|   add_ln28_8_fu_730_p2     |     |        | add_ln28_8     | add       | fabric                 | 0       |
+|   tmp16_fu_830_p2          |     |        | tmp16          | add       | fabric                 | 0       |
+|   tmp17_fu_840_p2          |     |        | tmp17          | add       | fabric                 | 0       |
+|   tmp101_fu_850_p2         |     |        | tmp101         | add       | fabric                 | 0       |
+|   add_ln28_10_fu_982_p2    |     |        | add_ln28_10    | add       | fabric                 | 0       |
+|   add_ln28_12_fu_856_p2    |     |        | add_ln28_12    | add       | fabric                 | 0       |
+|   add_ln28_13_fu_866_p2    |     |        | add_ln28_13    | add       | fabric                 | 0       |
+|   add_ln118_fu_390_p2      |     |        | add_ln118      | add       | fabric                 | 0       |
+|   select_ln114_fu_396_p3   |     |        | select_ln114   | select    | auto_sel               | 0       |
+|   select_ln114_1_fu_361_p3 |     |        | select_ln114_1 | select    | auto_sel               | 0       |
++----------------------------+-----+--------+----------------+-----------+------------------------+---------+
+
+
+================================================================
+== Storage Report
+================================================================
++-------------------------------------------------+--------+------+------+------+--------+--------+---------------------------------------------+------+---------+------------------+
+| Name                                            | Usage  | Type | BRAM | URAM | CE_REG | Pragma | Variable                                    | Impl | Latency | Bitwidth, Depth, |
+|                                                 |        |      |      |      |        |        |                                             |      |         | Banks            |
++-------------------------------------------------+--------+------+------+------+--------+--------+---------------------------------------------+------+---------+------------------+
+| + gaussian_stream                               |        |      | 9    | 0    |        |        |                                             |      |         |                  |
+|   gaussian_stream_stream_stream_axis_0_lbuf_2_U | ram_1p |      | 3    |      | N      |        | gaussian_stream_stream_stream_axis_0_lbuf_2 | auto | 1       | 24, 1920, 1      |
+|   gaussian_stream_stream_stream_axis_0_lbuf_1_U | ram_1p |      | 3    |      | N      |        | gaussian_stream_stream_stream_axis_0_lbuf_1 | auto | 1       | 24, 1920, 1      |
+|   gaussian_stream_stream_stream_axis_0_lbuf_U   | ram_1p |      | 3    |      | N      |        | gaussian_stream_stream_stream_axis_0_lbuf   | auto | 1       | 24, 1920, 1      |
++-------------------------------------------------+--------+------+------+------+--------+--------+---------------------------------------------+------+---------+------------------+
+
+
+================================================================
+== Pragma Report
+================================================================
+* Ignored Pragmas
++-----------------+--------------------------+----------------------------------------------------------------+-----------------+
+| Type            | Options                  | Location                                                       | Messages        |
++-----------------+--------------------------+----------------------------------------------------------------+-----------------+
+| ARRAY_PARTITION | variable = wtop complete | in gaussian_stream (../../../src/hls/gaussian/gaussian.cpp:47) | Not implemented |
+| ARRAY_PARTITION | variable = wmid complete | in gaussian_stream (../../../src/hls/gaussian/gaussian.cpp:48) | Not implemented |
+| ARRAY_PARTITION | variable = wbot complete | in gaussian_stream (../../../src/hls/gaussian/gaussian.cpp:49) | Not implemented |
+| UNROLL          |                          | in gaussian_stream (../../../src/hls/gaussian/gaussian.cpp:78) | Not implemented |
+| UNROLL          |                          | in gaussian_stream (../../../src/hls/gaussian/gaussian.cpp:85) | Not implemented |
+| UNROLL          |                          | in gaussian_stream (../../../src/hls/gaussian/gaussian.cpp:98) | Not implemented |
++-----------------+--------------------------+----------------------------------------------------------------+-----------------+
+
+* Implemented Pragmas
++-----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------+
+| Type            | Options                                                                                                                                                                                                                | Location                                                                                                          |
++-----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------+
+| INLINE          |                                                                                                                                                                                                                        | in _zn12_global__n_19gauss_tape7ap_uintili8ees1_s1_s1_s1_s1_s1_s1_s1_ (../../../src/hls/gaussian/gaussian.cpp:27) |
+| ARRAY_PARTITION | dim=1 type=complete variable=gaussian_stream(hls::stream<hls::axis<ap_uint<32>, 1ul, 1ul, 1ul, (unsigned char)56, false>, 0>&, hls::stream<hls::axis<ap_uint<32>, 1ul, 1ul, 1ul, (unsigned char)56, false>, 0>&)::lbuf | in gaussian_stream (../../../src/hls/gaussian/gaussian.cpp:42)                                                    |
++-----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------+
+
+* Valid Pragma Syntax
++-----------------+----------------------------------+----------------------------------------------------------------+
+| Type            | Options                          | Location                                                       |
++-----------------+----------------------------------+----------------------------------------------------------------+
+| INLINE          |                                  | in gauss_tap (../../../src/hls/gaussian/gaussian.cpp:27)       |
+| INTERFACE       | axis port = s_in                 | in gaussian_stream (../../../src/hls/gaussian/gaussian.cpp:37) |
+| INTERFACE       | axis port = s_out                | in gaussian_stream (../../../src/hls/gaussian/gaussian.cpp:38) |
+| INTERFACE       | ap_ctrl_none port = return       | in gaussian_stream (../../../src/hls/gaussian/gaussian.cpp:39) |
+| ARRAY_PARTITION | variable = lbuf complete dim = 1 | in gaussian_stream (../../../src/hls/gaussian/gaussian.cpp:42) |
+| PIPELINE        | II = 1                           | in gaussian_stream (../../../src/hls/gaussian/gaussian.cpp:59) |
++-----------------+----------------------------------+----------------------------------------------------------------+
+
+
