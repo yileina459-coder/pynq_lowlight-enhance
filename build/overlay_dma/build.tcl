@@ -72,7 +72,7 @@ set_property -dict [list \
 ] $dma
 
 # --- the kernel ------------------------------------------------------------
-set sobel [create_bd_cell -type ip -vlnv xilinx.com:hls:sobel_stream:1.0 sobel_0]
+set sobel [create_bd_cell -type ip -vlnv xilinx.com:hls:sobel_bounded:1.0 sobel_0]
 
 # --- TLAST generator -------------------------------------------------------
 # The kernel forwards the TLAST it receives, but on the board the S2MM never saw
@@ -84,9 +84,13 @@ set tlast [create_bd_cell -type module -reference axis_tlast_gen tlast_gen_0]
 set_property -dict [list CONFIG.WIDTH {1280}] $tlast
 
 # --- interconnect ----------------------------------------------------------
-# Control path: one PS master, one slave (DMA registers).
+# Control path: one PS master, two slaves (DMA registers + kernel control).
+# The kernel has an AXI-Lite control interface because it is the bounded variant
+# (ap_start / ap_done / n_pixels). Leaving it unconnected silently produces a
+# design where the kernel can never be started - which is exactly what happened
+# the first time this overlay was rebuilt, so the second slave is not optional.
 set sc_ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect sc_ctrl]
-set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_MI {1}] $sc_ctrl
+set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_MI {2}] $sc_ctrl
 
 # Memory path: two masters (MM2S, S2MM), one slave (HP0).
 set sc_mem [create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect sc_mem]
@@ -126,6 +130,7 @@ foreach pin {
 # --- AXI interconnects -----------------------------------------------------
 connect_bd_intf_net [get_bd_intf_pins ps7/M_AXI_GP0]      [get_bd_intf_pins sc_ctrl/S00_AXI]
 connect_bd_intf_net [get_bd_intf_pins sc_ctrl/M00_AXI]    [get_bd_intf_pins axi_dma_0/S_AXI_LITE]
+connect_bd_intf_net [get_bd_intf_pins sc_ctrl/M01_AXI]    [get_bd_intf_pins sobel_0/s_axi_control]
 connect_bd_intf_net [get_bd_intf_pins axi_dma_0/M_AXI_MM2S] [get_bd_intf_pins sc_mem/S00_AXI]
 connect_bd_intf_net [get_bd_intf_pins axi_dma_0/M_AXI_S2MM] [get_bd_intf_pins sc_mem/S01_AXI]
 connect_bd_intf_net [get_bd_intf_pins sc_mem/M00_AXI]     [get_bd_intf_pins ps7/S_AXI_HP0]

@@ -236,3 +236,36 @@ git 向上找到了本仓库的 `.git`，于是**把比赛仓库本身设成了�
 - 接受 WNS 只有 +0.207 ns 的现实：视频时钟固定 142.857 MHz，base overlay 本身就吃掉大部分时序余量；
   自研核在 7 ns 下估计 194.59 MHz，说明瓶颈在框架不在核。若要更大余量，得裁掉框架里用不到的
   MicroBlaze/音频/IO 子系统（会破坏 PYNQ `BaseOverlay` 的 API，暂不做）。
+
+---
+
+## 2026-10-18 / P3a 完成：板上逐位一致，PS/PL 对比 4.7×
+
+**结果**
+- 板上 `python3 sobel_dma.py` → **`COMPARE PASS (bit-exact)`**，0/2764800 个通道不一致；
+- PL：659.1 ms/帧（1.516 fps、1.397 Mpixel/s）；
+- PS（同板 ARM Cortex-A9 + numpy）：3108.4 ms/帧（0.320 fps、0.30 Mpixel/s）；
+- **加速比 4.72×**，且两边输出逐像素完全一致（`golden_compare` 比对 0 不一致）。
+
+**错误与纠正（第十九次～第二十一次）**
+
+1. **有界核的 AXI-Lite 控制没接**。把 DMA 路线换成 `sobel_bounded`（ap_ctrl_hs）后重建，
+   板上 `ol.ip_dict` 里只有 `axi_dma_0` 和 `ps7`——`sobel_0` 根本不在地址映射里。
+   原因：`sc_ctrl` 只连了 DMA 的 `S_AXI_LITE`，核的 `s_axi_control` 悬空，
+   `ap_start` 无处可写。修法：`sc_ctrl` 改成 `NUM_MI=2`，补一条 `M01_AXI → sobel_0/s_axi_control`。
+   教训：**加带寄存器的 IP 时，"接上流"和"接上控制"是两件独立的事，漏掉后者不会报错，
+   只会表现成"设备不存在"。**
+
+2. **自由运行核在流结束时不排空流水线**。这是这次最花时间的根因：给 1280 拍输入，
+   出来的不足 1280 拍，DMA 于是永远等不到 TLAST。判定方法是"传输结束差多少"——
+   每次正好差 16 个字（一个 AXI burst），再配合"2560 拍传输在第 1280 拍被提前关闭"
+   证明了 TLAST 生成器本身没问题，问题在核的输出拍数。
+
+3. **板上跑任何脚本都要 sudo + venv 解释器**。PYNQ 3.1.1 的 Jupyter 以 root 运行，
+   XRT 设备只有 root 能开；直接 `python3` 用的是 `/usr/bin/python3`（没有 pynq）。
+   正确写法：`sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:... /usr/local/share/pynq-venv/bin/python3 xxx.py`。
+
+**人工判断**
+- 接受"逐行 DMA"的 659 ms 作为**功能验证**数据，并在报告里明确标注它的开销主要来自
+  720 次核启动 + 1440 次传输的软件开销，而不是算子；整帧传输列为下一步优化。
+- 主机 numpy（40.7 ms/帧）比板上 PL 还快这件事，如实写进报告，避免"加速比"被误解。

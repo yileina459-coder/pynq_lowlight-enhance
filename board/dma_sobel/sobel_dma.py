@@ -74,6 +74,51 @@ def unpack_rgb(words: np.ndarray, width: int, height: int) -> np.ndarray:
     return np.dstack([r, g, b])
 
 
+class HlsKernelCtl:
+    """Start/poll an ap_ctrl_hs HLS kernel through its AXI-Lite registers.
+
+    The bounded kernel takes a pixel count and processes exactly that many beats
+    per call, then raises ap_done. That is what lets the pipeline drain before the
+    DMA transfer is closed - the free-running variant never drained, which is why
+    the transfers used to hang (docs/dma_investigation.md).
+    """
+
+    CTRL = 0x00        # ap_ctrl: bit0 ap_start, bit1 ap_done, bit2 ap_idle
+    N_PIXELS = 0x10    # first scalar argument
+
+    def __init__(self, ip):
+        self._ip = ip
+
+    def start(self, n_pixels: int) -> None:
+        self._ip.mmio.write(self.N_PIXELS, int(n_pixels))
+        self._ip.mmio.write(self.CTRL, 0x1)
+
+    def wait_done(self, timeout: float = 2.0) -> None:
+        deadline = time.monotonic() + timeout
+        while True:
+            if self._ip.mmio.read(self.CTRL) & 0x2:
+                return
+            if time.monotonic() > deadline:
+                raise TimeoutError("kernel ap_done did not rise")
+            time.sleep(0.0002)
+
+
+def find_kernel(ol):
+    """Return the HLS kernel's AXI-Lite control, or None if the IP has no CSRs."""
+    for name, ip in ol.ip_dict.items():
+        if "sobel" not in name.lower():
+            continue
+        dev = getattr(ol, name, None)
+        if dev is None or not hasattr(dev, "mmio"):
+            continue
+        try:
+            dev.mmio.read(HlsKernelCtl.CTRL)
+        except Exception:
+            continue
+        return HlsKernelCtl(dev)
+    return None
+
+
 def _transfer(channel, buf, start_bytes: int, nbytes: int) -> None:
     """PYNQ 2.6+ takes start/nbytes; older versions need a buffer slice."""
     try:
@@ -83,17 +128,21 @@ def _transfer(channel, buf, start_bytes: int, nbytes: int) -> None:
         channel.transfer(buf[start_bytes // itemsize:(start_bytes + nbytes) // itemsize])
 
 
-def run_frame(dma, in_buf, out_buf, width: int, height: int) -> float:
+def run_frame(dma, in_buf, out_buf, width: int, height: int, kernel=None) -> float:
     """Push one frame row by row. Returns elapsed seconds."""
     row_bytes = width * 4
     in_buf.flush()
     t0 = time.perf_counter()
     for row in range(height):
         offset = row * row_bytes
+        if kernel is not None:
+            kernel.start(width)          # bounded kernel: one call per row
         _transfer(dma.sendchannel, in_buf, offset, row_bytes)
         _transfer(dma.recvchannel, out_buf, offset, row_bytes)
         dma.sendchannel.wait()
         dma.recvchannel.wait()
+        if kernel is not None:
+            kernel.wait_done()
     elapsed = time.perf_counter() - t0
     out_buf.invalidate()
     return elapsed
@@ -129,6 +178,8 @@ def main(argv=None) -> int:
     ol = Overlay(args.bitstream)
     dma = find_dma(ol)
     print(f"  DMA IP: {dma}")
+    kernel = find_kernel(ol)
+    print(f"  kernel control: {'yes (bounded, ap_ctrl_hs)' if kernel else 'none (free-running)'}")
 
     in_buf = allocate(shape=(w * h,), dtype=np.uint32)
     out_buf = allocate(shape=(w * h,), dtype=np.uint32)
@@ -136,7 +187,7 @@ def main(argv=None) -> int:
 
     times = []
     for f in range(args.frames):
-        dt = run_frame(dma, in_buf, out_buf, w, h)
+        dt = run_frame(dma, in_buf, out_buf, w, h, kernel=kernel)
         times.append(dt)
         print(f"  frame {f + 1}/{args.frames}: {dt * 1000:.1f} ms "
               f"({w * h / dt / 1e6:.2f} Mpixel/s)")

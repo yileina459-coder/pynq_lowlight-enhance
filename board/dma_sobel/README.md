@@ -39,20 +39,49 @@ python sim/sobel/golden_sobel.py --input data/images/test_720p.png \
 
 ## 怎么跑
 
-**方式一（推荐先试）：Jupyter Terminal**
+**板上实测过的调用方式**（PYNQ 3.1.1 的 Jupyter 以 root 运行，XRT 设备只有 root 能开，
+且 python 必须用 venv 里的那个）：
 
 ```bash
 cd /home/xilinx/jupyter_notebooks/sobel_dma
-python3 sobel_dma.py
+sudo env XILINX_XRT=/usr \
+     PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=/root \
+     /usr/local/share/pynq-venv/bin/python3 sobel_dma.py
 ```
+
+如果你就在 Jupyter 的 Notebook / Terminal 里跑，环境已经是对的，直接
+`python3 sobel_dma.py` 即可。
 
 期望最后几行：
 
 ```text
+  kernel control: yes (bounded, ap_ctrl_hs)
 mismatched channels: 0 / 2764800, max |diff| = 0
 COMPARE PASS (bit-exact)
 throughput: ...
 ```
+
+## 为什么要"有界"版本的核
+
+DMA 路线的核是 `sobel_bounded`（`src/hls/sobel/sobel_bounded.cpp`）：带
+`ap_ctrl_hs` 和一个 `n_pixels` 参数，每次调用处理恰好 N 个像素、处理完才拉高 `ap_done`。
+
+之前用的是 HDMI 那个自由运行的核（`ap_ctrl_none` + 无限循环），在板上的表现是：
+传输永远差一个 AXI burst 收不了尾。逐档测量后确认根因是**流结束时流水线没有排空**
+——给 1280 拍输入，出来的不足 1280 拍，DMA 于是永远等不到 TLAST。
+完整数据和推理见 [`docs/dma_investigation.md`](../../docs/dma_investigation.md)。
+
+所以脚本里每传一行之前会先启动一次核：
+
+```python
+kernel.start(width)     # 写 n_pixels，然后 ap_start
+dma.sendchannel.transfer(...)
+dma.recvchannel.transfer(...)
+kernel.wait_done()      # 轮询 ap_done
+```
+
+HDMI 路线不受这个问题影响（视频流永不停），那边继续用自由运行的核。
+
 
 **方式二：Notebook**
 

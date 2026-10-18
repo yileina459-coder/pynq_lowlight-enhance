@@ -1,0 +1,7 @@
+timestamp,design,metric,value,unit,conditions,evidence
+2026-10-18T22:50:24,pl_dma,frame_time_mean,659.1,ms,"PYNQ-Z2 xc7z020, 1280x720, 100 MHz PL, per-row DMA (720 starts + 1440 transfers/frame), PYNQ 3.1.1",board/dma_sobel/evidence/sobel_dma_out.png
+2026-10-18T22:50:24,pl_dma,frame_rate,1.516,fps,"PYNQ-Z2 xc7z020, 1280x720, 100 MHz PL, per-row DMA (720 starts + 1440 transfers/frame), PYNQ 3.1.1",board/dma_sobel/metrics.csv
+2026-10-18T22:50:24,pl_dma,throughput,1.397,Mpixel/s,"PYNQ-Z2 xc7z020, 1280x720, 100 MHz PL, per-row DMA (720 starts + 1440 transfers/frame), PYNQ 3.1.1",board/dma_sobel/metrics.csv
+2026-10-18T22:50:25,ps_numpy,frame_time_mean,3108.4,ms,"PYNQ-Z2 ARM Cortex-A9, 1280x720, numpy Sobel, PYNQ 3.1.1",board/dma_sobel/evidence/ps_sobel_out.png
+2026-10-18T22:50:25,ps_numpy,frame_rate,0.32,fps,"PYNQ-Z2 ARM Cortex-A9, 1280x720, numpy Sobel, PYNQ 3.1.1",board/dma_sobel/evidence/ps_sobel_out.png
+2026-10-18T22:50:25,ps_numpy,throughput,0.3,Mpixel/s,"PYNQ-Z2 ARM Cortex-A9, 1280x720, numpy Sobel, PYNQ 3.1.1",board/dma_sobel/evidence/ps_sobel_out.png

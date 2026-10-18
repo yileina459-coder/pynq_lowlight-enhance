@@ -118,11 +118,30 @@
 
 完整实现（HDMI overlay = PYNQ base overlay + Sobel，142.857 MHz）：LUT 33098（62.2%）、FF 46563（43.8%）、BRAM 80.5（57.5%）、DSP 21（9.6%），**WNS +0.207 ns**、0 个失败端点（`board/hdmi_stream/timing_impl.rpt`）。资源占用主要来自 base overlay 的 MicroBlaze、音频、Arduino/Pmod/树莓派 IO 子系统，自研 Sobel 核本身只占约 1%——这组数字说明“把算子插进现成框架”的代价主要在框架，而不在算子。
 
-### 4.3 PS 与 PL 对比（待板上实测补齐）
+### 4.3 PS 与 PL 对比（板上实测）
 
-对比脚本已就位（`sim/perf/make_comparison.py`），数据由 `board/ps_baseline/ps_sobel.py`
-与 `board/dma_sobel/sobel_dma.py` 写入同一个 `metrics.csv`。
-主机侧参考值：numpy 1280×720 约 **40.7 ms/帧**（24.6 fps）；板上 ARM 实测值待补。
+同一块 PYNQ-Z2、同一张 1280×720 测试图、同一个 Sobel 算法（同一亮度公式与边界策略）：
+
+| 指标 | PS（ARM Cortex-A9 + numpy） | PL（Zynq 逻辑 + DMA） | 加速比 |
+| --- | --- | --- | --- |
+| 每帧时间 | 3108.4 ms | **659.1 ms** | **4.72×** |
+| 帧率 | 0.320 fps | **1.516 fps** | **4.74×** |
+| 像素吞吐 | 0.30 Mpixel/s | **1.397 Mpixel/s** | **4.66×** |
+
+数据来源：`board/dma_sobel/metrics_board.csv`，原始日志 `board/dma_sobel/metrics.csv`，
+表格由 `sim/perf/make_comparison.py` 生成（`report/comparison.md`）。
+
+两点必须说明，否则这组数字会被误读：
+
+1. **PL 的 659 ms 里绝大部分不是算子时间**，而是「逐行传输」的软件开销：每帧 720 次
+   核启动 + 1440 次 DMA 传输 + 轮询，每次都要走 Python。算子本身在 100 MHz 下
+   II=1，1280×720 只需约 9.2 ms 的计算量。整帧一次传输可以把这部分开销几乎全部消掉，
+   那是下一步的优化（需要把 TLAST 生成器的计数宽度改成帧大小）；
+2. 两边的输出**逐像素完全一致**（`skill/golden_compare` 比对 2764800 个通道，0 不一致），
+   也就是这 4.7× 是在「结果完全相同」的前提下取得的，不是用精度换速度。
+
+主机（x86 笔记本）上的 numpy 只要 40.7 ms/帧，比板上的 PL 还快——这条也如实记下来：
+本作品对比的是「同一块嵌入式板卡上，用 ARM 做还是用 PL 做」，不是「跟桌面 CPU 比」。
 
 ## 5. 功能正确性验证
 

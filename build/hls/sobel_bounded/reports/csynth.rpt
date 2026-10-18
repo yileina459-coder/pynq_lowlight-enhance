@@ -1,0 +1,176 @@
+
+
+================================================================
+== Synthesis Summary Report of 'sobel_bounded'
+================================================================
++ General Information: 
+    * Date:           Sun Oct 18 22:21:31 2026
+    * Version:        2026.1 (Build 6493734 on Jun 16 2026)
+    * Project:        proj
+    * Solution:       solution1
+    * Product family: zynq
+    * Target device:  xc7z020-clg400-1
+    
+
+* Performance & Resource Estimates: 
++-----------------+------+---------------+----------+---------+------+----------+---------+-----+------+--------+---------+-----------+-----------+-----+
+|     Modules     | Issue|               | Iteration|         | Trip |          |    Latency    |      |        |         |           |           |     |
+|     & Loops     | Type | Violation Type|  Latency | Interval| Count| Pipelined| (cycles)| (ns)| Slack|  BRAM  |   DSP   |     FF    |    LUT    | URAM|
++-----------------+------+---------------+----------+---------+------+----------+---------+-----+------+--------+---------+-----------+-----------+-----+
+|+ sobel_bounded  |     -|              -|         -|        -|     -|        no|        -|    -|  0.25|  3 (1%)|  2 (~0%)|  1127 (1%)|  1047 (1%)|    -|
+| o loop_pixels   |     -|              -|        12|        1|     -|       yes|        -|    -|  7.30|       -|        -|          -|          -|    -|
++-----------------+------+---------------+----------+---------+------+----------+---------+-----+------+--------+---------+-----------+-----------+-----+
+    Name Prefix: '+' for module, 'o' for loop, '*' for dataflow
+
+
+================================================================
+== HW Interfaces
+================================================================
+* S_AXILITE Interfaces
++---------------+------------+---------------+--------+----------+
+| Interface     | Data Width | Address Width | Offset | Register |
++---------------+------------+---------------+--------+----------+
+| s_axi_control | 32         | 5             | 16     | 0        |
++---------------+------------+---------------+--------+----------+
+
+* S_AXILITE Registers
++---------------+----------+--------+-------+--------+----------------------------------+----------------------------------------------------------------------+
+| Interface     | Register | Offset | Width | Access | Description                      | Bit Fields                                                           |
++---------------+----------+--------+-------+--------+----------------------------------+----------------------------------------------------------------------+
+| s_axi_control | CTRL     | 0x00   | 32    | RW     | Control signals                  | 0=AP_START 1=AP_DONE 2=AP_IDLE 3=AP_READY 7=AUTO_RESTART 9=INTERRUPT |
+| s_axi_control | GIER     | 0x04   | 32    | RW     | Global Interrupt Enable Register | 0=Enable                                                             |
+| s_axi_control | IP_IER   | 0x08   | 32    | RW     | IP Interrupt Enable Register     | 0=CHAN0_INT_EN 1=CHAN1_INT_EN                                        |
+| s_axi_control | IP_ISR   | 0x0c   | 32    | RW     | IP Interrupt Status Register     | 0=CHAN0_INT_ST 1=CHAN1_INT_ST                                        |
+| s_axi_control | n_pixels | 0x10   | 32    | W      | Data signal of n_pixels          |                                                                      |
++---------------+----------+--------+-------+--------+----------------------------------+----------------------------------------------------------------------+
+
+* AXIS
++-----------+-----------+---------------+-------+-------+-----+-------+-------+--------+-------+-------+--------+
+| Interface | Direction | Register Mode | TDATA | TDEST | TID | TKEEP | TLAST | TREADY | TSTRB | TUSER | TVALID |
++-----------+-----------+---------------+-------+-------+-----+-------+-------+--------+-------+-------+--------+
+| s_in      | in        | both          | 32    | 1     | 1   | 4     | 1     | 1      | 4     | 1     | 1      |
+| s_out     | out       | both          | 32    | 1     | 1   | 4     | 1     | 1      | 4     | 1     | 1      |
++-----------+-----------+---------------+-------+-------+-----+-------+-------+--------+-------+-------+--------+
+
+* TOP LEVEL CONTROL
++-----------+------------+-----------+
+| Interface | Type       | Ports     |
++-----------+------------+-----------+
+| ap_clk    | clock      | ap_clk    |
+| ap_rst_n  | reset      | ap_rst_n  |
+| interrupt | interrupt  | interrupt |
+| ap_ctrl   | ap_ctrl_hs |           |
++-----------+------------+-----------+
+
+
+================================================================
+== SW I/O Information
+================================================================
+* Top Function Arguments
++----------+-----------+------------------------------------------------------------------------------+
+| Argument | Direction | Datatype                                                                     |
++----------+-----------+------------------------------------------------------------------------------+
+| s_in     | in        | stream<hls::axis<ap_uint<32>, 1UL, 1UL, 1UL, (unsigned char)'8', false>, 0>& |
+| s_out    | out       | stream<hls::axis<ap_uint<32>, 1UL, 1UL, 1UL, (unsigned char)'8', false>, 0>& |
+| n_pixels | in        | int                                                                          |
++----------+-----------+------------------------------------------------------------------------------+
+
+* SW-to-HW Mapping
++----------+---------------+-----------+------------------------------------+
+| Argument | HW Interface  | HW Type   | HW Info                            |
++----------+---------------+-----------+------------------------------------+
+| s_in     | s_in          | interface |                                    |
+| s_out    | s_out         | interface |                                    |
+| n_pixels | s_axi_control | register  | name=n_pixels offset=0x10 range=32 |
++----------+---------------+-----------+------------------------------------+
+
+
+================================================================
+== Bind Op Report
+================================================================
++-------------------------------------+-----+--------+-------------+-----------+------------------------+---------+
+| Name                                | DSP | Pragma | Variable    | Op        | Impl                   | Latency |
++-------------------------------------+-----+--------+-------------+-----------+------------------------+---------+
+| + sobel_bounded                     | 2   |        |             |           |                        |         |
+|   icmp_ln49_fu_353_p2               |     |        | icmp_ln49   | setlt     | auto                   | 0       |
+|   add_ln49_fu_358_p2                |     |        | add_ln49    | add       | fabric                 | 0       |
+|   mul_8ns_8ns_15_1_1_U1             |     |        | mul_ln67    | mul       | auto                   | 0       |
+|   mac_muladd_8ns_8ns_15ns_16_4_1_U5 | 1   |        | mul_ln67_1  | mul       | dsp_slice              | 3       |
+|   mac_muladd_8ns_5ns_15s_15_4_1_U4  | 1   |        | mul_ln67_2  | mul       | dsp_slice              | 3       |
+|   mac_muladd_8ns_5ns_15s_15_4_1_U4  | 1   |        | zext_ln67_3 | zext      | dsp_slice              | 3       |
+|   mac_muladd_8ns_5ns_15s_15_4_1_U4  | 1   |        | add_ln67    | add       | dsp_slice              | 3       |
+|   mac_muladd_8ns_8ns_15ns_16_4_1_U5 | 1   |        | acc         | add       | dsp_slice              | 3       |
+|   icmp_ln59_fu_454_p2               |     |        | icmp_ln59   | seteq     | auto                   | 0       |
+|   i_mid_fu_460_p2                   |     |        | i_mid       | add       | fabric                 | 0       |
+|   i_mid_1_fu_466_p3                 |     |        | i_mid_1     | select    | auto_sel               | 0       |
+|   icmp_ln60_fu_474_p2               |     |        | icmp_ln60   | seteq     | auto                   | 0       |
+|   i_bot_fu_480_p2                   |     |        | i_bot       | add       | fabric                 | 0       |
+|   i_bot_1_fu_486_p3                 |     |        | i_bot_1     | select    | auto_sel               | 0       |
+|   sparsemux_7_2_8_1_1_U2            |     |        | tmp_5       | sparsemux | onehotencoding_realdef | 0       |
+|   sparsemux_7_2_8_1_1_U3            |     |        | tmp_6       | sparsemux | onehotencoding_realdef | 0       |
+|   icmp_ln66_fu_531_p2               |     |        | icmp_ln66   | seteq     | auto                   | 0       |
+|   tmp_fu_788_p2                     |     |        | tmp         | sub       | fabric                 | 0       |
+|   add_ln88_fu_725_p2                |     |        | add_ln88    | add       | fabric                 | 0       |
+|   add_ln90_fu_837_p2                |     |        | add_ln90    | add       | fabric                 | 0       |
+|   gx_fu_843_p2                      |     |        | gx          | add       | fabric                 | 0       |
+|   tmp3_fu_739_p2                    |     |        | tmp3        | sub       | fabric                 | 0       |
+|   sub_ln91_fu_745_p2                |     |        | sub_ln91    | sub       | fabric                 | 0       |
+|   sub_ln92_fu_867_p2                |     |        | sub_ln92    | sub       | fabric                 | 0       |
+|   neg_gx_fu_913_p2                  |     |        | neg_gx      | sub       | fabric                 | 0       |
+|   neg_gy_fu_918_p2                  |     |        | neg_gy      | sub       | fabric                 | 0       |
+|   select_ln97_fu_923_p3             |     |        | select_ln97 | select    | auto_sel               | 0       |
+|   select_ln98_fu_933_p3             |     |        | select_ln98 | select    | auto_sel               | 0       |
+|   add_ln97_fu_943_p2                |     |        | add_ln97    | add       | fabric                 | 0       |
+|   mag_fu_949_p2                     |     |        | mag         | add       | fabric                 | 0       |
+|   icmp_ln99_fu_965_p2               |     |        | icmp_ln99   | setne     | auto                   | 0       |
+|   edge_1_fu_975_p3                  |     |        | edge_1      | select    | auto_sel               | 0       |
+|   add_ln112_fu_537_p2               |     |        | add_ln112   | add       | fabric                 | 0       |
++-------------------------------------+-----+--------+-------------+-----------+------------------------+---------+
+
+
+================================================================
+== Storage Report
+================================================================
++---------------------------------------------------+-----------+-----------+------+------+--------+--------+-----------------------------------------------+------+---------+------------------+
+| Name                                              | Usage     | Type      | BRAM | URAM | CE_REG | Pragma | Variable                                      | Impl | Latency | Bitwidth, Depth, |
+|                                                   |           |           |      |      |        |        |                                               |      |         | Banks            |
++---------------------------------------------------+-----------+-----------+------+------+--------+--------+-----------------------------------------------+------+---------+------------------+
+| + sobel_bounded                                   |           |           | 3    | 0    |        |        |                                               |      |         |                  |
+|   control_s_axi_U                                 | interface | s_axilite |      |      |        |        |                                               |      |         |                  |
+|   sobel_bounded_stream_stream_axis_0_int_lbuf_2_U | ram_1p    |           | 1    |      | N      |        | sobel_bounded_stream_stream_axis_0_int_lbuf_2 | auto | 1       | 8, 1920, 1       |
+|   sobel_bounded_stream_stream_axis_0_int_lbuf_1_U | ram_1p    |           | 1    |      | N      |        | sobel_bounded_stream_stream_axis_0_int_lbuf_1 | auto | 1       | 8, 1920, 1       |
+|   sobel_bounded_stream_stream_axis_0_int_lbuf_U   | ram_1p    |           | 1    |      | N      |        | sobel_bounded_stream_stream_axis_0_int_lbuf   | auto | 1       | 8, 1920, 1       |
++---------------------------------------------------+-----------+-----------+------+------+--------+--------+-----------------------------------------------+------+---------+------------------+
+
+
+================================================================
+== Pragma Report
+================================================================
+* Implemented Pragmas
++-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------+
+| Type            | Options                                                                                                                                                                                                                   | Location                                                                |
++-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------+
+| INLINE          |                                                                                                                                                                                                                           | in _zl10sobel_luma7ap_uintili24ee (../../../src/hls/sobel/sobel.hpp:63) |
+| ARRAY_PARTITION | dim=1 type=complete variable=sobel_bounded(hls::stream<hls::axis<ap_uint<32>, 1ul, 1ul, 1ul, (unsigned char)56, false>, 0>&, hls::stream<hls::axis<ap_uint<32>, 1ul, 1ul, 1ul, (unsigned char)56, false>, 0>&, int)::lbuf | in sobel_bounded (../../../src/hls/sobel/sobel_bounded.cpp:36)          |
+| ARRAY_PARTITION | dim=1 type=complete variable=sobel_bounded(hls::stream<hls::axis<ap_uint<32>, 1ul, 1ul, 1ul, (unsigned char)56, false>, 0>&, hls::stream<hls::axis<ap_uint<32>, 1ul, 1ul, 1ul, (unsigned char)56, false>, 0>&, int)::wtop | in sobel_bounded (../../../src/hls/sobel/sobel_bounded.cpp:41)          |
+| ARRAY_PARTITION | dim=1 type=complete variable=sobel_bounded(hls::stream<hls::axis<ap_uint<32>, 1ul, 1ul, 1ul, (unsigned char)56, false>, 0>&, hls::stream<hls::axis<ap_uint<32>, 1ul, 1ul, 1ul, (unsigned char)56, false>, 0>&, int)::wmid | in sobel_bounded (../../../src/hls/sobel/sobel_bounded.cpp:42)          |
+| ARRAY_PARTITION | dim=1 type=complete variable=sobel_bounded(hls::stream<hls::axis<ap_uint<32>, 1ul, 1ul, 1ul, (unsigned char)56, false>, 0>&, hls::stream<hls::axis<ap_uint<32>, 1ul, 1ul, 1ul, (unsigned char)56, false>, 0>&, int)::wbot | in sobel_bounded (../../../src/hls/sobel/sobel_bounded.cpp:43)          |
++-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------+
+
+* Valid Pragma Syntax
++-----------------+--------------------------------------------+----------------------------------------------------------------+
+| Type            | Options                                    | Location                                                       |
++-----------------+--------------------------------------------+----------------------------------------------------------------+
+| INLINE          |                                            | in sobel_luma (../../../src/hls/sobel/sobel.hpp:63)            |
+| INTERFACE       | axis port = s_in                           | in sobel_bounded (../../../src/hls/sobel/sobel_bounded.cpp:30) |
+| INTERFACE       | axis port = s_out                          | in sobel_bounded (../../../src/hls/sobel/sobel_bounded.cpp:31) |
+| INTERFACE       | s_axilite port = n_pixels bundle = control | in sobel_bounded (../../../src/hls/sobel/sobel_bounded.cpp:32) |
+| INTERFACE       | s_axilite port = return bundle = control   | in sobel_bounded (../../../src/hls/sobel/sobel_bounded.cpp:33) |
+| ARRAY_PARTITION | variable = lbuf complete dim = 1           | in sobel_bounded (../../../src/hls/sobel/sobel_bounded.cpp:36) |
+| ARRAY_PARTITION | variable = wtop complete                   | in sobel_bounded (../../../src/hls/sobel/sobel_bounded.cpp:41) |
+| ARRAY_PARTITION | variable = wmid complete                   | in sobel_bounded (../../../src/hls/sobel/sobel_bounded.cpp:42) |
+| ARRAY_PARTITION | variable = wbot complete                   | in sobel_bounded (../../../src/hls/sobel/sobel_bounded.cpp:43) |
+| PIPELINE        | II = 1                                     | in sobel_bounded (../../../src/hls/sobel/sobel_bounded.cpp:50) |
++-----------------+--------------------------------------------+----------------------------------------------------------------+
+
+

@@ -17,7 +17,7 @@ set HERE=%~dp0
 set HERE=%HERE:~0,-1%
 set REPO=%HERE%\..\..
 
-set HLS_EXPORT=%REPO%\build\hls\sobel\export\sobel.zip
+set HLS_EXPORT=%REPO%\build\hls\sobel_bounded\export\sobel_bounded.zip
 set IPREPO=%HERE%\iprepo
 set OUTDIR=%HERE%\out
 set BOARD_DIR=%REPO%\board\dma_sobel
