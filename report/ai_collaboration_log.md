@@ -158,3 +158,47 @@ git 向上找到了本仓库的 `.git`，于是**把比赛仓库本身设成了�
 1. 任何 `git` 子命令在仓库子目录里都可能作用于**整个仓库**，稀疏检出尤其危险；
 2. `git status` 显示干净 ≠ 文件都在，稀疏检出会用 skip-worktree 把缺失隐藏掉；
    判断依据应该是 `git ls-files -v`（有 `S` 标记）与文件系统的交叉验证。
+
+---
+
+## 2026-10-18 / P3b：base overlay 移植到 2026.1（本轮主线）
+
+**提示词**
+> （目标轮次自动继续）继续完成项目
+
+**模型产出**
+- `build/overlay_hdmi/`：`fetch_pynq.ps1`（按 v3.1.2 稀疏克隆 PYNQ）、
+  `patch_base_tcl.py`（3 个补丁）、`insert_sobel.tcl`（切断 VDMA 环回并插入内核）、
+  `build.bat`（7 步流水线）
+- 关键结论：**PYNQ 官方 base overlay 可以在 Vivado 2026.1 里原样重建**，
+  不需要 `upgrade_ip`，也不需要退回 2025.2
+- 内核在 7 ns 目标下收敛：估计 Fmax **194.59 MHz**、II=1（视频时钟 142.86 MHz）
+- `board/hdmi_stream/`：上板脚本（加载 overlay、配置 HDMI、启动管线）
+
+**错误与纠正（第十次～第十五次）**
+
+1. **版本门禁**：`base.tcl` 头部的 `scripts_vivado_version 2024.1` 会让脚本在 2026.1 里
+   直接 `return 1`。改成 2026.1。
+2. **PFM_NAME**：脚本末尾 `PFM_NAME {xilinx.com:xd:${overlay_name}:1.0}` 在花括号里，
+   Tcl 从不替换变量，2024.1 不校验所以没人发现，2026.1 校验并报
+   `PFM_NAME name '${overlay_name}' is not valid`。改成字面量 `base`。
+3. **HLS IP 缺失**：base.tcl 列出的 5 个 `xilinx.com:hls:*` IP 在 IP 目录里根本没有
+   （仓库只给源码，不给打包好的 zip）。必须先跑 `build_ip.tcl`，而它 `exec vitis_hls`，
+   本机 vitis_hls 不在 PATH → 把 `tools/env` 加进 PATH。
+4. **PATH 被自己覆盖**：在 `cmd /c "call settings64.bat && set PATH=...;%PATH%"` 里，
+   `%PATH%` 在整行解析时就展开了（此时还没 call settings64），结果 Vivado 反而找不到。
+   教训：PowerShell 里先设 `$env:PATH`，cmd 里不要再动 PATH。
+5. **BOM 让 Tcl 崩溃**：用 PowerShell `Set-Content -Encoding UTF8` 生成的 .tcl 带 BOM，
+   Vivado 报 `invalid command name "﻿open_project"`。所有 .tcl 一律用不带 BOM 的方式写。
+6. **端口路径猜错**：`get_bd_intf_pins hdmi_in/out_stream` 找不到——实际路径是
+   `/video/hdmi_in/out_stream`（`video` 是顶层层次）。用
+   `get_bd_intf_pins -hier -filter {NAME =~ "*stream*"}` 一次列全，比猜快。
+7. **顺序问题**：`get_property ip_repo_paths [current_project]` 在 `open_project` 之前调用，
+   报 `No projects are currently open`。必须先开工程、再设 IP 仓库、然后打开块设计。
+8. **两处小坑**：`vitis_hls -f script.tcl` 的 `$argv` 里含有 `-f` 和脚本名，
+   解析自定义参数时不能按下标取；`create_bd_cell` 前必须 `update_ip_catalog`，
+   否则报 `IP definition not found for VLNV`。
+
+**人工判断**
+- 视频通路选择"绕过 VDMA 直通"，换来约一行延迟；代价是 PS 侧不能再 `readframe()`，
+  这条取舍写进了 `board/hdmi_stream/README.md`

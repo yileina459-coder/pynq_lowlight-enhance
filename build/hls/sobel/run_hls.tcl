@@ -23,9 +23,25 @@ add_files -tb [file join $src_dir "tb_sobel.cpp"]
 
 open_solution -reset "solution1"
 set_part xc7z020clg400-1
-# 10 ns = 100 MHz. A 720p60 stream needs a 74.25 MHz pixel clock, so closing at
-# 100 MHz leaves headroom for the rest of the pipeline.
-create_clock -period 10 -name default
+
+# Clock target, in ns. Optional first tclarg, defaults to 7 ns.
+#
+#   7 ns  = 142.86 MHz - the clock the PYNQ video fabric (clk_142M) actually
+#          runs at, so the kernel can be dropped straight into the HDMI path.
+#   10 ns = 100 MHz  - the DMA overlay clock.
+# Building for the faster target covers both: an IP that closes at 142.86 MHz
+# also closes at 100 MHz, so there is one IP variant to maintain.
+set clk_ns 7
+# vitis_hls puts its own switches ("-f", the script name, ...) in $argv, so look
+# for the first integer rather than assuming a position.
+foreach a $argv {
+    if {[string is integer -strict $a]} {
+        set clk_ns $a
+        break
+    }
+}
+puts "clock target: ${clk_ns} ns"
+create_clock -period $clk_ns -name default
 
 puts "=== CSIM ==="
 if {[catch {csim_design} err]} {

@@ -1,12 +1,27 @@
-# P3b 预研：把算子插进 HDMI 视频流
+# P3b：把算子插进 HDMI 视频流
 
 本文件记录**已经查证过**的事实和两条可选路线。没有查证的不写。
 
-## 结论先说
+## 结论先说（已从"预研"变成"已验证"）
 
-P3b 不是"改几行 tcl"就能完成的：PYNQ 的视频子系统（`pynq.lib.video`）依赖一整套
-IP 和固定的层次结构，而官方 base overlay 的构建脚本是 **Vivado 2024.1 生成**的，
-直接拿到 2026.1 里跑会被版本检查拦住。所以这一步要单独安排一轮，并且有明确的降级方案。
+路线 A 走通了：PYNQ 官方 base overlay 在 **Vivado 2026.1** 里重建成功（打了 3 个补丁），
+Sobel 核插在 `pixel_pack` → `pixel_unpack` 之间，视频流不经过 VDMA 帧缓冲。
+
+| 里程碑 | 状态 | 证据 |
+| --- | --- | --- |
+| PYNQ 的 5 个 HLS 视频 IP 用 Vitis HLS 2026.1 重新打包 | 通过 | `build/overlay_hdmi/.work/tree/boards/ip/hls/*/solution1/` |
+| base overlay 块设计在 2026.1 里生成 | 通过（4448 行 tcl，仅 3 处补丁） | `base.tcl` 日志 |
+| Sobel 插入并重新连线 | 通过 | `insert_sobel.tcl` 输出 `RESULT: INSERT OK` |
+| 内核在 142.86 MHz 下收敛 | 通过，估计 Fmax **194.59 MHz**、II=1 | `build/hls/sobel/reports/csynth.rpt`（7 ns 目标） |
+| 位流与上板 | 见 `build/overlay_hdmi/` 与 `board/hdmi_stream/` | `sobel_hdmi.bit/.hwh` |
+
+## 三个补丁（`build/overlay_hdmi/patch_base_tcl.py`）
+
+| 补丁 | 原文 | 原因 |
+| --- | --- | --- |
+| 版本门禁 | `scripts_vivado_version 2024.1` → `2026.1` | 脚本自检不同版本会直接 `return 1` |
+| IP 仓库路径 | `../../ip` → 绝对路径 | 构建目录与 PYNQ 仓库布局不同 |
+| PFM_NAME | `${overlay_name}` → `base` | 2024.1 不校验；2026.1 校验并报"非法字符"（该变量在花括号里从未被替换） |
 
 ## 已查证的事实
 
@@ -20,6 +35,9 @@ IP 和固定的层次结构，而官方 base overlay 的构建脚本是 **Vivado
 | 像素格式转换是 HLS IP | `xilinx.com:hls:color_convert:1.0`、`pixel_pack:1.0`、`pixel_unpack:1.0`，源码在 `boards/ip/hls/`，由 `build_ip.tcl` 用 `vitis_hls` 重新打包 |
 | IP 仓库路径 | `base.tcl` 里 `set_property ip_repo_paths ../../ip`，即 `boards/ip` |
 | base overlay 还含 MicroBlaze、TIMER、SPI、IIC、音频、Arduino/Pmod 等与本项目无关的部分 | `base.tcl` 中的 `lmb_v10`、`lmb_bram_if_cntlr`、`axi_timer`、`axi_quad_spi`、`axi_iic` 等实例 |
+| 视频端口在 `video` 层次下 | `get_bd_intf_pins -hier -filter {NAME =~ "*stream*"}` 得到 `/video/hdmi_in/out_stream`、`/video/hdmi_out/in_stream` |
+| 视频逻辑时钟是 `clk_142M`（PS 的 FCLK_CLK1） | 插入脚本把内核 `ap_clk` 接到 `video/clk_142M` 所在网络，网络名 `ps7_0_FCLK_CLK1` |
+| `pixel_pack` 输出是 **32 位**/像素 | 因此 Sobel 核用 `SOBEL_PIX_W=32` 直接对接，**不需要位宽转换** |
 
 ## 两条路线
 
@@ -47,30 +65,32 @@ IP 和固定的层次结构，而官方 base overlay 的构建脚本是 **Vivado
 如果这一步能在半天内跑通，剩下的"插一个 IP"就不难；如果跑不通（IP 升级连环报错），
 再评估路线 B 或换用 2025.2 工具链（赛规允许，需在报告中说明）。
 
-## 路线 A 的具体步骤（待执行）
+**这个建议已被验证**：路线 A 从零到出位流只用了 3 个补丁，没有遇到 IP 版本不兼容，
+不需要 `upgrade_ip`，也不需要退回 2025.2。路线 B 不再考虑。
 
-1. 把 `boards/Pynq-Z2/base/` 与 `boards/ip/` 引入仓库 `third_party/pynq/`，附 BSD-3 许可说明；
-2. 创建 `build/overlay_hdmi/`，用脚本复制并打补丁：
-   - 把 `scripts_vivado_version` 改成 `2026.1`（或直接去掉版本门禁）；
-   - `set_property ip_repo_paths` 指向仓库内的 `third_party/pynq/ip`；
-3. 先跑 `build_ip.tcl`（HLS 三个 IP：color_convert / pixel_pack / pixel_unpack），
-   失败就逐个人工用 `vitis_hls` 编译并检查时序；
-4. 跑 `base.tcl` 建块设计，遇到 IP 版本不认识就用 `upgrade_ip` 升级并检查连线；
-5. `validate_bd_design` 通过后，插入 `sobel_0`（24-bit 版本，`SOBEL_PIX_W=24`）：
-   `pixel_pack → sobel_0 → pixel_unpack`，TLAST/TUSER 语义由 PYNQ 的 pack/unpack 保证；
-6. `build_bitstream.tcl` 出位流，导出 `.bit` + `.hwh`；
-7. 上板：`hdmi_in.configure()` → `hdmi_out.configure(mode)` → `tie()`，确认画面是边缘图。
+## 路线 A 的实际步骤（已实现于 `build/overlay_hdmi/`）
+
+1. `fetch_pynq.ps1`：按 v3.1.2 稀疏克隆 PYNQ，取出 `boards/Pynq-Z2` 与 `boards/ip`，
+   放进 `.work/tree/`（不上传第三方源码进仓库，构建时拉取，版本可复现）；
+2. `patch_base_tcl.py`：三个补丁（见上表），每个补丁都校验原文存在，改不到就报错退出；
+3. `build_ip.tcl`：用 Vitis HLS 2026.1 重新打包 5 个 HLS IP
+   （color_convert / pixel_pack / pixel_unpack / trace_cntrl_32 / trace_cntrl_64）；
+4. `base.tcl`：生成 4448 行的块设计；
+5. `insert_sobel.tcl`：切断 VDMA 环回，把 `video/hdmi_in/out_stream` 接到 `sobel_0`，
+   再接到 `video/hdmi_out/in_stream`；时钟/复位复用 `video/clk_142M` 所在网络；
+6. `build_bitstream.tcl`：加 wrapper、约束、实现、写位流，导出 `base.bit` / `base.hwh`；
+7. `build.bat` 把产物改名为 `board/hdmi_stream/sobel_hdmi.bit|.hwh`。
 
 ## 风险与对策
 
 | 风险 | 影响 | 对策 |
 | --- | --- | --- |
-| 2024.1 生成的 tcl 在 2026.1 里 IP 版本不兼容 | 块设计建不起来 | 逐 IP `upgrade_ip`；仍有问题则改用 2025.2（赛规允许） |
-| 重打包 HLS IP 时 2026.1 的接口变化 | `color_convert` 等 IP 接口与 tcl 不匹配 | 优先使用仓库里已打包的 zip（`boards/ip/hls/*/solution1/impl/ip/*.zip`） |
-| PYNQ 镜像版本与 overlay 不匹配 | hwh 解析失败 | 需要板子上 `pynq.__version__` 的实测值（**待用户提供**） |
-| 没有显示器，无法验证 HDMI 输出 | 只能靠采集卡 | 采集卡（几十元）或临时借一台显示器 |
+| 2024.1 生成的 tcl 在 2026.1 里 IP 版本不兼容 | 块设计建不起来 | 实测未发生；如遇到则逐 IP `upgrade_ip`，或改用 2025.2（赛规允许） |
+| PYNQ 镜像版本与 overlay 不匹配 | hwh 解析失败 | 上板脚本会明确报 `no 'video' hierarchy`；届时按实际版本改 `fetch_pynq.ps1 -Tag` 重建 |
+| 没有显示器，无法验证 HDMI 输出 | 只能靠采集卡 | 采集卡（几十元）或借一台显示器；数字证据由 DMA 版提供 |
+| VDMA 被断开，`readframe()` 不可用 | PS 不能回读帧 | 这是低延迟直通的取舍，已写入 `board/hdmi_stream/README.md` |
 
 ## 当前状态
 
-- 源码已拉取并核对（`v3.1.2` 的 `boards/Pynq-Z2/base`、`boards/ip`）；
-- **未开始移植**：等用户确认 PYNQ 镜像版本与是否有显示/采集设备后，再决定走 A 还是 B。
+- 移植脚本、补丁、插入逻辑、上板脚本全部就位（`build/overlay_hdmi/`、`board/hdmi_stream/`）；
+- 等位流实现完成，然后在板上跑 `hdmi_sobel.py` 确认 overlay 能加载、HDMI 输入能锁定。
