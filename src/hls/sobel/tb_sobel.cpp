@@ -95,8 +95,8 @@ int main() {
                 p.data = ((ap_uint<24>)rgb[y][x][0] << 16) |
                          ((ap_uint<24>)rgb[y][x][1] << 8) |
                          (ap_uint<24>)rgb[y][x][2];
-                p.keep = 0x7;
-                p.strb = 0x7;
+                p.keep = (ap_uint<SOBEL_PIX_W / 8>)SOBEL_KEEP_ALL;
+                p.strb = (ap_uint<SOBEL_PIX_W / 8>)SOBEL_KEEP_ALL;
                 p.user = (f == 0 && y == 0 && x == 0) ? 1 : 0;
                 p.last = (x == TB_W - 1) ? 1 : 0;
                 p.id = 0;
@@ -126,7 +126,8 @@ int main() {
                     if (errors < 5) printf("FAIL: last flag wrong at f%d y%d x%d\n", f, y, x);
                     errors++;
                 }
-                if (q.keep != (ap_uint<3>)0x7 || q.strb != (ap_uint<3>)0x7) {
+                if (q.keep != (ap_uint<SOBEL_PIX_W / 8>)SOBEL_KEEP_ALL ||
+                    q.strb != (ap_uint<SOBEL_PIX_W / 8>)SOBEL_KEEP_ALL) {
                     if (errors < 5) printf("FAIL: keep/strb clobbered at f%d y%d x%d\n", f, y, x);
                     errors++;
                 }

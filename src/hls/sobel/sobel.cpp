@@ -47,7 +47,9 @@ void sobel_stream(sobel_stream_t& s_in, sobel_stream_t& s_out) {
         sobel_pixel_t pin = s_in.read();
         sobel_pixel_t pout = pin;   // carries keep/strb/user/last/id/dest through
 
-        ap_uint<8> y = sobel_luma(pin.data);
+        // Only the low 24 bits are colour; wider buses carry a passthrough byte.
+        ap_uint<24> rgb_in = pin.data.range(23, 0);
+        ap_uint<8> y = sobel_luma(rgb_in);
 
         // Row roles for this pixel.
         ap_uint<2> i_top = phase;
@@ -100,8 +102,11 @@ void sobel_stream(sobel_stream_t& s_in, sobel_stream_t& s_out) {
         ap_uint<8> edge = (mag > 255) ? ap_uint<8>(255) : ap_uint<8>(mag);
 
         // Replicate the edge value to R, G and B so the result is visible on a
-        // normal RGB display without a further colour-space stage.
-        pout.data = ((ap_uint<24>)edge << 16) | ((ap_uint<24>)edge << 8) | (ap_uint<24>)edge;
+        // normal RGB display without a further colour-space stage. Bits above
+        // 23 (alpha / passthrough) are preserved from the input.
+        ap_uint<24> rgb_out = ((ap_uint<24>)edge << 16) | ((ap_uint<24>)edge << 8) | (ap_uint<24>)edge;
+        ap_uint<SOBEL_PIX_W> upper = pin.data & ~(ap_uint<SOBEL_PIX_W>)0xFFFFFF;
+        pout.data = upper | (ap_uint<SOBEL_PIX_W>)rgb_out;
 
         s_out.write(pout);
 
