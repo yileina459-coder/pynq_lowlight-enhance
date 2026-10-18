@@ -25,7 +25,7 @@
 | 手写 RTL：AXI-Stream 三选一选择器 | `src/rtl/axis_mux3/` | 综合通过（36 LUT/0 FF）；功能仿真未跑通（本机 xsim 崩溃），未集成 |
 | 手写 RTL：TLAST 生成器 | `src/rtl/axis_tlast_gen/` | 板上验证过其行为，最终版本未使用（有界核已足够） |
 | DMA overlay 位流 | `board/dma_sobel/sobel_dma.bit|.hwh` | 已验证 |
-| HDMI overlay 位流 | `board/hdmi_stream/sobel_hdmi.bit|.hwh` | 已实现未上板（缺 HDMI 线/显示器） |
+| HDMI overlay 位流 | `board/hdmi_stream/sobel_hdmi.bit|.hwh` | **板上加载验证通过**（21 个 IP、`video` 层次绑定成功）；出图待显示设备 |
 | 软件黄金模型与比对 | `sim/common/`、`sim/*/golden_*.py`、`skill/golden_compare` | 已验证 |
 | PS 软件基线 | `board/ps_baseline/ps_sobel.py` | 已验证（板上 3108 ms/帧） |
 | 性能数据与对比表 | `sim/perf/make_comparison.py`、`report/comparison.md` | 已验证 |
@@ -36,8 +36,10 @@
 
 ## 三、已知限制（报告里同样写明）
 
-1. **HDMI 通路未在板上验证**：位流已构建、`.hwh` 离线校验通过，但缺显示器/采集卡，
-   只能验证到"加载 + 输入锁定"这一步。DMA 通路已经提供了数字证据。
+1. **HDMI 通路只验证到加载**：位流能在 PYNQ 3.1.1 上加载，`pynq.lib.video` 的
+   `hdmi_in` / `hdmi_out` 正常绑定（`board/hdmi_stream/check_hdmi_overlay.py` 实测输出
+   `IPs in design: 21`、`video hierarchy bound: True`）。但缺 HDMI 源与显示设备，
+   未能确认画面。DMA 通路已提供完整的数字证据。
 2. **算子切换 UI 未实现**：三个算子各自都有验证，但还没有把三路并行 + `axis_mux3`
    接进同一个 overlay（时序余量只有 +0.207 ns，需要先评估）。
 3. **功耗未测**：PYNQ-Z2 无板载功率计，报告中没有功耗数据，也没有编造。
