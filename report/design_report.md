@@ -33,7 +33,7 @@
  HDMI 源 ──────► │ HDMI IN ─ dvi2rgb ─ v_vid_in_axi4s ─ color_convert ─ pixel_pack ─┐        │
                  │                                                                  │        │
                  │                            ┌─────────────────────────────────────┴──┐    │
-                 │                            │  sobel_0 / gaussian_0（HLS 算子，AXI-Stream）│    │
+                 │                            │  sobel_0 / gaussian_0 / sharpen_0（HLS 算子，AXI-Stream）│    │
                  │                            └─────────────────────────────────────┬──┘    │
                  │                                                                  │        │
  HDMI 显示器 ◄── │ HDMI OUT ─ rgb2dvi ─ v_axi4s_vid_out ─ color_convert ─ pixel_unpack ┘        │
@@ -183,5 +183,5 @@ build\overlay_hdmi\build.bat
 - 板上实测数据（帧率、延迟、资源、功耗）待采集，`metrics.csv` 与对比表将据此生成；
 - HDMI 版绕过 VDMA，因此 PS 侧不能 `readframe()`（取舍已文档化）；
 - DMA 版按行传输，帧率受 Python 每次传输开销拖累，仅用于功能验证；
-- 算子族目前完成 Sobel、Gaussian，锐化与色彩空间转换待实现；
+- 算子族：Sobel、Gaussian、Sharpen 已完成并验证；色彩空间转换按设计复用 PYNQ 官方 color_convert IP，不自研；
 - 功耗尚无板级测量手段，报告中将明确标注测量边界。
