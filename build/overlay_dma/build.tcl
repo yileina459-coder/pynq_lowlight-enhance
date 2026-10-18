@@ -36,6 +36,16 @@ create_project -force sobel_dma $proj_dir -part $part_name
 set_property ip_repo_paths [list $iprepo_dir] [current_project]
 update_ip_catalog -rebuild
 
+# Hand-written RTL: the TLAST generator that closes each DMA transfer.
+# Added as a source so it can be instantiated in the block design as a module
+# reference (no IP packaging step needed).
+set tlast_src [file join $repo_root "src" "rtl" "axis_tlast_gen" "axis_tlast_gen.v"]
+if {![file exists $tlast_src]} {
+    error "missing RTL: $tlast_src"
+}
+add_files -norecurse $tlast_src
+update_compile_order -fileset sources_1
+
 puts "=== BLOCK DESIGN ==="
 create_bd_design "design_1"
 current_bd_design "design_1"
@@ -64,6 +74,15 @@ set_property -dict [list \
 # --- the kernel ------------------------------------------------------------
 set sobel [create_bd_cell -type ip -vlnv xilinx.com:hls:sobel_stream:1.0 sobel_0]
 
+# --- TLAST generator -------------------------------------------------------
+# The kernel forwards the TLAST it receives, but on the board the S2MM never saw
+# one: every transfer left exactly one AXI burst in the DMA buffer and never
+# completed (measurements in board/dma_sobel/diag_dma*.py). This cell rebuilds
+# TLAST from a beat count, so a transfer of exactly WIDTH pixels always closes.
+# WIDTH therefore has to match the transfer length the software uses.
+set tlast [create_bd_cell -type module -reference axis_tlast_gen tlast_gen_0]
+set_property -dict [list CONFIG.WIDTH {1280}] $tlast
+
 # --- interconnect ----------------------------------------------------------
 # Control path: one PS master, one slave (DMA registers).
 set sc_ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect sc_ctrl]
@@ -88,6 +107,7 @@ foreach pin {
     axi_dma_0/m_axi_mm2s_aclk
     axi_dma_0/m_axi_s2mm_aclk
     sobel_0/ap_clk
+    tlast_gen_0/aclk
     sc_ctrl/aclk
     sc_mem/aclk
 } {
@@ -96,6 +116,7 @@ foreach pin {
 foreach pin {
     axi_dma_0/axi_resetn
     sobel_0/ap_rst_n
+    tlast_gen_0/aresetn
     sc_ctrl/aresetn
     sc_mem/aresetn
 } {
@@ -111,7 +132,8 @@ connect_bd_intf_net [get_bd_intf_pins sc_mem/M00_AXI]     [get_bd_intf_pins ps7/
 
 # --- the actual data path --------------------------------------------------
 connect_bd_intf_net [get_bd_intf_pins axi_dma_0/M_AXIS_MM2S] [get_bd_intf_pins sobel_0/s_in]
-connect_bd_intf_net [get_bd_intf_pins sobel_0/s_out]          [get_bd_intf_pins axi_dma_0/S_AXIS_S2MM]
+connect_bd_intf_net [get_bd_intf_pins sobel_0/s_out]          [get_bd_intf_pins tlast_gen_0/s_axis]
+connect_bd_intf_net [get_bd_intf_pins tlast_gen_0/m_axis]     [get_bd_intf_pins axi_dma_0/S_AXIS_S2MM]
 
 # --- address map -----------------------------------------------------------
 # Offset left to the auto-assign algorithm on purpose: PYNQ reads the real

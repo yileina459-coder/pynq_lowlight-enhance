@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Sun Oct 18 15:42:55 2026" VIVADOVERSION="2026.1">
+<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Sun Oct 18 22:00:41 2026" VIVADOVERSION="2026.1">
 
   <SYSTEMINFO ARCH="zynq" DEVICE="7z020" NAME="design_1" PACKAGE="clg400" SPEEDGRADE="-1"/>
 
@@ -1168,27 +1168,27 @@
         </PORT>
         <PORT DIR="I" LEFT="31" NAME="s_axis_s2mm_tdata" RIGHT="0" SIGIS="undef" SIGNAME="axi_dma_0_s_axis_s2mm_tdata">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="sobel_0" PORT="s_out_TDATA"/>
+            <CONNECTION INSTANCE="tlast_gen_0" PORT="m_axis_tdata"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="I" LEFT="3" NAME="s_axis_s2mm_tkeep" RIGHT="0" SIGIS="undef" SIGNAME="axi_dma_0_s_axis_s2mm_tkeep">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="sobel_0" PORT="s_out_TKEEP"/>
+            <CONNECTION INSTANCE="tlast_gen_0" PORT="m_axis_tkeep"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="I" NAME="s_axis_s2mm_tlast" SIGIS="undef" SIGNAME="axi_dma_0_s_axis_s2mm_tlast">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="sobel_0" PORT="s_out_TLAST"/>
+            <CONNECTION INSTANCE="tlast_gen_0" PORT="m_axis_tlast"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="O" NAME="s_axis_s2mm_tready" SIGIS="undef" SIGNAME="axi_dma_0_s_axis_s2mm_tready">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="sobel_0" PORT="s_out_TREADY"/>
+            <CONNECTION INSTANCE="tlast_gen_0" PORT="m_axis_tready"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="I" NAME="s_axis_s2mm_tvalid" SIGIS="undef" SIGNAME="axi_dma_0_s_axis_s2mm_tvalid">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="sobel_0" PORT="s_out_TVALID"/>
+            <CONNECTION INSTANCE="tlast_gen_0" PORT="m_axis_tvalid"/>
           </CONNECTIONS>
         </PORT>
       </PORTS>
@@ -1365,7 +1365,7 @@
             <PORTMAP LOGICAL="TVALID" PHYSICAL="m_axis_mm2s_tvalid"/>
           </PORTMAPS>
         </BUSINTERFACE>
-        <BUSINTERFACE BUSNAME="sobel_0_s_out" NAME="S_AXIS_S2MM" TYPE="TARGET" VLNV="xilinx.com:interface:axis:1.0">
+        <BUSINTERFACE BUSNAME="tlast_gen_0_m_axis" NAME="S_AXIS_S2MM" TYPE="TARGET" VLNV="xilinx.com:interface:axis:1.0">
           <PARAMETER NAME="CLK_DOMAIN" VALUE="design_1_ps7_0_FCLK_CLK0"/>
           <PARAMETER NAME="FREQ_HZ" VALUE="100000000"/>
           <PARAMETER NAME="HAS_TKEEP" VALUE="1"/>
@@ -1376,9 +1376,9 @@
           <PARAMETER NAME="LAYERED_METADATA" VALUE="undef"/>
           <PARAMETER NAME="PHASE" VALUE="0.0"/>
           <PARAMETER NAME="TDATA_NUM_BYTES" VALUE="4"/>
-          <PARAMETER NAME="TDEST_WIDTH" VALUE="1"/>
-          <PARAMETER NAME="TID_WIDTH" VALUE="1"/>
-          <PARAMETER NAME="TUSER_WIDTH" VALUE="1"/>
+          <PARAMETER NAME="TDEST_WIDTH" VALUE="0"/>
+          <PARAMETER NAME="TID_WIDTH" VALUE="0"/>
+          <PARAMETER NAME="TUSER_WIDTH" VALUE="0"/>
           <PORTMAPS>
             <PORTMAP LOGICAL="TDATA" PHYSICAL="s_axis_s2mm_tdata"/>
             <PORTMAP LOGICAL="TKEEP" PHYSICAL="s_axis_s2mm_tkeep"/>
@@ -2367,6 +2367,7 @@
             <CONNECTION INSTANCE="axi_dma_0" PORT="m_axi_mm2s_aclk"/>
             <CONNECTION INSTANCE="axi_dma_0" PORT="m_axi_s2mm_aclk"/>
             <CONNECTION INSTANCE="sobel_0" PORT="ap_clk"/>
+            <CONNECTION INSTANCE="tlast_gen_0" PORT="aclk"/>
             <CONNECTION INSTANCE="sc_ctrl" PORT="aclk"/>
             <CONNECTION INSTANCE="sc_mem" PORT="aclk"/>
           </CONNECTIONS>
@@ -2991,6 +2992,7 @@
           <CONNECTIONS>
             <CONNECTION INSTANCE="axi_dma_0" PORT="axi_resetn"/>
             <CONNECTION INSTANCE="sobel_0" PORT="ap_rst_n"/>
+            <CONNECTION INSTANCE="tlast_gen_0" PORT="aresetn"/>
             <CONNECTION INSTANCE="sc_ctrl" PORT="aresetn"/>
             <CONNECTION INSTANCE="sc_mem" PORT="aresetn"/>
           </CONNECTIONS>
@@ -3939,14 +3941,14 @@
         </BUSINTERFACE>
       </BUSINTERFACES>
     </MODULE>
-    <MODULE COREREVISION="2114834734" FULLNAME="/sobel_0" HWVERSION="1.0" INSTANCE="sobel_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="sobel_stream" VLNV="xilinx.com:hls:sobel_stream:1.0">
+    <MODULE COREREVISION="2114834776" FULLNAME="/sobel_0" HWVERSION="1.0" INSTANCE="sobel_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="sobel_stream" VLNV="xilinx.com:hls:sobel_stream:1.0">
       <DOCUMENTS>
         <DOCUMENT SOURCE="https://support.amd.com/documentation/ipcores/sobel_stream/1_0"/>
       </DOCUMENTS>
       <PARAMETERS>
         <PARAMETER NAME="Component_Name" VALUE="design_1_sobel_0_0"/>
         <PARAMETER NAME="II" VALUE="undef"/>
-        <PARAMETER NAME="clk_period" VALUE="10"/>
+        <PARAMETER NAME="clk_period" VALUE="7"/>
         <PARAMETER NAME="combinational" VALUE="0"/>
         <PARAMETER NAME="latency" VALUE="undef"/>
         <PARAMETER NAME="machine" VALUE="64"/>
@@ -3988,29 +3990,49 @@
             <CONNECTION INSTANCE="axi_dma_0" PORT="m_axis_mm2s_tvalid"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="31" NAME="s_out_TDATA" RIGHT="0" SIGIS="undef" SIGNAME="axi_dma_0_s_axis_s2mm_tdata">
+        <PORT DIR="O" LEFT="31" NAME="s_out_TDATA" RIGHT="0" SIGIS="undef" SIGNAME="sobel_0_s_out_TDATA">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="axi_dma_0" PORT="s_axis_s2mm_tdata"/>
+            <CONNECTION INSTANCE="tlast_gen_0" PORT="s_axis_tdata"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="3" NAME="s_out_TKEEP" RIGHT="0" SIGIS="undef" SIGNAME="axi_dma_0_s_axis_s2mm_tkeep">
+        <PORT DIR="O" LEFT="0" NAME="s_out_TDEST" RIGHT="0" SIGIS="undef" SIGNAME="sobel_0_s_out_TDEST">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="axi_dma_0" PORT="s_axis_s2mm_tkeep"/>
+            <CONNECTION INSTANCE="tlast_gen_0" PORT="s_axis_tdest"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="0" NAME="s_out_TLAST" RIGHT="0" SIGIS="undef" SIGNAME="axi_dma_0_s_axis_s2mm_tlast">
+        <PORT DIR="O" LEFT="0" NAME="s_out_TID" RIGHT="0" SIGIS="undef" SIGNAME="sobel_0_s_out_TID">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="axi_dma_0" PORT="s_axis_s2mm_tlast"/>
+            <CONNECTION INSTANCE="tlast_gen_0" PORT="s_axis_tid"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="s_out_TREADY" SIGIS="undef" SIGNAME="axi_dma_0_s_axis_s2mm_tready">
+        <PORT DIR="O" LEFT="3" NAME="s_out_TKEEP" RIGHT="0" SIGIS="undef" SIGNAME="sobel_0_s_out_TKEEP">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="axi_dma_0" PORT="s_axis_s2mm_tready"/>
+            <CONNECTION INSTANCE="tlast_gen_0" PORT="s_axis_tkeep"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="s_out_TVALID" SIGIS="undef" SIGNAME="axi_dma_0_s_axis_s2mm_tvalid">
+        <PORT DIR="O" LEFT="0" NAME="s_out_TLAST" RIGHT="0" SIGIS="undef" SIGNAME="sobel_0_s_out_TLAST">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="axi_dma_0" PORT="s_axis_s2mm_tvalid"/>
+            <CONNECTION INSTANCE="tlast_gen_0" PORT="s_axis_tlast"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="s_out_TREADY" SIGIS="undef" SIGNAME="sobel_0_s_out_TREADY">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="tlast_gen_0" PORT="s_axis_tready"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="3" NAME="s_out_TSTRB" RIGHT="0" SIGIS="undef" SIGNAME="sobel_0_s_out_TSTRB">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="tlast_gen_0" PORT="s_axis_tstrb"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="0" NAME="s_out_TUSER" RIGHT="0" SIGIS="undef" SIGNAME="sobel_0_s_out_TUSER">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="tlast_gen_0" PORT="s_axis_tuser"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="s_out_TVALID" SIGIS="undef" SIGNAME="sobel_0_s_out_TVALID">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="tlast_gen_0" PORT="s_axis_tvalid"/>
           </CONNECTIONS>
         </PORT>
       </PORTS>
@@ -4053,10 +4075,160 @@
           <PARAMETER NAME="TUSER_WIDTH" VALUE="1"/>
           <PORTMAPS>
             <PORTMAP LOGICAL="TDATA" PHYSICAL="s_out_TDATA"/>
+            <PORTMAP LOGICAL="TDEST" PHYSICAL="s_out_TDEST"/>
+            <PORTMAP LOGICAL="TID" PHYSICAL="s_out_TID"/>
             <PORTMAP LOGICAL="TKEEP" PHYSICAL="s_out_TKEEP"/>
             <PORTMAP LOGICAL="TLAST" PHYSICAL="s_out_TLAST"/>
             <PORTMAP LOGICAL="TREADY" PHYSICAL="s_out_TREADY"/>
+            <PORTMAP LOGICAL="TSTRB" PHYSICAL="s_out_TSTRB"/>
+            <PORTMAP LOGICAL="TUSER" PHYSICAL="s_out_TUSER"/>
             <PORTMAP LOGICAL="TVALID" PHYSICAL="s_out_TVALID"/>
+          </PORTMAPS>
+        </BUSINTERFACE>
+      </BUSINTERFACES>
+    </MODULE>
+    <MODULE COREREVISION="1" FULLNAME="/tlast_gen_0" HWVERSION="1.0" INSTANCE="tlast_gen_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="axis_tlast_gen" VLNV="xilinx.com:module_ref:axis_tlast_gen:1.0">
+      <DOCUMENTS>
+        <DOCUMENT SOURCE="https://support.amd.com/documentation/ipcores/axis_tlast_gen/1_0"/>
+      </DOCUMENTS>
+      <PARAMETERS>
+        <PARAMETER NAME="DATA_W" VALUE="32"/>
+        <PARAMETER NAME="DEST_W" VALUE="1"/>
+        <PARAMETER NAME="ID_W" VALUE="1"/>
+        <PARAMETER NAME="USER_W" VALUE="1"/>
+        <PARAMETER NAME="WIDTH" VALUE="1280"/>
+        <PARAMETER NAME="Component_Name" VALUE="design_1_tlast_gen_0_0"/>
+        <PARAMETER NAME="EDK_IPTYPE" VALUE="PERIPHERAL"/>
+      </PARAMETERS>
+      <PORTS>
+        <PORT CLKFREQUENCY="100000000" DIR="I" NAME="aclk" SIGIS="clk" SIGNAME="ps7_FCLK_CLK0">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7" PORT="FCLK_CLK0"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="aresetn" POLARITY="ACTIVE_LOW" SIGIS="rst" SIGNAME="rst_100m_peripheral_aresetn">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="rst_100m" PORT="peripheral_aresetn"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="31" NAME="m_axis_tdata" RIGHT="0" SIGIS="undef" SIGNAME="axi_dma_0_s_axis_s2mm_tdata">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="axi_dma_0" PORT="s_axis_s2mm_tdata"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="3" NAME="m_axis_tkeep" RIGHT="0" SIGIS="undef" SIGNAME="axi_dma_0_s_axis_s2mm_tkeep">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="axi_dma_0" PORT="s_axis_s2mm_tkeep"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="m_axis_tlast" SIGIS="undef" SIGNAME="axi_dma_0_s_axis_s2mm_tlast">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="axi_dma_0" PORT="s_axis_s2mm_tlast"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="m_axis_tready" SIGIS="undef" SIGNAME="axi_dma_0_s_axis_s2mm_tready">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="axi_dma_0" PORT="s_axis_s2mm_tready"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="m_axis_tvalid" SIGIS="undef" SIGNAME="axi_dma_0_s_axis_s2mm_tvalid">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="axi_dma_0" PORT="s_axis_s2mm_tvalid"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="31" NAME="s_axis_tdata" RIGHT="0" SIGIS="undef" SIGNAME="sobel_0_s_out_TDATA">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="sobel_0" PORT="s_out_TDATA"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="0" NAME="s_axis_tdest" RIGHT="0" SIGIS="undef" SIGNAME="sobel_0_s_out_TDEST">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="sobel_0" PORT="s_out_TDEST"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="0" NAME="s_axis_tid" RIGHT="0" SIGIS="undef" SIGNAME="sobel_0_s_out_TID">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="sobel_0" PORT="s_out_TID"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="3" NAME="s_axis_tkeep" RIGHT="0" SIGIS="undef" SIGNAME="sobel_0_s_out_TKEEP">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="sobel_0" PORT="s_out_TKEEP"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="s_axis_tlast" SIGIS="undef" SIGNAME="sobel_0_s_out_TLAST">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="sobel_0" PORT="s_out_TLAST"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="s_axis_tready" SIGIS="undef" SIGNAME="sobel_0_s_out_TREADY">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="sobel_0" PORT="s_out_TREADY"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="3" NAME="s_axis_tstrb" RIGHT="0" SIGIS="undef" SIGNAME="sobel_0_s_out_TSTRB">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="sobel_0" PORT="s_out_TSTRB"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="0" NAME="s_axis_tuser" RIGHT="0" SIGIS="undef" SIGNAME="sobel_0_s_out_TUSER">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="sobel_0" PORT="s_out_TUSER"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="s_axis_tvalid" SIGIS="undef" SIGNAME="sobel_0_s_out_TVALID">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="sobel_0" PORT="s_out_TVALID"/>
+          </CONNECTIONS>
+        </PORT>
+      </PORTS>
+      <BUSINTERFACES>
+        <BUSINTERFACE BUSNAME="tlast_gen_0_m_axis" NAME="m_axis" TYPE="INITIATOR" VLNV="xilinx.com:interface:axis:1.0">
+          <PARAMETER NAME="CLK_DOMAIN" VALUE="design_1_ps7_0_FCLK_CLK0"/>
+          <PARAMETER NAME="FREQ_HZ" VALUE="100000000"/>
+          <PARAMETER NAME="HAS_TKEEP" VALUE="1"/>
+          <PARAMETER NAME="HAS_TLAST" VALUE="1"/>
+          <PARAMETER NAME="HAS_TREADY" VALUE="1"/>
+          <PARAMETER NAME="HAS_TSTRB" VALUE="1"/>
+          <PARAMETER NAME="INSERT_VIP" VALUE="0"/>
+          <PARAMETER NAME="LAYERED_METADATA" VALUE="undef"/>
+          <PARAMETER NAME="PHASE" VALUE="0.0"/>
+          <PARAMETER NAME="TDATA_NUM_BYTES" VALUE="4"/>
+          <PARAMETER NAME="TDEST_WIDTH" VALUE="1"/>
+          <PARAMETER NAME="TID_WIDTH" VALUE="1"/>
+          <PARAMETER NAME="TUSER_WIDTH" VALUE="1"/>
+          <PORTMAPS>
+            <PORTMAP LOGICAL="TDATA" PHYSICAL="m_axis_tdata"/>
+            <PORTMAP LOGICAL="TKEEP" PHYSICAL="m_axis_tkeep"/>
+            <PORTMAP LOGICAL="TLAST" PHYSICAL="m_axis_tlast"/>
+            <PORTMAP LOGICAL="TREADY" PHYSICAL="m_axis_tready"/>
+            <PORTMAP LOGICAL="TVALID" PHYSICAL="m_axis_tvalid"/>
+          </PORTMAPS>
+        </BUSINTERFACE>
+        <BUSINTERFACE BUSNAME="sobel_0_s_out" NAME="s_axis" TYPE="TARGET" VLNV="xilinx.com:interface:axis:1.0">
+          <PARAMETER NAME="CLK_DOMAIN" VALUE="design_1_ps7_0_FCLK_CLK0"/>
+          <PARAMETER NAME="FREQ_HZ" VALUE="100000000"/>
+          <PARAMETER NAME="HAS_TKEEP" VALUE="1"/>
+          <PARAMETER NAME="HAS_TLAST" VALUE="1"/>
+          <PARAMETER NAME="HAS_TREADY" VALUE="1"/>
+          <PARAMETER NAME="HAS_TSTRB" VALUE="1"/>
+          <PARAMETER NAME="INSERT_VIP" VALUE="0"/>
+          <PARAMETER NAME="LAYERED_METADATA" VALUE="undef"/>
+          <PARAMETER NAME="PHASE" VALUE="0.0"/>
+          <PARAMETER NAME="TDATA_NUM_BYTES" VALUE="4"/>
+          <PARAMETER NAME="TDEST_WIDTH" VALUE="1"/>
+          <PARAMETER NAME="TID_WIDTH" VALUE="1"/>
+          <PARAMETER NAME="TUSER_WIDTH" VALUE="1"/>
+          <PORTMAPS>
+            <PORTMAP LOGICAL="TDATA" PHYSICAL="s_axis_tdata"/>
+            <PORTMAP LOGICAL="TDEST" PHYSICAL="s_axis_tdest"/>
+            <PORTMAP LOGICAL="TID" PHYSICAL="s_axis_tid"/>
+            <PORTMAP LOGICAL="TKEEP" PHYSICAL="s_axis_tkeep"/>
+            <PORTMAP LOGICAL="TLAST" PHYSICAL="s_axis_tlast"/>
+            <PORTMAP LOGICAL="TREADY" PHYSICAL="s_axis_tready"/>
+            <PORTMAP LOGICAL="TSTRB" PHYSICAL="s_axis_tstrb"/>
+            <PORTMAP LOGICAL="TUSER" PHYSICAL="s_axis_tuser"/>
+            <PORTMAP LOGICAL="TVALID" PHYSICAL="s_axis_tvalid"/>
           </PORTMAPS>
         </BUSINTERFACE>
       </BUSINTERFACES>
