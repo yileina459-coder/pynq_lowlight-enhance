@@ -68,12 +68,15 @@ PS Python <-> DDR <-> AXI DMA (MM2S/S2MM) <-> sobel_stream
 - 离线预演：`sim/sobel/test_sobel_dma_offline.py`（假 DMA 用 numpy 复现核行为，先验证主机侧脚本）
 - 验收：板上 `COMPARE PASS`（0 个通道不一致），`metrics.csv` 有第一条真实数据
 - 限制：按行传输，DMA 每次传输的固定开销会让帧率显著低于真实流式性能
+- **当前状态**：位流已生成（WNS +3.086 ns，LUT 7.6%、BRAM 2.5%、DSP 1.4%），`.hwh`
+  已通过离线校验，上板脚本已用假 DMA 离线验证 → **只等板卡侧跑一次 DMA 回环**
 
 #### P3b HDMI 流式 overlay（主展示形态，待采集卡/显示器）
 
-1. 用 PYNQ 官方 base overlay 源码（`boards/Pynq-Z2/base`）在 2026.1 里重新打开并**原样重建**出可用位流，证明版本链能打通；
-2. 在 `pixel_pack` 之后 / `pixel_unpack` 之前插入 Sobel 核，保持 `TLAST/TUSER/TKEEP` 语义；
-3. 上板跑实时视频，记录帧率与时序收敛情况。
+预研结论见 `docs/p3b_plan.md`：官方 base overlay 是 4448 行、Vivado **2024.1** 生成的
+tcl，带版本门禁，直接放到 2026.1 跑会被拒；`pynq.lib.video` 依赖 dvi2rgb/v_tc/v_axi4s_vid_out/
+rgb2dvi/axi_dynclk 与三个 HLS IP（color_convert/pixel_pack/pixel_unpack）。两条路线与工作量
+估计都写在那个文件里。
 
 - 构建：`build/overlay_hdmi/`
 - 产物：`board/hdmi_stream/`（`.bit`、`.hwh`、notebook、实测日志）
