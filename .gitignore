@@ -36,6 +36,7 @@ build/**/out/xsa_stage/
 **/*.rpx
 **/*.ltx
 **/*.xpr
+**/*.xsa
 **/*.jou
 **/*.log
 

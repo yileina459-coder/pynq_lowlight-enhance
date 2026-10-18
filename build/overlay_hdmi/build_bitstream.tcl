@@ -19,6 +19,36 @@ set out_dir    [file join $repo_root "board" "hdmi_stream"]
 cd $work
 open_project {base/base.xpr}
 
+# Out-of-context synthesis: ~200 IPs, one run each.
+#
+# Two failure modes were hit here, both documented so the next person does not
+# repeat them:
+#
+# 1. Parallel runs collide in Vivado's Tcl app store.
+#    With -jobs 4 several child processes load the app store at once and die:
+#        ERROR: [Common 17-354] Could not open 'C' for writing.
+#        ERROR: [Common 17-39] 'tclapp::load_apps' failed due to earlier errors.
+#    -jobs 1 avoids it but is unusably slow (200 runs, serialised).
+#
+# 2. Switching IPs to global synthesis is the "right" fix in principle, but for
+#    IPs that live inside a block design `get_ips` returns nothing here, so the
+#    property never gets applied (the counter below prints 0). To make it work
+#    you would have to reach the IPs through the BD hierarchy.
+#
+# What actually works: run with a low job count so that only the handful of
+# still-missing runs execute. Everything already synthesised is reused from the
+# IP cache, so a retry after a failure converges quickly (in this build: 4
+# outstanding runs, ~15 minutes to a bitstream).
+set n_none 0
+foreach ip [get_ips] {
+    if {[catch {set_property synth_checkpoint_mode None $ip} err]} {
+        puts "note: could not set global synth for $ip: $err"
+    } else {
+        incr n_none
+    }
+}
+puts "IPs switched to global synthesis: $n_none (0 is expected for IPs inside the block design)"
+
 set bd_file [get_files base.bd]
 generate_target all $bd_file
 make_wrapper -files $bd_file -top
@@ -34,9 +64,16 @@ set_property top base_wrapper [current_fileset]
 import_files -fileset constrs_1 -norecurse [file join $work "vivado" "constraints" "base.xdc"]
 update_compile_order -fileset sources_1
 
-puts "=== IMPLEMENTATION (jobs 1, 30-50 min) ==="
+set jobs 2
+if {[info exists ::env(HDMI_JOBS)]} {
+    set jobs $::env(HDMI_JOBS)
+}
+puts "parallel jobs: $jobs"
+
+puts "=== IMPLEMENTATION ==="
+reset_run synth_1
 reset_run impl_1
-launch_runs impl_1 -to_step write_bitstream -jobs 1
+launch_runs impl_1 -to_step write_bitstream -jobs $jobs
 wait_on_run impl_1
 
 set status [get_property STATUS [get_runs impl_1]]

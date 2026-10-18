@@ -36,7 +36,7 @@ import os
 import sys
 import xml.etree.ElementTree as ET
 
-DMA_TYPES = ("axi_dma",)
+DMA_TYPES = ("axi_dma", "axi_vdma")
 
 
 def attr(node, *names, default=""):
