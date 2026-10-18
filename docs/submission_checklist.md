@@ -32,7 +32,7 @@
 | 通用 Skill ×4 + 踩坑清单 | `skill/` | 已验证 |
 | 设计报告 | `report/design_report.md` | 已完成（含实测数据） |
 | 大模型协作记录 | `report/ai_collaboration_log.md` | 已完成（21 条） |
-| 英文 A4 海报 | — | **未完成**（决赛要求，需 AMD 模板） |
+| 英文 A4 海报 | `report/poster/poster.pptx`（由 `make_poster.py` 生成） | **已完成**：一页 A4 竖版英文海报，内容与数据全部来自仓库；拿到 AMD 官方模板后可直接套版 |
 
 ## 三、已知限制（报告里同样写明）
 
