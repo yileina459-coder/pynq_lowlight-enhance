@@ -37,16 +37,34 @@
 
 ## 验证状态（如实记录）
 
-- 已写自检 testbench：`tb_axis_mux3.v`，检查三件事——选中通路数据/TLAST 不被篡改、
-  三路都被持续排空（计数 ≥150）、切换中途不丢拍；
-- **本机尚未跑通仿真**：`xsim` 在批处理模式下一启动就崩溃
-  （`Could not open file mapping object (2)` 后 `EXCEPTION_ACCESS_VIOLATION`，两次复现）。
-  这是 xsim 在本机环境的运行问题，不是设计问题，但也意味着**这份 RTL 目前是"未验证"状态**。
+**已做的**：
 
-在交互式终端里重跑（很可能就正常了，xsim 对会话环境敏感）：
+- 自检 testbench `tb_axis_mux3.v`：检查选中通路数据/TLAST 不被篡改、三路都被持续排空
+  （每路计数 ≥150）、切换中途不丢拍、`sel==3` 回落到输入 0；
+- `xvlog` 编译 + `xelab` 展开**均通过**（说明 RTL 本身语法与层次没问题）；
+- **Vivado 综合通过**（7 ns 约束、`xc7z020clg400-1`）：`0 errors, 0 critical warnings`，
+  资源 **36 LUT、0 FF**，纯组合逻辑因此没有内部时序路径（WNS 显示 NA 是预期的）。
+  报告在 `build/rtl/axis_mux3/mux3_util.rpt`、`mux3_timing.rpt`。
+
+**未做的**：功能仿真（跑 testbench 本身）。
+
+`xsim` 在本机一启动就崩：
+
+```text
+Could not open file mapping object (2).
+Time resolution is 1 ps
+Abnormal program termination (EXCEPTION_ACCESS_VIOLATION)
+```
+
+三次复现（含用户放行安全提示后重试、以及绕过 Vivado 直接用 `xvlog/xelab/xsim`），
+都是**同一个位置**：快照建好了、仿真内核初始化时打不开共享内存映射。
+这是运行环境（安全软件/进程限制）问题，不是设计问题，但也意味着**功能正确性目前只有
+静态检查 + 综合背书，没有仿真背书**。
+
+在你这台机器的交互式终端里重跑（很可能就正常）：
 
 ```powershell
-cd build\rtl\axis_mux3
+cd C:\Users\79171\Desktop\FPGA\build\rtl\axis_mux3
 ..\..\..\tools\env\vivado.bat -mode batch -source run_sim.tcl
 ```
 
