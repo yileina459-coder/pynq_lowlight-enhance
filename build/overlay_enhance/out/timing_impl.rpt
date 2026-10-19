@@ -1,7 +1,7 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2026 Advanced Micro Devices, Inc. All Rights Reserved.
 ---------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version : Vivado v.2026.1 (win64) Build 6511674 Tue Jun 16 11:02:23 MDT 2026
-| Date         : Mon Oct 19 12:34:37 2026
+| Date         : Mon Oct 19 13:42:50 2026
 | Host         : kkkk running 64-bit major release  (build 9200)
 | Command      : report_timing_summary -file C:/Users/79171/Desktop/FPGA/build/overlay_enhance/out/timing_impl.rpt
 | Design       : design_1_wrapper
@@ -138,7 +138,7 @@ Table of Contents
 
     WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  
     -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  
-      2.182        0.000                      0                21687        0.019        0.000                      0                21687        3.750        0.000                       0                  7523  
+      2.254        0.000                      0                22823        0.007        0.000                      0                22823        3.750        0.000                       0                  8202  
 
 
 All user specified timing constraints are met.
@@ -161,7 +161,7 @@ clk_fpga_0  {0.000 5.000}      10.000          100.000
 
 Clock             WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  
 -----             -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  
-clk_fpga_0          2.182        0.000                      0                21687        0.019        0.000                      0                21687        3.750        0.000                       0                  7523  
+clk_fpga_0          2.254        0.000                      0                22823        0.007        0.000                      0                22823        3.750        0.000                       0                  8202  
 
 
 ------------------------------------------------------------------------------------------------
@@ -192,27 +192,27 @@ Path Group    From Clock    To Clock          WNS(ns)      TNS(ns)  TNS Failing 
 From Clock:  clk_fpga_0
   To Clock:  clk_fpga_0
 
-Setup :            0  Failing Endpoints,  Worst Slack        2.182ns,  Total Violation        0.000ns
-Hold  :            0  Failing Endpoints,  Worst Slack        0.019ns,  Total Violation        0.000ns
+Setup :            0  Failing Endpoints,  Worst Slack        2.254ns,  Total Violation        0.000ns
+Hold  :            0  Failing Endpoints,  Worst Slack        0.007ns,  Total Violation        0.000ns
 PW    :            0  Failing Endpoints,  Worst Slack        3.750ns,  Total Violation        0.000ns
 ---------------------------------------------------------------------------------------------------
 
 
 Max Delay Paths
 --------------------------------------------------------------------------------------
-Slack (MET) :             2.182ns  (required time - arrival time)
+Slack (MET) :             2.254ns  (required time - arrival time)
   Source:                 design_1_i/enhance_0/inst/zext_ln120_reg_1910_pp0_iter9_reg_reg[0]/C
                             (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
-  Destination:            design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product/A[16]
+  Destination:            design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product/A[24]
                             (rising edge-triggered cell DSP48E1 clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
   Path Group:             clk_fpga_0
   Path Type:              Setup (Max at Slow Process Corner)
   Requirement:            10.000ns  (clk_fpga_0 rise@10.000ns - clk_fpga_0 rise@0.000ns)
-  Data Path Delay:        3.795ns  (logic 1.448ns (38.154%)  route 2.347ns (61.846%))
+  Data Path Delay:        3.733ns  (logic 1.510ns (40.454%)  route 2.223ns (59.546%))
   Logic Levels:           4  (CARRY4=3 LUT2=1)
-  Clock Path Skew:        0.029ns (DCD - SCD + CPR)
-    Destination Clock Delay (DCD):    2.736ns = ( 12.736 - 10.000 ) 
-    Source Clock Delay      (SCD):    2.937ns
+  Clock Path Skew:        0.038ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.748ns = ( 12.748 - 10.000 ) 
+    Source Clock Delay      (SCD):    2.940ns
     Clock Pessimism Removal (CPR):    0.229ns
   Clock Uncertainty:      0.154ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
     Total System Jitter     (TSJ):    0.071ns
@@ -227,23 +227,23 @@ Slack (MET) :             2.182ns  (required time - arrival time)
     PS7_X0Y0             PS7                          0.000     0.000 r  design_1_i/ps7/inst/PS7_i/FCLKCLK[0]
                          net (fo=1, routed)           1.193     1.193    design_1_i/ps7/inst/FCLK_CLK_unbuffered[0]
     BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  design_1_i/ps7/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
-                         net (fo=7525, routed)        1.643     2.937    design_1_i/enhance_0/inst/ap_clk
-    SLICE_X48Y84         FDRE                                         r  design_1_i/enhance_0/inst/zext_ln120_reg_1910_pp0_iter9_reg_reg[0]/C
+                         net (fo=8204, routed)        1.646     2.940    design_1_i/enhance_0/inst/ap_clk
+    SLICE_X46Y63         FDRE                                         r  design_1_i/enhance_0/inst/zext_ln120_reg_1910_pp0_iter9_reg_reg[0]/C
   -------------------------------------------------------------------    -------------------
-    SLICE_X48Y84         FDRE (Prop_fdre_C_Q)         0.456     3.393 r  design_1_i/enhance_0/inst/zext_ln120_reg_1910_pp0_iter9_reg_reg[0]/Q
-                         net (fo=3, routed)           1.460     4.853    design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product_2[0]
-    SLICE_X41Y71         LUT2 (Prop_lut2_I0_O)        0.124     4.977 r  design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product_i_11__0/O
-                         net (fo=1, routed)           0.000     4.977    design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product_i_11__0_n_2
-    SLICE_X41Y71         CARRY4 (Prop_carry4_S[0]_CO[3])
-                                                      0.532     5.509 r  design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product_i_3__0/CO[3]
-                         net (fo=1, routed)           0.000     5.509    design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product_i_3__0_n_2
-    SLICE_X41Y72         CARRY4 (Prop_carry4_CI_CO[3])
-                                                      0.114     5.623 r  design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product_i_2__0/CO[3]
-                         net (fo=1, routed)           0.000     5.623    design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product_i_2__0_n_2
-    SLICE_X41Y73         CARRY4 (Prop_carry4_CI_O[0])
-                                                      0.222     5.845 r  design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product_i_1__0/O[0]
-                         net (fo=22, routed)          0.888     6.732    design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/A[8]
-    DSP48_X2Y28          DSP48E1                                      r  design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product/A[16]
+    SLICE_X46Y63         FDRE (Prop_fdre_C_Q)         0.518     3.458 r  design_1_i/enhance_0/inst/zext_ln120_reg_1910_pp0_iter9_reg_reg[0]/Q
+                         net (fo=3, routed)           1.360     4.818    design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product_2[0]
+    SLICE_X39Y56         LUT2 (Prop_lut2_I0_O)        0.124     4.942 r  design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product_i_11__0/O
+                         net (fo=1, routed)           0.000     4.942    design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product_i_11__0_n_2
+    SLICE_X39Y56         CARRY4 (Prop_carry4_S[0]_CO[3])
+                                                      0.532     5.474 r  design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product_i_3__0/CO[3]
+                         net (fo=1, routed)           0.000     5.474    design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product_i_3__0_n_2
+    SLICE_X39Y57         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.588 r  design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product_i_2__0/CO[3]
+                         net (fo=1, routed)           0.000     5.588    design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product_i_2__0_n_2
+    SLICE_X39Y58         CARRY4 (Prop_carry4_CI_O[0])
+                                                      0.222     5.810 r  design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product_i_1__0/O[0]
+                         net (fo=22, routed)          0.863     6.673    design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/A[8]
+    DSP48_X2Y22          DSP48E1                                      r  design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product/A[24]
   -------------------------------------------------------------------    -------------------
 
                          (clock clk_fpga_0 rise edge)
@@ -251,17 +251,17 @@ Slack (MET) :             2.182ns  (required time - arrival time)
     PS7_X0Y0             PS7                          0.000    10.000 r  design_1_i/ps7/inst/PS7_i/FCLKCLK[0]
                          net (fo=1, routed)           1.088    11.088    design_1_i/ps7/inst/FCLK_CLK_unbuffered[0]
     BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091    11.179 r  design_1_i/ps7/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
-                         net (fo=7525, routed)        1.557    12.736    design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/ap_clk
-    DSP48_X2Y28          DSP48E1                                      r  design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product/CLK
-                         clock pessimism              0.229    12.966    <hidden>
-                         clock uncertainty           -0.154    12.811    <hidden>
-    DSP48_X2Y28          DSP48E1 (Setup_dsp48e1_CLK_A[16])
-                                                     -3.897     8.914    design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product
+                         net (fo=8204, routed)        1.569    12.748    design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/ap_clk
+    DSP48_X2Y22          DSP48E1                                      r  design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product/CLK
+                         clock pessimism              0.229    12.978    <hidden>
+                         clock uncertainty           -0.154    12.823    <hidden>
+    DSP48_X2Y22          DSP48E1 (Setup_dsp48e1_CLK_A[24])
+                                                     -3.897     8.926    design_1_i/enhance_0/inst/mul_9s_8ns_17_1_1_U4/tmp_product
   -------------------------------------------------------------------
-                         required time                          8.914    <hidden>
-                         arrival time                          -6.732    <hidden>
+                         required time                          8.926    <hidden>
+                         arrival time                          -6.673    <hidden>
   -------------------------------------------------------------------
-                         slack                                  2.182    <hidden>
+                         slack                                  2.254    <hidden>
 
 
 
@@ -269,20 +269,20 @@ Slack (MET) :             2.182ns  (required time - arrival time)
 
 Min Delay Paths
 --------------------------------------------------------------------------------------
-Slack (MET) :             0.019ns  (arrival time - required time)
-  Source:                 design_1_i/axi_dma_0/U0/INCLUDE_S2MM_SOF_EOF_GENERATOR.I_S2MM_DMA_MNGR/GEN_S2MM_DMA_CONTROL.GEN_SIMPLE_DMA_MODE.I_S2MM_SMPL_SM/GEN_CMD_BTT_LESS_23.cmnd_data_reg[7]/C
+Slack (MET) :             0.007ns  (arrival time - required time)
+  Source:                 design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/I_CMD_FIFO/USE_SINGLE_REG.sig_regfifo_dout_reg_reg[41]/C
                             (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
-  Destination:            design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/I_CMD_FIFO/USE_SINGLE_REG.sig_regfifo_dout_reg_reg[7]/D
+  Destination:            design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_INCLUDE_IBTTCC.I_S2MM_MSTR_IBTTCC/sig_input_addr_reg_reg[6]/D
                             (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
   Path Group:             clk_fpga_0
   Path Type:              Hold (Min at Fast Process Corner)
   Requirement:            0.000ns  (clk_fpga_0 rise@0.000ns - clk_fpga_0 rise@0.000ns)
-  Data Path Delay:        0.307ns  (logic 0.148ns (48.238%)  route 0.159ns (51.762%))
+  Data Path Delay:        0.343ns  (logic 0.164ns (47.815%)  route 0.179ns (52.185%))
   Logic Levels:           0  
-  Clock Path Skew:        0.266ns (DCD - SCD - CPR)
-    Destination Clock Delay (DCD):    1.177ns
-    Source Clock Delay      (SCD):    0.876ns
-    Clock Pessimism Removal (CPR):    0.035ns
+  Clock Path Skew:        0.273ns (DCD - SCD - CPR)
+    Destination Clock Delay (DCD):    1.196ns
+    Source Clock Delay      (SCD):    0.893ns
+    Clock Pessimism Removal (CPR):    0.030ns
 
     Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
   -------------------------------------------------------------------    -------------------
@@ -291,12 +291,12 @@ Slack (MET) :             0.019ns  (arrival time - required time)
     PS7_X0Y0             PS7                          0.000     0.000 r  design_1_i/ps7/inst/PS7_i/FCLKCLK[0]
                          net (fo=1, routed)           0.310     0.310    design_1_i/ps7/inst/FCLK_CLK_unbuffered[0]
     BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.026     0.336 r  design_1_i/ps7/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
-                         net (fo=7525, routed)        0.540     0.876    design_1_i/axi_dma_0/U0/INCLUDE_S2MM_SOF_EOF_GENERATOR.I_S2MM_DMA_MNGR/GEN_S2MM_DMA_CONTROL.GEN_SIMPLE_DMA_MODE.I_S2MM_SMPL_SM/s_axi_lite_aclk
-    SLICE_X50Y76         FDRE                                         r  design_1_i/axi_dma_0/U0/INCLUDE_S2MM_SOF_EOF_GENERATOR.I_S2MM_DMA_MNGR/GEN_S2MM_DMA_CONTROL.GEN_SIMPLE_DMA_MODE.I_S2MM_SMPL_SM/GEN_CMD_BTT_LESS_23.cmnd_data_reg[7]/C
+                         net (fo=8204, routed)        0.557     0.893    design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/I_CMD_FIFO/m_axi_s2mm_aclk
+    SLICE_X46Y50         FDRE                                         r  design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/I_CMD_FIFO/USE_SINGLE_REG.sig_regfifo_dout_reg_reg[41]/C
   -------------------------------------------------------------------    -------------------
-    SLICE_X50Y76         FDRE (Prop_fdre_C_Q)         0.148     1.024 r  design_1_i/axi_dma_0/U0/INCLUDE_S2MM_SOF_EOF_GENERATOR.I_S2MM_DMA_MNGR/GEN_S2MM_DMA_CONTROL.GEN_SIMPLE_DMA_MODE.I_S2MM_SMPL_SM/GEN_CMD_BTT_LESS_23.cmnd_data_reg[7]/Q
-                         net (fo=1, routed)           0.159     1.182    design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/I_CMD_FIFO/USE_SINGLE_REG.sig_regfifo_dout_reg_reg[66]_0[7]
-    SLICE_X48Y77         FDRE                                         r  design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/I_CMD_FIFO/USE_SINGLE_REG.sig_regfifo_dout_reg_reg[7]/D
+    SLICE_X46Y50         FDRE (Prop_fdre_C_Q)         0.164     1.057 r  design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/I_CMD_FIFO/USE_SINGLE_REG.sig_regfifo_dout_reg_reg[41]/Q
+                         net (fo=1, routed)           0.179     1.236    design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_INCLUDE_IBTTCC.I_S2MM_MSTR_IBTTCC/Q[31]
+    SLICE_X46Y49         FDRE                                         r  design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_INCLUDE_IBTTCC.I_S2MM_MSTR_IBTTCC/sig_input_addr_reg_reg[6]/D
   -------------------------------------------------------------------    -------------------
 
                          (clock clk_fpga_0 rise edge)
@@ -304,15 +304,15 @@ Slack (MET) :             0.019ns  (arrival time - required time)
     PS7_X0Y0             PS7                          0.000     0.000 r  design_1_i/ps7/inst/PS7_i/FCLKCLK[0]
                          net (fo=1, routed)           0.337     0.337    design_1_i/ps7/inst/FCLK_CLK_unbuffered[0]
     BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.029     0.366 r  design_1_i/ps7/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
-                         net (fo=7525, routed)        0.811     1.177    design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/I_CMD_FIFO/m_axi_s2mm_aclk
-    SLICE_X48Y77         FDRE                                         r  design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/I_CMD_FIFO/USE_SINGLE_REG.sig_regfifo_dout_reg_reg[7]/C
-                         clock pessimism             -0.035     1.142    <hidden>
-    SLICE_X48Y77         FDRE (Hold_fdre_C_D)         0.022     1.164    design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/I_CMD_STATUS/I_CMD_FIFO/USE_SINGLE_REG.sig_regfifo_dout_reg_reg[7]
+                         net (fo=8204, routed)        0.830     1.196    design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_INCLUDE_IBTTCC.I_S2MM_MSTR_IBTTCC/m_axi_s2mm_aclk
+    SLICE_X46Y49         FDRE                                         r  design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_INCLUDE_IBTTCC.I_S2MM_MSTR_IBTTCC/sig_input_addr_reg_reg[6]/C
+                         clock pessimism             -0.030     1.166    <hidden>
+    SLICE_X46Y49         FDRE (Hold_fdre_C_D)         0.063     1.229    design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_INCLUDE_IBTTCC.I_S2MM_MSTR_IBTTCC/sig_input_addr_reg_reg[6]
   -------------------------------------------------------------------
-                         required time                         -1.164    <hidden>
-                         arrival time                           1.182    <hidden>
+                         required time                         -1.229    <hidden>
+                         arrival time                           1.236    <hidden>
   -------------------------------------------------------------------
-                         slack                                  0.019    <hidden>
+                         slack                                  0.007    <hidden>
 
 
 
@@ -326,9 +326,9 @@ Period(ns):         10.000
 Sources:            { design_1_i/ps7/inst/PS7_i/FCLKCLK[0] }
 
 Check Type        Corner  Lib Pin      Reference Pin  Required(ns)  Actual(ns)  Slack(ns)  Location      Pin
-Min Period        n/a     DSP48E1/CLK  n/a            3.884         10.000      6.116      DSP48_X2Y30   design_1_i/enhance_0/inst/lshr_ln_reg_1957_reg/CLK
-Low Pulse Width   Slow    RAMD32/CLK   n/a            1.250         5.000       3.750      SLICE_X58Y69  design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/I_XD_FIFO/NON_BLK_MEM.I_SYNC_FIFOGEN_FIFO/xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst/gen_wr_a.gen_word_narrow.mem_reg_0_15_0_5/RAMA/CLK
-High Pulse Width  Slow    RAMD32/CLK   n/a            1.250         5.000       3.750      SLICE_X58Y69  design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/I_XD_FIFO/NON_BLK_MEM.I_SYNC_FIFOGEN_FIFO/xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst/gen_wr_a.gen_word_narrow.mem_reg_0_15_0_5/RAMA/CLK
+Min Period        n/a     DSP48E1/CLK  n/a            3.884         10.000      6.116      DSP48_X2Y24   design_1_i/enhance_0/inst/lshr_ln_reg_1957_reg/CLK
+Low Pulse Width   Slow    RAMD32/CLK   n/a            1.250         5.000       3.750      SLICE_X46Y35  design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/I_XD_FIFO/NON_BLK_MEM.I_SYNC_FIFOGEN_FIFO/xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst/gen_wr_a.gen_word_narrow.mem_reg_0_15_0_5/RAMA/CLK
+High Pulse Width  Slow    RAMD32/CLK   n/a            1.250         5.000       3.750      SLICE_X46Y35  design_1_i/axi_dma_0/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/I_XD_FIFO/NON_BLK_MEM.I_SYNC_FIFOGEN_FIFO/xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst/gen_wr_a.gen_word_narrow.mem_reg_0_15_0_5/RAMA/CLK
 
 
 

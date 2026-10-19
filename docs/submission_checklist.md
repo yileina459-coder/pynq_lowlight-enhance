@@ -30,6 +30,7 @@
 | DMA overlay 位流（enhance） | `board/enhance_dma/enhance_dma.bit|.hwh` | **已验证**（WNS +2.182 ns，8 预设逐位一致） |
 | 增强预设离线自检 | `sim/enhance/test_preset_regs.py` | 已验证（寄存器翻译与黄金预设一致） |
 | 预设调参脚本 | `sim/enhance/tune_document_preset.py` | 已验证（新增 `document` 预设，对比度 +158） |
+| 延迟实测 | `src/rtl/axis_cycle_stamp/` + `board/enhance_dma/` | **已验证：16 像素时钟 = 160 ns @100 MHz** |
 | 暗光测试页生成器 | `sim/enhance/make_dim_page.py` | 已验证（固定种子，可复现） |
 | HDMI overlay 位流 | `board/hdmi_stream/sobel_hdmi.bit|.hwh` | **板上加载验证通过**（21 个 IP、`video` 层次绑定成功）；出图待显示设备 |
 | 软件黄金模型与比对 | `sim/common/`、`sim/*/golden_*.py`、`skill/golden_compare` | 已验证 |

@@ -84,6 +84,63 @@ def find_dma(ol):
     raise RuntimeError(f"no AXI DMA in overlay; IPs are: {list(ol.ip_dict)}")
 
 
+# axi_gpio register layout: channel 1 data at 0x00, channel 2 data at 0x08
+# (both configured as inputs, so reading them returns the wired-in value).
+GPIO_CH1_DATA = 0x00
+GPIO_CH2_DATA = 0x08
+
+
+class LatencyMon:
+    """Reads the pipeline fill latency that the PL latches next to the kernel.
+
+    The PL stamps the cycle counter when the first beat enters the kernel and
+    again when the first beat leaves it, so
+
+        latency_cycles = end_cycle - start_cycle
+        latency_us     = latency_cycles / clock_hz * 1e6
+
+    The latching is sticky, so a slow PS can read it at leisure; reloading the
+    overlay (which resets the PL) re-arms the measurement.
+    """
+
+    def __init__(self, ip, clock_hz: float):
+        self._ip = ip
+        self.clock_hz = clock_hz
+
+    @property
+    def start_cycle(self) -> int:
+        return int(self._ip.mmio.read(GPIO_CH1_DATA))
+
+    @property
+    def end_cycle(self) -> int:
+        return int(self._ip.mmio.read(GPIO_CH2_DATA))
+
+    @property
+    def latency_cycles(self) -> int:
+        start, end = self.start_cycle, self.end_cycle
+        if start == 0 and end == 0:
+            return 0                      # nothing measured yet
+        return (end - start) & 0xFFFFFFFF  # 32-bit wrap is fine for a set of cycles
+
+    def ns(self, cycles: int) -> float:
+        return cycles / self.clock_hz * 1e9
+
+    def describe(self) -> str:
+        cycles = self.latency_cycles
+        return (f"{cycles} pixel clocks  (~{self.ns(cycles):.1f} ns "
+                f"at {self.clock_hz / 1e6:.3f} MHz)")
+
+
+def find_latency_mon(ol, clock_hz: float) -> LatencyMon | None:
+    """Return the monitor if this overlay has one; older bitstreams do not."""
+    for name in ol.ip_dict:
+        if "gpio_lat" in name.lower():
+            dev = getattr(ol, name, None)
+            if dev is not None and hasattr(dev, "mmio"):
+                return LatencyMon(dev, clock_hz)
+    return None
+
+
 def find_kernel(ol):
     """Return (name, IP) for the enhance kernel's AXI-Lite control."""
     for name, ip in ol.ip_dict.items():
@@ -199,6 +256,9 @@ def main(argv=None) -> int:
                          "reference images)")
     ap.add_argument("--outdir", default="", help="write per-preset output images here")
     ap.add_argument("--metrics", default="metrics_enhance.csv")
+    ap.add_argument("--clock-mhz", type=float, default=100.0,
+                    help="kernel clock in MHz, used to turn the in-flight pixel "
+                         "count into microseconds (this overlay runs at 100 MHz)")
     args = ap.parse_args(argv)
 
     if Overlay is None:
@@ -220,6 +280,10 @@ def main(argv=None) -> int:
     print(f"  DMA IP: {dma}")
     print(f"  kernel: {name}")
     offsets = resolve_regs(ol, name)
+
+    # The kernel runs on the PS clock in this overlay (see build/overlay_enhance).
+    mon = find_latency_mon(ol, args.clock_mhz * 1e6)
+    print(f"  latency monitor: {'yes' if mon else 'no (older bitstream)'}")
 
     in_buf = allocate(shape=(w * h,), dtype=np.uint32)
     out_buf = allocate(shape=(w * h,), dtype=np.uint32)
@@ -253,10 +317,13 @@ def main(argv=None) -> int:
             i = 0
             print(f"    first mismatch at (row {ys[i]}, col {xs[i]}, channel {cs[i]}):"
                   f" got {got[ys[i], xs[i], cs[i]]}, expected {expected[ys[i], xs[i], cs[i]]}")
-        rows.append(dict(preset=preset, frame_ms=round(best, 2),
-                         mismatched=mismatched, channels=total,
-                         result="pass" if mismatched == 0 else "fail",
-                         **regs))
+        row = dict(preset=preset, frame_ms=round(best, 2),
+                   mismatched=mismatched, channels=total,
+                   result="pass" if mismatched == 0 else "fail", **regs)
+        if mon is not None:
+            print(f"            latency: {mon.describe()}")
+            row["latency_cycles"] = mon.latency_cycles
+        rows.append(row)
 
     if args.outdir:
         os.makedirs(args.outdir, exist_ok=True)
@@ -280,6 +347,12 @@ def main(argv=None) -> int:
     if failures:
         print(f"COMPARE FAIL: {failures} preset(s) differ from the golden model")
         return 1
+    if mon is not None:
+        print()
+        print(f"pipeline fill latency: {mon.describe()}")
+        print("  (first beat in -> first beat out; the line buffers hold vertical")
+        print("   context, they do not delay the pixel, so this is a few clocks -")
+        print("   which is the whole point of not having a frame buffer)")
     print("COMPARE PASS (bit-exact) for all presets")
     return 0
 
