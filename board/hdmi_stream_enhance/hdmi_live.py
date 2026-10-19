@@ -151,7 +151,7 @@ def main(argv=None) -> int:
                           "passed since the PL was configured)")
                 else:
                     print(f"           latency: {lat} pixel clocks "
-                          f"(~{lat / args.clock_mhz / 1000:.3f} us at {args.clock_mhz} MHz)")
+                          f"(~{lat / args.clock_mhz:.3f} us at {args.clock_mhz} MHz)")
                 if args.cycle > 0:
                     time.sleep(args.cycle)
                 if args.seconds and (time.monotonic() - start) > args.seconds:
@@ -163,7 +163,7 @@ def main(argv=None) -> int:
                     lat = read_latency(lat_ip)
                     if lat is not None:
                         print(f"           latency: {lat} pixel clocks "
-                              f"(~{lat / args.clock_mhz / 1000:.3f} us)")
+                              f"(~{lat / args.clock_mhz:.3f} us)")
                     if args.seconds and (time.monotonic() - start) > args.seconds:
                         raise KeyboardInterrupt
     except KeyboardInterrupt:

@@ -61,7 +61,7 @@ CHECK_CELLS = [
         "n = hl.read_latency(lat)\n"
         "print(\"latency:\", n, \"pixel clocks\" if n is not None else \"(not measured yet)\")\n"
         "if n is not None:\n"
-        "    print(f\"         ~{n / 142.857 / 1000:.3f} us at 142.857 MHz\")\n"
+        "    print(f\"         ~{n / 142.857:.3f} us at 142.857 MHz\")\n"
     ),
 ]
 
@@ -85,7 +85,7 @@ DEMO_CELLS = [
         "        hl.write_preset(cfg, name)\n"
         "        n = hl.read_latency(lat)\n"
         "        stamp = time.strftime(\"%H:%M:%S\")\n"
-        "        lat_txt = \"(no stamps yet)\" if n is None else f\"{n} pixel clocks (~{n / 142.857 / 1000:.3f} us)\"\n"
+        "        lat_txt = \"(no stamps yet)\" if n is None else f\"{n} pixel clocks (~{n / 142.857:.3f} us)\"\n"
         "        print(f\"[{stamp}] {name:<9} latency {lat_txt}\")\n"
         "        time.sleep(HOLD)\n"
         "print(\"done\")\n"
