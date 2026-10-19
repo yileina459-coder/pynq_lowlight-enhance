@@ -41,7 +41,10 @@
 - [x] **增强核已进 HDMI overlay**：`board/hdmi_stream_enhance/`，WNS **+0.242 ns**、LUT 63.1%、BRAM 57.5%；板上加载成功（23 个 IP，`video` 绑定正常），配置 GPIO 写入/回读 OK
 - [x] **Jupyter 交互面板**：`board/enhance_dma/panel.ipynb`（8 预设一键切换、
       实时显示帧时间/延迟/逐位比对，走 DMA 通路，不需要显示器）
-- [ ] 端到端真机画面（采集卡已到货，接线后跑 `board/hdmi_stream_enhance/hdmi_live.py`）
+- [ ] **HDMI 两个方向仍待解决**（采集卡已到货，排查记录与下一步见 `docs/hdmi_status.md`）：
+      IN 侧 EDID/HPD 正常但 TMDS 锁不上（原厂 overlay 同样如此）；
+      OUT 侧原厂 overlay 能出信号，插入内核后不产生 TMDS
+- [x] 内部图案源 overlay（`board/hdmi_pattern/`，不依赖任何外部输入）
 - [x] **流水线延迟实测：16 个像素时钟 = 160 ns @100 MHz**（`axis_cycle_stamp` 在内核前后各
       打一次时间戳；720p60 的一行是 17.2 µs，所以延迟只有一行的 1%，原来说的「约一行」是上界）
 - [ ] 端到端延迟与功耗实测（需采集卡 + 功率计）
