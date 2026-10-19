@@ -39,7 +39,9 @@
 - [x] 新增 `document` 预设：保住极性的暗页提亮（原 `reading` 在暗页上会把黑白翻转，
       对比度 +41 → −51；新预设 → **+158**，见 `sim/enhance/tune_document_preset.py`）
 - [x] **增强核已进 HDMI overlay**：`board/hdmi_stream_enhance/`，WNS **+0.242 ns**、LUT 63.1%、BRAM 57.5%；板上加载成功（23 个 IP，`video` 绑定正常），配置 GPIO 写入/回读 OK
-- [ ] 端到端真机画面（等采集卡，预计 10/22 到货）
+- [x] **Jupyter 交互面板**：`board/enhance_dma/panel.ipynb`（8 预设一键切换、
+      实时显示帧时间/延迟/逐位比对，走 DMA 通路，不需要显示器）
+- [ ] 端到端真机画面（采集卡已到货，接线后跑 `board/hdmi_stream_enhance/hdmi_live.py`）
 - [x] **流水线延迟实测：16 个像素时钟 = 160 ns @100 MHz**（`axis_cycle_stamp` 在内核前后各
       打一次时间戳；720p60 的一行是 17.2 µs，所以延迟只有一行的 1%，原来说的「约一行」是上界）
 - [ ] 端到端延迟与功耗实测（需采集卡 + 功率计）

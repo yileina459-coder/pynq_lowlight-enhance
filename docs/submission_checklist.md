@@ -32,6 +32,8 @@
 | 预设调参脚本 | `sim/enhance/tune_document_preset.py` | 已验证（新增 `document` 预设，对比度 +158） |
 | 延迟实测 | `src/rtl/axis_cycle_stamp/` + `board/enhance_dma/` | **已验证：16 像素时钟 = 160 ns @100 MHz** |
 | 暗光测试页生成器 | `sim/enhance/make_dim_page.py` | 已验证（固定种子，可复现） |
+| Jupyter 交互面板 | `board/enhance_dma/panel.ipynb` + `enhance_panel.py` | **已验证**（板上构建成功，8 预设表全 0 误差） |
+| 真机演示脚本 | `board/hdmi_stream_enhance/hdmi_live.py` | 已实现（无源时正确报告"未检测到输入"） |
 | HDMI overlay 位流（Sobel） | `board/hdmi_stream/sobel_hdmi.bit|.hwh` | **板上加载验证通过**（21 个 IP、`video` 层次绑定成功）；出图待显示设备 |
 | HDMI overlay 位流（enhance，含配置与延迟） | `board/hdmi_stream_enhance/enhance_hdmi.bit|.hwh` | **已验证**：WNS +0.242 ns、23 个 IP、`video` 绑定、配置 GPIO 写入/回读 |
 | 软件黄金模型与比对 | `sim/common/`、`sim/*/golden_*.py`、`skill/golden_compare` | 已验证 |

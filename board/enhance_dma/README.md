@@ -51,6 +51,19 @@ document    252.0            94.1         +158.0   ← 新增预设
 参数由 `sim/enhance/tune_document_preset.py` 在可复现的暗页上搜索得到（评分函数：
 正对比度、少黑像素、少过曝）。**这是合成页上的结果，真实画面到货后应重新标定。**
 
+## 交互面板
+
+`panel.ipynb` 是给人看的那一层：下拉选预设、按钮跑一次或基准 20 帧，
+右边显示硬件真实输出图与三行数字（帧时间 / 延迟 / 逐位比对）。
+
+```bash
+# 在 Jupyter 里打开 panel.ipynb，或命令行先跑一遍自检：
+python3 panel_selftest.py
+```
+
+它不是新的证据来源——所有数字都来自 `enhance_dma.py` 同一套代码路径，
+面板只是让"参数化"和"低延迟"变成可以当场点出来的东西（也方便录演示视频）。
+
 ## 目录里还有
 
 - `enhance_dma.bit` / `.hwh`：位流（由 `build\overlay_enhance\build.bat` 生成，约 12 分钟）
