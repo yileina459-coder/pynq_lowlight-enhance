@@ -67,6 +67,15 @@ PRESETS = {
                      thresh=112, binarize=True, mono=True),
     # split screen: left half untouched, right half enhanced
     "split":    dict(clarity=28, knee=90,  gain_lo=40, gain_hi=12, split=True),
+    # document: polarity-preserving shadow lift for a dim *page* (dark ink on
+    # light paper that is simply under-lit). The "reading" preset does not do
+    # this: with knee=48 the paper sits below the knee and is multiplied by
+    # gain_lo/16 while the ink is compressed towards the knee, so the page comes
+    # out as dark-on-light. Measured on the synthetic dim page: "reading" takes
+    # the contrast from +41 to -51 (flipped), this one takes it to +158 with 0.2%
+    # of pixels left below luma 32 (sim/enhance/tune_document_preset.py).
+    # Tuned against a synthetic page, so re-tune against real footage.
+    "document": dict(clarity=20, knee=192, gain_lo=64, gain_hi=12),
 }
 
 

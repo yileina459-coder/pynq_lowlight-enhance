@@ -27,13 +27,29 @@ sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=
 期望输出：
 
 ```text
-  register map of enhance_0: OK (11 registers)
+  register map of enhance_0: OK (12 registers)
   pass       15.9 ms   mismatched 0/2764800   max|diff| 0
   clarity    15.8 ms   mismatched 0/2764800   max|diff| 0
   reading    15.8 ms   mismatched 0/2764800   max|diff| 0
   ...
 COMPARE PASS (bit-exact) for all presets
 ```
+
+## 一个关于预设的实测结论
+
+`reading` 预设（knee=48）在暗页上会**把黑白翻转**：纸面（低于拐点）被 ×5.5 提亮到 114，
+而字迹（高于拐点）被压向拐点停在 63，于是字比纸暗。在暗页上实测：
+
+```text
+            字迹            纸面          对比度
+输入         62.7            21.4          +41.3
+reading      62.8           114.1          -51.3   ← 极性翻转
+document    252.0            94.1         +158.0   ← 新增预设
+```
+
+`document` 预设的 kneee 大于纸面亮度，于是整页落在同一段斜率上，极性得以保持。
+参数由 `sim/enhance/tune_document_preset.py` 在可复现的暗页上搜索得到（评分函数：
+正对比度、少黑像素、少过曝）。**这是合成页上的结果，真实画面到货后应重新标定。**
 
 ## 目录里还有
 
