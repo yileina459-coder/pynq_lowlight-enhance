@@ -20,13 +20,16 @@
 
 | 交付物 | 位置 | 状态 |
 | --- | --- | --- |
-| HLS 算子：**enhance（主算子）** | `src/hls/enhance/` | 已验证 C 仿真（两配置 0 误差）+ 综合（II=1、194.59 MHz、LUT 3%）；**未进位流** |
+| HLS 算子：**enhance（主算子）** | `src/hls/enhance/` | **板上逐位验证通过**（7 预设各 0/2764800，15.6 ms/帧，DMA 通路）；C 仿真两配置 0 误差；综合 II=1、194.59 MHz、LUT 3% |
 | HLS 算子：Sobel（流式 + 有界两个变体） | `src/hls/sobel/` | 已验证（板上逐位一致） |
 | HLS 算子：Gaussian | `src/hls/gaussian/` | 已验证（C 仿真 0 误差、II=1、194.59 MHz） |
 | HLS 算子：Sharpen | `src/hls/sharpen/` | 已验证（同上，含钳位路径覆盖） |
 | 手写 RTL：AXI-Stream 三选一选择器 | `src/rtl/axis_mux3/` | 综合通过（36 LUT/0 FF）；功能仿真未跑通（本机 xsim 崩溃），未集成 |
 | 手写 RTL：TLAST 生成器 | `src/rtl/axis_tlast_gen/` | 板上验证过其行为，最终版本未使用（有界核已足够） |
-| DMA overlay 位流 | `board/dma_sobel/sobel_dma.bit|.hwh` | 已验证 |
+| DMA overlay 位流（Sobel） | `board/dma_sobel/sobel_dma.bit|.hwh` | 已验证 |
+| DMA overlay 位流（enhance） | `board/enhance_dma/enhance_dma.bit|.hwh` | **已验证**（WNS +2.182 ns，7 预设逐位一致） |
+| 增强预设离线自检 | `sim/enhance/test_preset_regs.py` | 已验证（寄存器翻译与黄金预设一致） |
+| 暗光测试页生成器 | `sim/enhance/make_dim_page.py` | 已验证（固定种子，可复现） |
 | HDMI overlay 位流 | `board/hdmi_stream/sobel_hdmi.bit|.hwh` | **板上加载验证通过**（21 个 IP、`video` 层次绑定成功）；出图待显示设备 |
 | 软件黄金模型与比对 | `sim/common/`、`sim/*/golden_*.py`、`skill/golden_compare` | 已验证 |
 | PS 软件基线 | `board/ps_baseline/ps_sobel.py` | 已验证（板上 3108 ms/帧） |

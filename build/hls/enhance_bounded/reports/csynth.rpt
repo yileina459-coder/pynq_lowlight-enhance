@@ -1,0 +1,263 @@
+
+
+================================================================
+== Synthesis Summary Report of 'enhance_bounded'
+================================================================
++ General Information: 
+    * Date:           Mon Oct 19 12:26:17 2026
+    * Version:        2026.1 (Build 6493734 on Jun 16 2026)
+    * Project:        proj
+    * Solution:       solution1
+    * Product family: zynq
+    * Target device:  xc7z020-clg400-1
+    
+
+* Performance & Resource Estimates: 
++-------------------+------+---------------+----------+---------+------+----------+---------+-----+------+--------+---------+-----------+-----------+-----+
+|      Modules      | Issue|               | Iteration|         | Trip |          |    Latency    |      |        |         |           |           |     |
+|      & Loops      | Type | Violation Type|  Latency | Interval| Count| Pipelined| (cycles)| (ns)| Slack|  BRAM  |   DSP   |     FF    |    LUT    | URAM|
++-------------------+------+---------------+----------+---------+------+----------+---------+-----+------+--------+---------+-----------+-----------+-----+
+|+ enhance_bounded  |     -|              -|         -|        -|     -|        no|        -|    -|  0.13|  3 (1%)|  2 (~0%)|  1912 (1%)|  1901 (3%)|    -|
+| o loop_pixels     |     -|              -|        17|        1|     -|       yes|        -|    -|  7.30|       -|        -|          -|          -|    -|
++-------------------+------+---------------+----------+---------+------+----------+---------+-----+------+--------+---------+-----------+-----------+-----+
+    Name Prefix: '+' for module, 'o' for loop, '*' for dataflow
+
+
+================================================================
+== HW Interfaces
+================================================================
+* S_AXILITE Interfaces
++------------+------------+---------------+--------+----------+
+| Interface  | Data Width | Address Width | Offset | Register |
++------------+------------+---------------+--------+----------+
+| s_axi_ctrl | 32         | 7             | 16     | 0        |
++------------+------------+---------------+--------+----------+
+
+* S_AXILITE Registers
++------------+------------+--------+-------+--------+----------------------------------+----------------------------------------------------------------------+
+| Interface  | Register   | Offset | Width | Access | Description                      | Bit Fields                                                           |
++------------+------------+--------+-------+--------+----------------------------------+----------------------------------------------------------------------+
+| s_axi_ctrl | CTRL       | 0x00   | 32    | RW     | Control signals                  | 0=AP_START 1=AP_DONE 2=AP_IDLE 3=AP_READY 7=AUTO_RESTART 9=INTERRUPT |
+| s_axi_ctrl | GIER       | 0x04   | 32    | RW     | Global Interrupt Enable Register | 0=Enable                                                             |
+| s_axi_ctrl | IP_IER     | 0x08   | 32    | RW     | IP Interrupt Enable Register     | 0=CHAN0_INT_EN 1=CHAN1_INT_EN                                        |
+| s_axi_ctrl | IP_ISR     | 0x0c   | 32    | RW     | IP Interrupt Status Register     | 0=CHAN0_INT_ST 1=CHAN1_INT_ST                                        |
+| s_axi_ctrl | n_pixels   | 0x10   | 32    | W      | Data signal of n_pixels          |                                                                      |
+| s_axi_ctrl | line_width | 0x18   | 32    | W      | Data signal of line_width        |                                                                      |
+| s_axi_ctrl | clarity    | 0x20   | 32    | W      | Data signal of clarity           |                                                                      |
+| s_axi_ctrl | knee       | 0x28   | 32    | W      | Data signal of knee              |                                                                      |
+| s_axi_ctrl | gain_lo    | 0x30   | 32    | W      | Data signal of gain_lo           |                                                                      |
+| s_axi_ctrl | gain_hi    | 0x38   | 32    | W      | Data signal of gain_hi           |                                                                      |
+| s_axi_ctrl | thresh     | 0x40   | 32    | W      | Data signal of thresh            |                                                                      |
+| s_axi_ctrl | binarize   | 0x48   | 32    | W      | Data signal of binarize          |                                                                      |
+| s_axi_ctrl | invert     | 0x50   | 32    | W      | Data signal of invert            |                                                                      |
+| s_axi_ctrl | mono       | 0x58   | 32    | W      | Data signal of mono              |                                                                      |
+| s_axi_ctrl | split_x    | 0x60   | 32    | W      | Data signal of split_x           |                                                                      |
++------------+------------+--------+-------+--------+----------------------------------+----------------------------------------------------------------------+
+
+* AXIS
++-----------+-----------+---------------+-------+-------+-----+-------+-------+--------+-------+-------+--------+
+| Interface | Direction | Register Mode | TDATA | TDEST | TID | TKEEP | TLAST | TREADY | TSTRB | TUSER | TVALID |
++-----------+-----------+---------------+-------+-------+-----+-------+-------+--------+-------+-------+--------+
+| s_in      | in        | both          | 32    | 1     | 1   | 4     | 1     | 1      | 4     | 1     | 1      |
+| s_out     | out       | both          | 32    | 1     | 1   | 4     | 1     | 1      | 4     | 1     | 1      |
++-----------+-----------+---------------+-------+-------+-----+-------+-------+--------+-------+-------+--------+
+
+* TOP LEVEL CONTROL
++-----------+------------+-----------+
+| Interface | Type       | Ports     |
++-----------+------------+-----------+
+| ap_clk    | clock      | ap_clk    |
+| ap_rst_n  | reset      | ap_rst_n  |
+| interrupt | interrupt  | interrupt |
+| ap_ctrl   | ap_ctrl_hs |           |
++-----------+------------+-----------+
+
+
+================================================================
+== SW I/O Information
+================================================================
+* Top Function Arguments
++------------+-----------+------------------------------------------------------------------------------+
+| Argument   | Direction | Datatype                                                                     |
++------------+-----------+------------------------------------------------------------------------------+
+| s_in       | in        | stream<hls::axis<ap_uint<32>, 1UL, 1UL, 1UL, (unsigned char)'8', false>, 0>& |
+| s_out      | out       | stream<hls::axis<ap_uint<32>, 1UL, 1UL, 1UL, (unsigned char)'8', false>, 0>& |
+| n_pixels   | in        | ap_uint<32>                                                                  |
+| line_width | in        | ap_uint<16>                                                                  |
+| clarity    | in        | ap_uint<8>                                                                   |
+| knee       | in        | ap_uint<8>                                                                   |
+| gain_lo    | in        | ap_uint<8>                                                                   |
+| gain_hi    | in        | ap_uint<8>                                                                   |
+| thresh     | in        | ap_uint<8>                                                                   |
+| binarize   | in        | ap_uint<1>                                                                   |
+| invert     | in        | ap_uint<1>                                                                   |
+| mono       | in        | ap_uint<1>                                                                   |
+| split_x    | in        | ap_uint<16>                                                                  |
++------------+-----------+------------------------------------------------------------------------------+
+
+* SW-to-HW Mapping
++------------+--------------+-----------+--------------------------------------+
+| Argument   | HW Interface | HW Type   | HW Info                              |
++------------+--------------+-----------+--------------------------------------+
+| s_in       | s_in         | interface |                                      |
+| s_out      | s_out        | interface |                                      |
+| n_pixels   | s_axi_ctrl   | register  | name=n_pixels offset=0x10 range=32   |
+| line_width | s_axi_ctrl   | register  | name=line_width offset=0x18 range=32 |
+| clarity    | s_axi_ctrl   | register  | name=clarity offset=0x20 range=32    |
+| knee       | s_axi_ctrl   | register  | name=knee offset=0x28 range=32       |
+| gain_lo    | s_axi_ctrl   | register  | name=gain_lo offset=0x30 range=32    |
+| gain_hi    | s_axi_ctrl   | register  | name=gain_hi offset=0x38 range=32    |
+| thresh     | s_axi_ctrl   | register  | name=thresh offset=0x40 range=32     |
+| binarize   | s_axi_ctrl   | register  | name=binarize offset=0x48 range=32   |
+| invert     | s_axi_ctrl   | register  | name=invert offset=0x50 range=32     |
+| mono       | s_axi_ctrl   | register  | name=mono offset=0x58 range=32       |
+| split_x    | s_axi_ctrl   | register  | name=split_x offset=0x60 range=32    |
++------------+--------------+-----------+--------------------------------------+
+
+
+================================================================
+== Bind Op Report
+================================================================
++-------------------------------------+-----+--------+---------------+-----------+------------------------+---------+
+| Name                                | DSP | Pragma | Variable      | Op        | Impl                   | Latency |
++-------------------------------------+-----+--------+---------------+-----------+------------------------+---------+
+| + enhance_bounded                   | 2   |        |               |           |                        |         |
+|   icmp_ln177_fu_444_p2              |     |        | icmp_ln177    | seteq     | auto                   | 0       |
+|   icmp_ln74_fu_512_p2               |     |        | icmp_ln74     | seteq     | auto                   | 0       |
+|   i_1_fu_517_p2                     |     |        | i_1           | add       | fabric                 | 0       |
+|   mul_8ns_8ns_15_1_1_U1             |     |        | mul_ln79      | mul       | auto                   | 0       |
+|   mac_muladd_8ns_8ns_15ns_16_4_1_U9 | 1   |        | mul_ln79_1    | mul       | dsp_slice              | 3       |
+|   mac_muladd_8ns_5ns_15s_15_4_1_U8  | 1   |        | mul_ln79_2    | mul       | dsp_slice              | 3       |
+|   mac_muladd_8ns_5ns_15s_15_4_1_U8  | 1   |        | zext_ln79_6   | zext      | dsp_slice              | 3       |
+|   mac_muladd_8ns_5ns_15s_15_4_1_U8  | 1   |        | add_ln79      | add       | dsp_slice              | 3       |
+|   mac_muladd_8ns_8ns_15ns_16_4_1_U9 | 1   |        | acc           | add       | dsp_slice              | 3       |
+|   icmp_ln88_fu_613_p2               |     |        | icmp_ln88     | seteq     | auto                   | 0       |
+|   i_mid_fu_619_p2                   |     |        | i_mid         | add       | fabric                 | 0       |
+|   i_mid_1_fu_625_p3                 |     |        | i_mid_1       | select    | auto_sel               | 0       |
+|   icmp_ln89_fu_633_p2               |     |        | icmp_ln89     | seteq     | auto                   | 0       |
+|   i_bot_fu_639_p2                   |     |        | i_bot         | add       | fabric                 | 0       |
+|   i_bot_1_fu_645_p3                 |     |        | i_bot_1       | select    | auto_sel               | 0       |
+|   sparsemux_7_2_8_1_1_U2            |     |        | tmp_5         | sparsemux | onehotencoding_realdef | 0       |
+|   sparsemux_7_2_8_1_1_U3            |     |        | tmp_6         | sparsemux | onehotencoding_realdef | 0       |
+|   icmp_ln95_fu_666_p2               |     |        | icmp_ln95     | seteq     | auto                   | 0       |
+|   tmp5_fu_963_p2                    |     |        | tmp5          | add       | fabric                 | 0       |
+|   tmp6_fu_973_p2                    |     |        | tmp6          | add       | fabric                 | 0       |
+|   tmp21_fu_983_p2                   |     |        | tmp21         | add       | fabric                 | 0       |
+|   add_ln118_fu_1045_p2              |     |        | add_ln118     | add       | fabric                 | 0       |
+|   add_ln118_2_fu_989_p2             |     |        | add_ln118_2   | add       | fabric                 | 0       |
+|   add_ln118_3_fu_999_p2             |     |        | add_ln118_3   | add       | fabric                 | 0       |
+|   detail_fu_1082_p2                 |     |        | detail        | sub       | fabric                 | 0       |
+|   mul_9s_8ns_17_1_1_U4              |     |        | prod          | mul       | auto                   | 0       |
+|   y1_fu_1116_p2                     |     |        | y1            | add       | fabric                 | 0       |
+|   icmp_ln89_1_fu_1144_p2            |     |        | icmp_ln89_1   | setgt     | auto                   | 0       |
+|   xor_ln88_fu_1154_p2               |     |        | xor_ln88      | xor       | auto                   | 0       |
+|   select_ln88_2_fu_1160_p3          |     |        | select_ln88_2 | select    | auto_sel               | 0       |
+|   or_ln88_fu_1168_p2                |     |        | or_ln88       | or        | auto                   | 0       |
+|   y1c_fu_1174_p3                    |     |        | y1c           | select    | auto_sel               | 0       |
+|   icmp_ln132_fu_1182_p2             |     |        | icmp_ln132    | setgt     | auto                   | 0       |
+|   above_fu_1191_p2                  |     |        | above         | sub       | fabric                 | 0       |
+|   mul_9s_8ns_17_1_1_U5              |     |        | mul_ln136     | mul       | auto                   | 0       |
+|   add_ln136_fu_1232_p2              |     |        | add_ln136     | add       | fabric                 | 0       |
+|   mul_8ns_8ns_16_1_1_U6             |     |        | mul_ln133     | mul       | auto                   | 0       |
+|   v_1_fu_1257_p3                    |     |        | v_1           | select    | auto_sel               | 0       |
+|   icmp_ln89_2_fu_1285_p2            |     |        | icmp_ln89_2   | setgt     | auto                   | 0       |
+|   xor_ln88_1_fu_1295_p2             |     |        | xor_ln88_1    | xor       | auto                   | 0       |
+|   select_ln88_4_fu_1301_p3          |     |        | select_ln88_4 | select    | auto_sel               | 0       |
+|   or_ln88_1_fu_1309_p2              |     |        | or_ln88_1     | or        | auto                   | 0       |
+|   y2c_fu_1315_p3                    |     |        | y2c           | select    | auto_sel               | 0       |
+|   icmp_ln143_fu_1323_p2             |     |        | icmp_ln143    | setlt     | auto                   | 0       |
+|   y3_1_fu_1328_p2                   |     |        | y3_1          | xor       | auto                   | 0       |
+|   select_ln143_fu_1334_p3           |     |        | select_ln143  | select    | auto_sel               | 0       |
+|   y3_2_fu_1342_p3                   |     |        | y3_2          | select    | auto_sel               | 0       |
+|   xor_ln146_fu_1352_p2              |     |        | xor_ln146     | xor       | auto                   | 0       |
+|   y3_3_fu_1357_p3                   |     |        | y3_3          | select    | auto_sel               | 0       |
+|   delta_fu_1367_p2                  |     |        | delta         | sub       | fabric                 | 0       |
+|   v_2_fu_1404_p2                    |     |        | v_2           | add       | fabric                 | 0       |
+|   icmp_ln89_3_fu_1427_p2            |     |        | icmp_ln89_3   | seteq     | auto                   | 0       |
+|   xor_ln88_2_fu_1437_p2             |     |        | xor_ln88_2    | xor       | auto                   | 0       |
+|   select_ln88_6_fu_1443_p3          |     |        | select_ln88_6 | select    | auto_sel               | 0       |
+|   or_ln88_2_fu_1451_p2              |     |        | or_ln88_2     | or        | auto                   | 0       |
+|   r_out_fu_1457_p3                  |     |        | r_out         | select    | auto_sel               | 0       |
+|   v_3_fu_1465_p2                    |     |        | v_3           | add       | fabric                 | 0       |
+|   icmp_ln89_4_fu_1488_p2            |     |        | icmp_ln89_4   | seteq     | auto                   | 0       |
+|   xor_ln88_3_fu_1494_p2             |     |        | xor_ln88_3    | xor       | auto                   | 0       |
+|   or_ln88_3_fu_1500_p2              |     |        | or_ln88_3     | or        | auto                   | 0       |
+|   v_4_fu_1376_p2                    |     |        | v_4           | add       | fabric                 | 0       |
+|   icmp_ln89_5_fu_1392_p2            |     |        | icmp_ln89_5   | seteq     | auto                   | 0       |
+|   b_out_fu_1547_p6                  |     |        | select_ln89   | select    | auto_sel               | 0       |
+|   r_out_1_fu_1523_p3                |     |        | r_out_1       | select    | auto_sel               | 0       |
+|   xor_ln43_fu_1529_p2               |     |        | xor_ln43      | xor       | auto                   | 0       |
+|   and_ln88_fu_1534_p2               |     |        | and_ln88      | and       | auto                   | 0       |
+|   sparsemux_7_2_8_1_1_U7            |     |        | b_out         | sparsemux | onehotencoding_realdef | 0       |
+|   icmp_ln163_fu_748_p2              |     |        | icmp_ln163    | setlt     | auto                   | 0       |
+|   r_out_2_fu_1566_p3                |     |        | r_out_2       | select    | auto_sel               | 0       |
+|   b_out_1_fu_1572_p3                |     |        | b_out_1       | select    | auto_sel               | 0       |
+|   select_ln88_8_fu_1578_p3          |     |        | select_ln88_8 | select    | auto_sel               | 0       |
+|   select_ln88_fu_1590_p3            |     |        | select_ln88   | select    | auto_sel               | 0       |
+|   empty_35_fu_1598_p3               |     |        | empty_35      | select    | auto_sel               | 0       |
+|   select_ln163_fu_1604_p3           |     |        | select_ln163  | select    | auto_sel               | 0       |
+|   add_ln178_fu_676_p2               |     |        | add_ln178     | add       | fabric                 | 0       |
+|   icmp_ln178_fu_686_p2              |     |        | icmp_ln178    | setlt     | auto                   | 0       |
+|   grp_fu_439_p2                     |     |        | add_ln182     | add       | fabric                 | 0       |
+|   grp_fu_439_p2                     |     |        | add_ln188     | add       | fabric                 | 0       |
++-------------------------------------+-----+--------+---------------+-----------+------------------------+---------+
+
+
+================================================================
+== Storage Report
+================================================================
++--------------------------------------------------------------------------------------+-----------+-----------+------+------+--------+--------+----------------------------------------------------------------------------------+------+---------+------------------+
+| Name                                                                                 | Usage     | Type      | BRAM | URAM | CE_REG | Pragma | Variable                                                                         | Impl | Latency | Bitwidth, Depth, |
+|                                                                                      |           |           |      |      |        |        |                                                                                  |      |         | Banks            |
++--------------------------------------------------------------------------------------+-----------+-----------+------+------+--------+--------+----------------------------------------------------------------------------------+------+---------+------------------+
+| + enhance_bounded                                                                    |           |           | 3    | 0    |        |        |                                                                                  |      |         |                  |
+|   ctrl_s_axi_U                                                                       | interface | s_axilite |      |      |        |        |                                                                                  |      |         |                  |
+|   enhance_bounded_stream_stream_ap_uint_ap_uint_ap_uint_ap_uint_ap_uint_ap_uint_11_U | ram_1p    |           | 1    |      | N      |        | enhance_bounded_stream_stream_ap_uint_ap_uint_ap_uint_ap_uint_ap_uint_ap_uint_11 | auto | 1       | 8, 1920, 1       |
+|   enhance_bounded_stream_stream_ap_uint_ap_uint_ap_uint_ap_uint_ap_uint_ap_uint_10_U | ram_1p    |           | 1    |      | N      |        | enhance_bounded_stream_stream_ap_uint_ap_uint_ap_uint_ap_uint_ap_uint_ap_uint_10 | auto | 1       | 8, 1920, 1       |
+|   enhance_bounded_stream_stream_ap_uint_ap_uint_ap_uint_ap_uint_ap_uint_ap_uint_9_U  | ram_1p    |           | 1    |      | N      |        | enhance_bounded_stream_stream_ap_uint_ap_uint_ap_uint_ap_uint_ap_uint_ap_uint_9  | auto | 1       | 8, 1920, 1       |
++--------------------------------------------------------------------------------------+-----------+-----------+------+------+--------+--------+----------------------------------------------------------------------------------+------+---------+------------------+
+
+
+================================================================
+== Pragma Report
+================================================================
+* Implemented Pragmas
++-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+
+| Type            | Options                                                                                                                                                                                                                                                                                                                                                       | Location                                                                 |
++-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+
+| INLINE          |                                                                                                                                                                                                                                                                                                                                                               | in _zl8enh_luma7ap_uintili24ee (../../../src/hls/enhance/enhance.hpp:75) |
+| INLINE          |                                                                                                                                                                                                                                                                                                                                                               | in _zl9enh_clip86ap_intili16ee (../../../src/hls/enhance/enhance.hpp:87) |
+| ARRAY_PARTITION | dim=1 type=complete variable=enhance_bounded(hls::stream<hls::axis<ap_uint<32>, 1ul, 1ul, 1ul, (unsigned char)56, false>, 0>&, hls::stream<hls::axis<ap_uint<32>, 1ul, 1ul, 1ul, (unsigned char)56, false>, 0>&, ap_uint<32>, ap_uint<16>, ap_uint<8>, ap_uint<8>, ap_uint<8>, ap_uint<8>, ap_uint<8>, ap_uint<1>, ap_uint<1>, ap_uint<1>, ap_uint<16>)::lbuf | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:61)     |
+| ARRAY_PARTITION | dim=1 type=complete variable=enhance_bounded(hls::stream<hls::axis<ap_uint<32>, 1ul, 1ul, 1ul, (unsigned char)56, false>, 0>&, hls::stream<hls::axis<ap_uint<32>, 1ul, 1ul, 1ul, (unsigned char)56, false>, 0>&, ap_uint<32>, ap_uint<16>, ap_uint<8>, ap_uint<8>, ap_uint<8>, ap_uint<8>, ap_uint<8>, ap_uint<1>, ap_uint<1>, ap_uint<1>, ap_uint<16>)::wtop | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:66)     |
+| ARRAY_PARTITION | dim=1 type=complete variable=enhance_bounded(hls::stream<hls::axis<ap_uint<32>, 1ul, 1ul, 1ul, (unsigned char)56, false>, 0>&, hls::stream<hls::axis<ap_uint<32>, 1ul, 1ul, 1ul, (unsigned char)56, false>, 0>&, ap_uint<32>, ap_uint<16>, ap_uint<8>, ap_uint<8>, ap_uint<8>, ap_uint<8>, ap_uint<8>, ap_uint<1>, ap_uint<1>, ap_uint<1>, ap_uint<16>)::wmid | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:67)     |
+| ARRAY_PARTITION | dim=1 type=complete variable=enhance_bounded(hls::stream<hls::axis<ap_uint<32>, 1ul, 1ul, 1ul, (unsigned char)56, false>, 0>&, hls::stream<hls::axis<ap_uint<32>, 1ul, 1ul, 1ul, (unsigned char)56, false>, 0>&, ap_uint<32>, ap_uint<16>, ap_uint<8>, ap_uint<8>, ap_uint<8>, ap_uint<8>, ap_uint<8>, ap_uint<1>, ap_uint<1>, ap_uint<1>, ap_uint<16>)::wbot | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:68)     |
++-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+
+
+* Valid Pragma Syntax
++-----------------+-------------------------------------------+----------------------------------------------------------------------+
+| Type            | Options                                   | Location                                                             |
++-----------------+-------------------------------------------+----------------------------------------------------------------------+
+| INLINE          |                                           | in enh_luma (../../../src/hls/enhance/enhance.hpp:75)                |
+| INLINE          |                                           | in enh_clip8 (../../../src/hls/enhance/enhance.hpp:87)               |
+| INTERFACE       | axis port = s_in                          | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:45) |
+| INTERFACE       | axis port = s_out                         | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:46) |
+| INTERFACE       | s_axilite port = n_pixels bundle = ctrl   | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:47) |
+| INTERFACE       | s_axilite port = line_width bundle = ctrl | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:48) |
+| INTERFACE       | s_axilite port = clarity bundle = ctrl    | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:49) |
+| INTERFACE       | s_axilite port = knee bundle = ctrl       | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:50) |
+| INTERFACE       | s_axilite port = gain_lo bundle = ctrl    | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:51) |
+| INTERFACE       | s_axilite port = gain_hi bundle = ctrl    | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:52) |
+| INTERFACE       | s_axilite port = thresh bundle = ctrl     | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:53) |
+| INTERFACE       | s_axilite port = binarize bundle = ctrl   | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:54) |
+| INTERFACE       | s_axilite port = invert bundle = ctrl     | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:55) |
+| INTERFACE       | s_axilite port = mono bundle = ctrl       | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:56) |
+| INTERFACE       | s_axilite port = split_x bundle = ctrl    | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:57) |
+| INTERFACE       | s_axilite port = return bundle = ctrl     | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:58) |
+| ARRAY_PARTITION | variable = lbuf complete dim = 1          | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:61) |
+| ARRAY_PARTITION | variable = wtop complete                  | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:66) |
+| ARRAY_PARTITION | variable = wmid complete                  | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:67) |
+| ARRAY_PARTITION | variable = wbot complete                  | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:68) |
+| PIPELINE        | II = 1                                    | in enhance_bounded (../../../src/hls/enhance/enhance_bounded.cpp:75) |
++-----------------+-------------------------------------------+----------------------------------------------------------------------+
+
+

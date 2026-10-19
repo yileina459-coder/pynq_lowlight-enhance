@@ -34,7 +34,9 @@
 - [x] HDMI overlay 在板上加载成功、`pynq.lib.video` 绑定正常
 - [x] 增强核 `enhance`：C 仿真两种配置各 9216 拍 **0 误差**、II=1、估计 Fmax 194.59 MHz、
       BRAM 3 / DSP 2 / FF 2168 / LUT 1659（3%）
-- [ ] 增强核进 overlay、端到端真机画面（等 HDMI 采集卡，预计 10/22 到货）
+- [x] 增强核 **已在板上逐位验证**：7 个预设各 0/2764800 通道不一致，15.6 ms/帧
+      （`board/enhance_dma/`，走 AXI-DMA，不需要显示器）
+- [ ] 增强核进 HDMI overlay、端到端真机画面（等采集卡，预计 10/22 到货）
 - [ ] 延迟与功耗实测（流水线延迟 <1 行、端到端 <50 ms 为目标）
 - [ ] 参数化与 UI（算子切换、阈值/增益调节）
 - [ ] 决赛用一页英文 A4 海报
@@ -57,11 +59,13 @@
 ├── sim/                      # 软件黄金模型、比对脚本、离线预演、性能对比表
 ├── build/                    # 可复现构建脚本 + 综合实现报告
 │   ├── smoke/                # 工具链冒烟（Vivado / Vitis HLS）
-│   ├── hls/                  # 每个算子的 HLS 工程脚本
-│   ├── overlay_dma/          # DMA 版 overlay 构建
+│   ├── hls/                  # 每个算子的 HLS 工程脚本（enhance 也有有界版本）
+│   ├── overlay_dma/          # DMA 版 overlay 构建（Sobel）
+│   ├── overlay_enhance/      # DMA 版 overlay 构建（enhance）
 │   └── overlay_hdmi/         # HDMI 版 overlay 构建（含 PYNQ base overlay 移植）
 ├── board/                    # 上板脚本与实测输出
 │   ├── dma_sobel/            # DMA 版：逐位比对
+│   ├── enhance_dma/          # 增强核：7 个预设的板上逐位比对（不需要显示器）
 │   ├── hdmi_stream/          # HDMI 版：实时出图
 │   └── ps_baseline/          # PS 软件基线
 ├── data/                     # 测试图与各算子的黄金参考
