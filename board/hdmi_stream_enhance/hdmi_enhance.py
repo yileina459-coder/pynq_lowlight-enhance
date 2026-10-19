@@ -84,7 +84,10 @@ def main(argv=None) -> int:
         return 1
     cfg = getattr(ol, cfg_name)
     print(f"  config GPIO: {cfg_name}")
-    print(f"    TRI = 0x{cfg.mmio.read(GPIO_TRI):08x} (0 = outputs)")
+    # For a channel fixed as all-outputs the TRI register is not meaningful (it
+    # reads back 0xffffffff), so the direction comes from the bitstream's own
+    # parameters; what matters here is that the data register holds what we write.
+    print(f"    TRI = 0x{cfg.mmio.read(GPIO_TRI):08x} (not meaningful for a fixed-direction channel)")
     for name in ("document", "binarize"):
         lo, hi = pack(PRESETS[name])
         cfg.mmio.write(GPIO_DATA, lo)
@@ -104,7 +107,7 @@ def main(argv=None) -> int:
     lat = getattr(ol, lat_name)
     tri1, tri2 = lat.mmio.read(GPIO_TRI), lat.mmio.read(GPIO2_TRI)
     print(f"  latency GPIO: {lat_name}")
-    print(f"    TRI 0x{tri1:08x} / 0x{tri2:08x} (0xffffffff = inputs)")
+    print(f"    TRI 0x{tri1:08x} / 0x{tri2:08x} (both channels are inputs in the bitstream)")
     print(f"    stamps now: in=0x{lat.mmio.read(GPIO_DATA):08x} "
           f"out=0x{lat.mmio.read(GPIO2_DATA):08x}")
     if video.hdmi_in.mode is None:
