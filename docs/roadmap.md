@@ -8,6 +8,7 @@
 ## 阶段总览
 
 | 阶段 | 内容 | 验收标准（可验证） | 对应评分项 | 状态 |
+| P4b | enhance 核进 overlay | 真机画面 + 延迟计数器实测 | 创新性 + 完整度 | 待采集卡（10/22） |
 | --- | --- | --- | --- | --- |
 | P0 | 工具链基线 | Vivado 综合 + HLS 仿真/综合/导出 IP 全通过 | 可复现性 | **DONE**（`build/smoke/`、`docs/env.md`） |
 | P1 | 官方 HDMI 回环 | 板子上 `hdmi_in.tie(hdmi_out)` 出图，记录分辨率/帧率证据 | 功能正确性 | 待板卡 |
@@ -92,7 +93,7 @@ PS Python <-> DDR <-> AXI DMA (MM2S/S2MM) <-> sobel_stream
 - **构建完成**：`sobel_hdmi.bit` 已生成，WNS +0.207 ns @142.857 MHz，`.hwh` 离线校验通过
 - 验收：板上 overlay 能加载、HDMI 输入锁定、输出出图（需显示器或采集卡）
 
-### P4 算子族 + 参数化 + UI
+### P4 算子族 + 参数化 + UI（含新的主算子 enhance）
 
 - 已完成：Sobel、Gaussian 两个流式核（均 II=1、0 误差、7 ns 下 194 MHz）
 - 待做：锐化（3×3 拉普拉斯/非锐化掩模）、色彩空间转换
@@ -104,6 +105,19 @@ PS Python <-> DDR <-> AXI DMA (MM2S/S2MM) <-> sobel_stream
   让 DMA 版可以整帧传输而不是逐行传输，帧率预计提升一个数量级
 - PS 侧：`src/ps/` 下 overlay 驱动封装 + ipywidgets UI
 - 验收：UI 上切算子/调参，画面实时变化，无花屏无撕裂
+
+#### P4b 增强核进 overlay（主线，10/22 采集卡到货后）
+
+`enhance` 已完成 C 仿真（两种配置各 9216 拍 0 误差）与综合（II=1、194.59 MHz、
+BRAM 3 / DSP 2 / FF 2168 / LUT 1659），**尚未进位流**。
+
+- 集成方式：替换 `board/hdmi_stream` 里的 `sobel_0`，参数走一个 `axi_gpio` 双通道
+  （2×32 bit > 59 bit，核本体不加 AXI-Lite）；
+- 风险：HDMI overlay 现有 WNS 只有 +0.207 ns，enhance 估计 194.59 MHz，理论上够，
+  但需要实现后看真实时序；
+- **止损线 2026-11-01**：若届时时序不收敛或功能未通，回退到现有 Sobel 版 HDMI 位流，
+  用 DMA 通路 + 算子族作为技术证据，`report/school_round.md` 已按此口径写；
+- 提交截止 **2026-11-04**。
 
 ### P5 性能与资源对比
 

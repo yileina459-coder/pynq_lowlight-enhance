@@ -3,7 +3,8 @@
 本文件是交付前的最后一张表：**每个评分项对应哪些文件、证据在哪、现在什么状态**。
 状态只有三种：`已验证`（有实测/运行证据）、`已实现未上板`、`未完成`。
 
-生成日期：2026-10-18　工具链：Vivado / Vitis HLS 2026.1　板卡：PYNQ-Z2（XC7Z020，PYNQ 3.1.1 镜像）
+生成日期：2026-10-19　提交截止：**2026-11-04**（止损线 11-01）
+工具链：Vivado / Vitis HLS 2026.1　板卡：PYNQ-Z2（XC7Z020，PYNQ 3.1.1 镜像）
 
 ## 一、按评分项
 
@@ -19,6 +20,7 @@
 
 | 交付物 | 位置 | 状态 |
 | --- | --- | --- |
+| HLS 算子：**enhance（主算子）** | `src/hls/enhance/` | 已验证 C 仿真（两配置 0 误差）+ 综合（II=1、194.59 MHz、LUT 3%）；**未进位流** |
 | HLS 算子：Sobel（流式 + 有界两个变体） | `src/hls/sobel/` | 已验证（板上逐位一致） |
 | HLS 算子：Gaussian | `src/hls/gaussian/` | 已验证（C 仿真 0 误差、II=1、194.59 MHz） |
 | HLS 算子：Sharpen | `src/hls/sharpen/` | 已验证（同上，含钳位路径覆盖） |
@@ -30,7 +32,10 @@
 | PS 软件基线 | `board/ps_baseline/ps_sobel.py` | 已验证（板上 3108 ms/帧） |
 | 性能数据与对比表 | `sim/perf/make_comparison.py`、`report/comparison.md` | 已验证 |
 | 通用 Skill ×4 + 踩坑清单 | `skill/` | 已验证 |
-| 设计报告 | `report/design_report.md` | 已完成（含实测数据） |
+| 设计报告 | `report/design_report.md` | 已完成（含实测数据，主线为低延迟视觉增强终端） |
+| 校赛一页材料 | `report/school_round.md` | 已完成 |
+| 采购与接线清单 | `docs/bom.md` | 已完成（预算 ≤200 元，含验收标准） |
+| 增强效果图 | `report/figures/preview_synthetic.png` | 已完成（7 个预设中的 4 个） |
 | 大模型协作记录 | `report/ai_collaboration_log.md` | 已完成（21 条） |
 | 英文 A4 海报 | `report/poster/poster.pptx`（由 `make_poster.py` 生成） | **已完成**：一页 A4 竖版英文海报，内容与数据全部来自仓库；拿到 AMD 官方模板后可直接套版 |
 

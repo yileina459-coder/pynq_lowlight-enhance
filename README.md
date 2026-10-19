@@ -1,4 +1,4 @@
-# HDMI 实时视频处理流水线
+# 低延迟视觉增强终端（PYNQ-Z2）
 
 参赛厂商：AMD
 
@@ -6,12 +6,15 @@
 
 开发方向：AMD 自主选题（初级组）
 
-作品名称：HDMI 实时视频处理流水线
+作品名称：低延迟视觉增强终端
 
-作品简介：Vitis HLS 实现卷积类算子（Sobel 边缘、高斯模糊、锐化），色彩空间转换复用 PYNQ
-官方 IP，整体封装为 Overlay；Python/Jupyter 侧做配置与控制。提供两条通路：HDMI 实时流式
-（延迟约一行）与 AXI-DMA 批处理（可与黄金参考逐位比对）。同一算法另有 PS 纯软件实现，
-用于给出帧率、延迟、吞吐、资源、功耗的软硬件对比数据。
+作品简介：面向低视力人群的阅读辅助——**不经过帧缓冲**，像素边走边算，端到端延迟约一行，
+而不是一帧。核心算子 `enhance`（局部对比 → 色调曲线 → 二值/反色 → 分屏）由 Vitis HLS 实现，
+59 bit 参数在运行时由 PS 下发；参数含清晰度、拐点、双段增益、二值阈值、反色/单色、分屏位置。
+
+算子族另含 Sobel、高斯、锐化三个卷积核，用于构成"同一算法软硬件对比"的证据：AXI-DMA 通路
+上已做到与 numpy 黄金模型**逐位一致**，并测出 PS 3108 ms/帧 vs PL 15.8 ms/帧（196.7×）。
+色彩空间转换复用 PYNQ 官方 IP。
 
 ## 当前状态
 
@@ -29,7 +32,10 @@
 - [x] 板上实测：DMA 回环 **逐位一致**（0/2764800 通道），整帧 15.8 ms/帧
 - [x] PS/PL 对比数据：3108.4 ms → 15.8 ms（**196.7×**），见 `report/comparison.md`
 - [x] HDMI overlay 在板上加载成功、`pynq.lib.video` 绑定正常
-- [ ] HDMI 实时出图（缺 HDMI 源与显示设备，未能确认画面）
+- [x] 增强核 `enhance`：C 仿真两种配置各 9216 拍 **0 误差**、II=1、估计 Fmax 194.59 MHz、
+      BRAM 3 / DSP 2 / FF 2168 / LUT 1659（3%）
+- [ ] 增强核进 overlay、端到端真机画面（等 HDMI 采集卡，预计 10/22 到货）
+- [ ] 延迟与功耗实测（流水线延迟 <1 行、端到端 <50 ms 为目标）
 - [ ] 参数化与 UI（算子切换、阈值/增益调节）
 - [ ] 决赛用一页英文 A4 海报
 
@@ -47,7 +53,7 @@
 .
 ├── README.md                 # 项目简介 + 复现步骤
 ├── docs/                     # 架构、路线图、环境基线、HDMI 移植记录、参考资料
-├── src/                      # HLS / PS 侧源码（sobel、gaussian、sharpen）
+├── src/                      # HLS 源码：enhance（主算子）、sobel/gaussian/sharpen（算子族）
 ├── sim/                      # 软件黄金模型、比对脚本、离线预演、性能对比表
 ├── build/                    # 可复现构建脚本 + 综合实现报告
 │   ├── smoke/                # 工具链冒烟（Vivado / Vitis HLS）
@@ -74,7 +80,8 @@
 cd build\smoke\vivado ; ..\..\..\tools\env\vivado.bat -mode batch -nojournal -nolog -source synth_smoke.tcl
 cd build\smoke\hls    ; ..\..\..\tools\env\vitis_hls.bat -f run_hls.tcl
 
-# 2) 三个算子（C 仿真 + 综合 + 导出 IP），每个约 1 分钟
+# 2) 算子（C 仿真 + 综合 + 导出 IP），每个约 1-2 分钟
+tools\env\vitis_hls.bat -f build\hls\enhance\run_hls.tcl   # 主算子
 tools\env\vitis_hls.bat -f build\hls\sobel\run_hls.tcl
 tools\env\vitis_hls.bat -f build\hls\gaussian\run_hls.tcl
 tools\env\vitis_hls.bat -f build\hls\sharpen\run_hls.tcl

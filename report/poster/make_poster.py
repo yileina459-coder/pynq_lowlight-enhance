@@ -100,11 +100,11 @@ def main() -> int:
     head.shadow.inherit = False
 
     add_text(slide, MARGIN, 0.4, BODY_W,
-             "Real-Time HDMI Video Processing Pipeline on PYNQ-Z2",
+             "A One-Line-Latency Vision Enhancement Terminal on PYNQ-Z2",
              size=19, bold=True, color=WHITE)
     add_text(slide, MARGIN, 1.5, BODY_W,
-             "2026 Embedded Chip & System Design Competition  |  AMD track, self-selected "
-             "topic (junior group)  |  Zynq-7000 XC7Z020  |  Vivado / Vitis HLS 2026.1",
+             "Reading aid for the low-vision  |  2026 Embedded Chip & System Design Competition, "
+             "AMD track, self-selected topic (junior group)  |  Zynq-7000 XC7Z020  |  Vivado / Vitis HLS 2026.1",
              size=9, color=RGBColor(0xC8, 0xD8, 0xEA))
 
     y = 2.95
@@ -112,28 +112,21 @@ def main() -> int:
 
     sections = [
         ("Motivation",
-         "FPGA video accelerators get judged on three things: is the result correct, how much "
-         "faster than software is it, and can somebody else reproduce it. This project answers all "
-         "three with evidence rather than claims - an independent software golden model for every "
-         "operator, a zero-tolerance comparison against it, and PS-vs-PL measurements taken on the "
-         "same board with the same image."),
+         "Around 17 million people in China live with low vision, and shop-bought electronic magnifiers are expensive while phone/PC pipelines take 100-300 ms from capture to display - enough latency to cause dizziness. For this class of device the key metric is not frame rate but end-to-end latency. This project therefore puts the whole enhancement chain inside the pixel stream, with no frame buffer at all."),
         ("Architecture",
-         "Two data paths share one HLS kernel.\n"
-         "HDMI streaming:  HDMI IN -> colour convert -> pixel_pack -> Sobel -> pixel_unpack -> "
-         "HDMI OUT, bypassing the frame buffer, so latency is about one line.\n"
-         "AXI-DMA path:  PS <-> DDR <-> AXI DMA <-> Sobel, which gives readable-back results and is "
-         "what makes bit-exact verification possible without a display.\n"
+         "Main path:  HDMI IN -> dvi2rgb -> pixel_pack -> enhance -> pixel_unpack -> rgb2dvi -> HDMI OUT, "
+         "bypassing the frame buffer, so latency is about one line (17 us at 720p60).\n"
+         "The enhance kernel runs local contrast -> tone curve -> binarise/invert -> split screen, "
+         "all integer, one pixel per clock; 59 configuration bits are driven from the PS at "
+         "run time.\n"
+         "Verification path:  PS <-> DDR <-> AXI DMA <-> operator, readable back, so bit-exact "
+         "checks need no display.\n"
          "Three rotating line buffers plus per-row 3-tap shift registers give each buffer one read "
          "and one write per pixel, which is what fits II = 1 into a dual-port BRAM."),
         ("Operators",
-         "Sobel edge detection, 3x3 Gaussian blur and 3x3 sharpen are hand-written Vitis HLS: II = 1, "
-         "estimated Fmax 194.6 MHz at a 7 ns target, 3 to 9 BRAM and under 1.1k LUT each. "
-         "Colour-space conversion reuses PYNQ's verified color_convert IP rather than being rewritten - "
-         "the design effort went into the convolution operators, where it belongs."),
+         "enhance: 3 BRAM, 2 DSP, 2168 FF, 1659 LUT (3%), II = 1, estimated Fmax 194.59 MHz at 7 ns. The operator family behind it - Sobel, 3x3 Gaussian, 3x3 sharpen - is hand-written HLS too (II = 1, 194.6 MHz, under 1.1k LUT each), and colour-space conversion reuses PYNQ's verified color_convert IP instead of being rewritten."),
         ("Correctness",
-         "The picture produced by the PL is compared channel by channel with the PS result: 0 "
-         "mismatches out of 2,764,800 channels, and the same holds against an independently written "
-         "numpy reference. Every kernel also passes C simulation with 0 errors before synthesis. "
+         "enhance passes C simulation against an independently written C++ golden model in two configurations (contrast+split, and tone+binarise+invert+mono): 9216 beats each, 0 errors. On the DMA path the PL picture is compared channel by channel with the PS result: 0 mismatches out of 2,764,800 channels. "
          "Border policy (horizontal replicate, vertical line-buffer state) is defined once and shared "
          "by hardware, testbench and Python model, which is why the comparison can use zero tolerance."),
         ("What Made It Work - and What Did Not",
@@ -155,11 +148,11 @@ def main() -> int:
         layout.append((title, round(y, 2), round(need, 2)))
         y += add_heading(slide, y, title)
         y += add_text(slide, MARGIN, y, BODY_W, body)
-        y += 0.25
+        y += 0.12
 
     # results table + figure side by side
     y += 0.1
-    y += add_heading(slide, y, "Verified Results (same board, same 1280x720 image)")
+    y += add_heading(slide, y, "Operator Family on the DMA Path (same board, same 1280x720 image)")
 
     rows = [
         ("Metric", "PS (Cortex-A9, numpy)", "PL (DMA, whole frame)"),
@@ -191,7 +184,7 @@ def main() -> int:
         slide.shapes.add_picture(FIGURE, Cm(MARGIN + table_w + 0.7), Cm(y),
                                  width=Cm(fig_w), height=Cm(fig_h))
         add_text(slide, MARGIN + table_w + 0.7, y + fig_h + 0.1, fig_w,
-                 "Sobel output captured from the PL path", size=8,
+                 "Sobel output captured from the PL path (DMA)", size=8,
                  color=RGBColor(0x77, 0x77, 0x77), align=PP_ALIGN.CENTER)
 
     y += max(table_h, 6.2 * 720 / 1280 + 0.55) + 0.3
