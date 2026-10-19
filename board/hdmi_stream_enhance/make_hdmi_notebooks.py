@@ -116,9 +116,48 @@ def write(path: str, cells: list[dict]) -> None:
     print(f"wrote {path} ({len(cells)} cells)")
 
 
+STOCK_CELLS = [
+    md(
+        "# 对照实验：原厂 base overlay 能不能看到 HDMI 输入\n"
+        "\n"
+        "用来分清两种完全不同的故障：\n"
+        "\n"
+        "* 这一格也报 `None` → **板子这一侧（口/线/EDID）有问题**，与我们的 overlay 无关；\n"
+        "* 这一格报 `1280x720@60` → 原厂能收到，**是我们的 overlay 弄坏了什么**，需要我修。\n"
+        "\n"
+        "运行前把笔记本 HDMI 插在板子的 **HDMI IN** 上。\n"
+    ),
+    code(
+        "from pynq import Overlay\n"
+        "\n"
+        "STOCK = \"/usr/local/share/pynq-venv/lib/python3.10/site-packages/pynq/overlays/base/base.bit\"\n"
+        "ol = Overlay(STOCK)\n"
+        "print(\"stock overlay loaded, IPs:\", len(ol.ip_dict))\n"
+        "print(\"mode:\", ol.video.hdmi_in.mode)\n"
+    ),
+    md(
+        "## 如果第一次是 None，插拔一次线再跑这一格\n"
+        "\n"
+        "EDID 握手发生在插线的那一刻；如果线在位流加载前就插好了，有些笔记本不会重试。\n"
+    ),
+    code(
+        "import time\n"
+        "\n"
+        "for i in range(10):\n"
+        "    m = ol.video.hdmi_in.mode\n"
+        "    print(i, \"mode:\", m)\n"
+        "    if m is not None:\n"
+        "        print(\"SEES SOURCE ->\", m.width, \"x\", m.height, \"@\", m.frame_rate)\n"
+        "        break\n"
+        "    time.sleep(1.0)\n"
+    ),
+]
+
+
 def main() -> int:
     write(os.path.join(HERE, "hdmi_check.ipynb"), CHECK_CELLS)
     write(os.path.join(HERE, "hdmi_demo.ipynb"), DEMO_CELLS)
+    write(os.path.join(HERE, "hdmi_stock_check.ipynb"), STOCK_CELLS)
     return 0
 
 
