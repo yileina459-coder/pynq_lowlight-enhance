@@ -34,10 +34,11 @@ HDMI 屏 ◄ rgb2dvi ◄ v_axi4s_vid_out ◄ pixel_unpack
 | 项目 | 方法 | 结果 | 证据 |
 |---|---|---|---|
 | 逐位正确性 | 独立编写的 C++ 黄金模型，两种配置（对比度+分屏 / 色调+二值+反色+单色） | **各 9216 拍 0 误差** | `src/hls/enhance/tb_enhance.cpp` |
+| **板上逐位一致** | AXI-DMA 整帧回环，8 个预设逐一与 numpy 比对 | **各 0/2764800 通道**，15.6 ms/帧 | `board/enhance_dma/` |
 | 独立复核 | numpy 黄金模型，恒等预设必须逐位等于输入 | **通过** | `sim/enhance/golden_enhance.py` |
 | 综合结果 | Vitis HLS 2026.1，`xc7z020clg400-1`，7 ns 约束 | **II=1**；BRAM 3 / DSP 2 / FF 2168 / LUT 1657（3%）；估计 **Fmax 194.59 MHz** | `build/hls/enhance/` |
-| 视觉验证 | 7 个预设（清晰度/阅读/夜间/反色/二值/分屏） | 暗光页平均亮度 27 → 150，文字可辨 | `sim/enhance/golden_enhance.py --grid` |
-| 既有硬件证据 | DMA 通路整帧传输、与黄金参考比对 | **0/2764800 通道不一致**；15.8 ms/帧 | `board/dma_sobel/` |
+| 视觉验证 | 8 个预设（清晰度/阅读/文档/夜间/反色/二值/分屏） | 暗光页平均亮度 27 → 150，文字可辨 | `sim/enhance/golden_enhance.py --grid` |
+| 既有硬件证据 | DMA 通路整帧传输、与黄金参考比对（Sobel 算子族） | **0/2764800 通道不一致**；15.8 ms/帧；相对 PS 196.7× | `board/dma_sobel/` |
 
 时钟预算：视频通路 142.86 MHz，核估计 194.59 MHz，余量约 27%。
 
@@ -45,8 +46,8 @@ HDMI 屏 ◄ rgb2dvi ◄ v_axi4s_vid_out ◄ pixel_unpack
 
 | 指标 | 目标 | 现状 |
 |---|---|---|
-| 流水线延迟 | < 1 行（约 17 µs @720p60） | 待计数器实测 |
-| 端到端延迟 | < 50 ms（不眩晕阈值） | 待采集卡到货后测 |
+| 流水线延迟 | < 1 行（约 17 µs @720p60） | **已实测 16 个像素时钟 = 160 ns**（DMA 通路，`axis_cycle_stamp`） |
+| 端到端延迟 | < 50 ms（不眩晕阈值） | 受限于 HDMI 两侧未打通（`docs/hdmi_status.md`），暂无法测量 |
 | 吞吐 | 720p60 实时 | 架构保证（II=1） |
 | 资源 | < 5% LUT | 3% |
 | 功耗 | 待 USB 功率计实测 | 待测 |

@@ -27,12 +27,12 @@ import os
 
 from pptx import Presentation
 from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_ALIGN
+from pptx.enum.text import MSO_AUTO_SIZE, PP_ALIGN
 from pptx.util import Cm, Pt
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(REPO, "report", "poster", "poster.pptx")
-FIGURE = os.path.join(REPO, "board", "dma_sobel", "evidence", "sobel_dma_out.png")
+FIGURE = os.path.join(REPO, "board", "enhance_dma", "evidence", "enhance_document.png")
 
 NAVY = RGBColor(0x12, 0x2B, 0x4A)
 ACCENT = RGBColor(0x1E, 0x88, 0xE5)
@@ -58,12 +58,15 @@ def estimate_lines(text: str, size_pt: float, width_cm: float) -> int:
     return lines
 
 
-def add_text(slide, left, top, width, text, size=9.5, bold=False, color=GREY,
+def add_text(slide, left, top, width, text, size=9.0, bold=False, color=GREY,
              align=PP_ALIGN.LEFT):
     height = estimate_lines(text, size, width) * line_height_cm(size) + 0.15
     box = slide.shapes.add_textbox(Cm(left), Cm(top), Cm(width), Cm(height))
     frame = box.text_frame
     frame.word_wrap = True
+    # Without this python-pptx writes <a:spAutoFit/>, and LibreOffice then sizes the
+    # box to the text instead of wrapping it - the whole page overflows sideways.
+    frame.auto_size = MSO_AUTO_SIZE.NONE
     for i, line in enumerate(text.split("\n")):
         para = frame.paragraphs[0] if i == 0 else frame.add_paragraph()
         para.alignment = align
@@ -100,10 +103,10 @@ def main() -> int:
     head.shadow.inherit = False
 
     add_text(slide, MARGIN, 0.4, BODY_W,
-             "A One-Line-Latency Vision Enhancement Terminal on PYNQ-Z2",
-             size=19, bold=True, color=WHITE)
+             "A One-Line-Latency Vision Enhancement Terminal",
+             size=18, bold=True, color=WHITE)
     add_text(slide, MARGIN, 1.5, BODY_W,
-             "Reading aid for the low-vision  |  2026 Embedded Chip & System Design Competition, "
+             "PYNQ-Z2  |  reading aid for the low-vision  |  2026 Embedded Chip & System Design Competition, "
              "AMD track, self-selected topic (junior group)  |  Zynq-7000 XC7Z020  |  Vivado / Vitis HLS 2026.1",
              size=9, color=RGBColor(0xC8, 0xD8, 0xEA))
 
@@ -114,8 +117,10 @@ def main() -> int:
         ("Motivation",
          "Around 17 million people in China live with low vision, and shop-bought electronic magnifiers are expensive while phone/PC pipelines take 100-300 ms from capture to display - enough latency to cause dizziness. For this class of device the key metric is not frame rate but end-to-end latency. This project therefore puts the whole enhancement chain inside the pixel stream, with no frame buffer at all."),
         ("Architecture",
-         "Main path:  HDMI IN -> dvi2rgb -> pixel_pack -> enhance -> pixel_unpack -> rgb2dvi -> HDMI OUT, "
-         "bypassing the frame buffer, so latency is about one line (17 us at 720p60).\n"
+         "Intended main path:  HDMI IN -> pixel_pack -> enhance -> pixel_unpack -> HDMI OUT, no frame "
+         "buffer. Both HDMI directions are still in bring-up and are documented, not claimed: the input "
+         "negotiates EDID/HPD but never locks TMDS (the stock PYNQ bitstream behaves identically), and "
+         "the output stops producing TMDS once the kernel is inserted.\n"
          "The enhance kernel runs local contrast -> tone curve -> binarise/invert -> split screen, "
          "all integer, one pixel per clock; 59 configuration bits are driven from the PS at "
          "run time.\n"
@@ -126,7 +131,7 @@ def main() -> int:
         ("Operators",
          "enhance: 3 BRAM, 2 DSP, 2168 FF, 1659 LUT (3%), II = 1, estimated Fmax 194.59 MHz at 7 ns. The operator family behind it - Sobel, 3x3 Gaussian, 3x3 sharpen - is hand-written HLS too (II = 1, 194.6 MHz, under 1.1k LUT each), and colour-space conversion reuses PYNQ's verified color_convert IP instead of being rewritten."),
         ("Correctness",
-         "enhance passes C simulation against an independently written C++ golden model in two configurations (contrast+split, and tone+binarise+invert+mono): 9216 beats each, 0 errors. On the DMA path the PL picture is compared channel by channel with the PS result: 0 mismatches out of 2,764,800 channels. "
+         "enhance passes C simulation against an independently written C++ golden model in two configurations (contrast+split, and tone+binarise+invert+mono): 9216 beats each, 0 errors. Through the AXI-DMA path, all eight presets are compared channel by channel with the numpy model: 0 mismatches out of 2,764,800 channels each, at 15.6 ms per frame. A second pair of counters brackets the kernel and stamps the first beat in and out: the measured pipeline latency is 16 pixel clocks, i.e. 160 ns at 100 MHz - about 1% of a 720p60 line, which is what having no frame buffer buys. "
          "Border policy (horizontal replicate, vertical line-buffer state) is defined once and shared "
          "by hardware, testbench and Python model, which is why the comparison can use zero tolerance."),
         ("What Made It Work - and What Did Not",
@@ -144,22 +149,21 @@ def main() -> int:
     ]
 
     for title, body in sections:
-        need = 0.95 + estimate_lines(body, 9.5, BODY_W) * line_height_cm(9.5) + 0.25
+        need = 0.95 + estimate_lines(body, 9.0, BODY_W) * line_height_cm(9.0) + 0.18
         layout.append((title, round(y, 2), round(need, 2)))
         y += add_heading(slide, y, title)
         y += add_text(slide, MARGIN, y, BODY_W, body)
-        y += 0.12
+        y += 0.10
 
     # results table + figure side by side
     y += 0.1
     y += add_heading(slide, y, "Operator Family on the DMA Path (same board, same 1280x720 image)")
 
     rows = [
-        ("Metric", "PS (Cortex-A9, numpy)", "PL (DMA, whole frame)"),
-        ("Frame time", "3108.4 ms", "15.8 ms"),
-        ("Frame rate", "0.320 fps", "63.45 fps"),
-        ("Pixel throughput", "0.30 Mpixel/s", "58.47 Mpixel/s"),
-        ("Speed-up", "-", "196.7x"),
+        ("Measured on the board", "PS (Cortex-A9, numpy)", "PL (Zynq + DMA)"),
+        ("enhance, 8 presets", "-", "15.6 ms/frame, 0/2764800 wrong"),
+        ("Pipeline latency", "-", "16 pixel clocks = 160 ns"),
+        ("Sobel family, frame time", "3108.4 ms", "15.8 ms (196.7x)"),
     ]
     table_w, table_h = 12.0, 3.5
     shape = slide.shapes.add_table(len(rows), 3, Cm(MARGIN), Cm(y), Cm(table_w), Cm(table_h))
@@ -191,8 +195,8 @@ def main() -> int:
 
     add_text(slide, MARGIN, y, BODY_W,
              "Tool versions: Vivado / Vitis HLS 2026.1, PYNQ 3.1.1 image, device "
-             "xc7z020clg400-1.  Repository: README.md, docs/, report/design_report.md, "
-             "report/comparison.md.",
+             "xc7z020clg400-1.  Repository: README.md, docs/ (including docs/hdmi_status.md for the "
+             "open HDMI items), report/design_report.md, report/comparison.md.",
              size=8, color=RGBColor(0x88, 0x88, 0x88))
     used = y + 0.5
 

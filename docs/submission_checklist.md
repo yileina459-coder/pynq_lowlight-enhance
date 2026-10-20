@@ -43,7 +43,8 @@
 | 设计报告 | `report/design_report.md` | 已完成（含实测数据，主线为低延迟视觉增强终端） |
 | 校赛一页材料 | `report/school_round.md` | 已完成 |
 | 采购与接线清单 | `docs/bom.md` | 已完成（预算 ≤200 元，含验收标准） |
-| 增强效果图 | `report/figures/preview_synthetic.png` | 已完成（7 个预设中的 4 个） |
+| 增强效果图 | `report/figures/preview_synthetic.png` | 已完成（8 个预设中的 4 个） |
+| HDMI 排查记录 | `docs/hdmi_status.md` | 已完成（含已排除的假设与下一步） |
 | 大模型协作记录 | `report/ai_collaboration_log.md` | 已完成（21 条） |
 | 英文 A4 海报 | `report/poster/poster.pptx`（由 `make_poster.py` 生成） | **已完成**：一页 A4 竖版英文海报，内容与数据全部来自仓库；拿到 AMD 官方模板后可直接套版 |
 

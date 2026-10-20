@@ -75,7 +75,7 @@
 │   └── overlay_hdmi/         # HDMI 版 overlay 构建（含 PYNQ base overlay 移植）
 ├── board/                    # 上板脚本与实测输出
 │   ├── dma_sobel/            # DMA 版：逐位比对
-│   ├── enhance_dma/          # 增强核：7 个预设的板上逐位比对（不需要显示器）
+│   ├── enhance_dma/          # 增强核：8 个预设的板上逐位比对（不需要显示器）
 │   ├── hdmi_stream/          # HDMI 版：实时出图
 │   └── ps_baseline/          # PS 软件基线
 ├── data/                     # 测试图与各算子的黄金参考
