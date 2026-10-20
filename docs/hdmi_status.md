@@ -62,3 +62,47 @@
 ```
 
 板子重启后**只需重新加载 overlay**（notebook 第一格会自动加载）。
+
+---
+
+## 2026-10-20 夜：源码研究的结论
+
+完整推导见 `docs/hdmi_source_study.md`，这里只记结论和明天的动作。
+
+**新的确定性结论**
+
+1. `kClkRange` 决定 MMCM 的 `MULT_F = kClkRange*5`，Artix-7 -1 要求
+   `600 <= FVCO <= 1200 MHz`。720p 的 TMDS 时钟 74.25 MHz **必须用 range 2**；
+   原厂用 range 1 → FVCO=371 MHz，**物理上不可能锁定**。这解释了原厂 base.bit 也失败。
+2. 我们重建的位流已确认把 `kClkRange` 改成 2，并在**综合后网表**里核实
+   `CLKFBOUT_MULT_F=10.0 / CLKIN1_PERIOD=12.0`——修复真的进了位流。
+3. `720p_edid.data` 是 128 行二进制文本，解析后**完全合法**
+   （头部 OK、校验和 OK、首选时序 1280x720@60 / 74.25 MHz、名称 DigilentDVI-2）。
+   所以不是 EDID 坏了导致源端不送信号。
+4. `aPixelClkLckd` 接到 `proc_sys_reset` 的 `aux_reset_in`：
+   **没有 TMDS → 没有像素时钟 → PLL 不锁 → 前端一直复位**。
+   因此 `mode=None` 无法区分"源端没送"还是"板子收不到"。
+
+**因此明天只剩一个实验需要做**
+
+`board/hdmi_stream_enhance/hdmi_loopback_ours.ipynb`：用**我们的位流**做
+OUT→IN 自环，720p。选我们的位流而不是原厂，是因为原厂输入 range 1、输出 range 2，
+两端没有交集，那个实验设计本身就是错的（今晚读源码才发现）。
+
+| 结果 | 结论 | 下一步 |
+| --- | --- | --- |
+| 锁上（黑屏也算） | 板子收发都正常 | 问题在笔记本侧：接 IN、设 720p，必要时用"列出所有模式"强制 |
+| 仍不锁 | 输出端不发 TMDS（与采集卡现象一致） | 在 `v_axi4s_vid_out` 的 `tvalid/tready/tuser/tlast` 上插 ILA |
+
+**顺带准备**：`src/rtl/axis_cycle_stamp` 已加 `beats` 输出（拍数计数），
+用来区分"流水线在跑"和"跑了 21 拍就停了"。BD 里那两个 cell 是模块引用，
+加端口后需要**重建 cell**（`update_module_reference` 不刷新端口表）——
+`build/overlay_hdmi_enhance/rebuild_stamps.tcl` 就是干这个的，但今晚没跑通
+（新 cell 仍缺 `beats` 端口），明天先解决这个再插 ILA。
+
+## 备忘：这轮踩过的两个坑
+
+- **改 IP 参数后要回读验证**：`get_bd_cells` 默认只看顶层，`dvi2rgb` 在 `video` 层级里，
+  不加 `-hierarchical` 就一个都匹配不到，属性没写进去却毫无报错。
+- **删工程会丢 Vivado 的 IP 缓存**：为改一个参数重跑 `base.tcl`，导致 ~200 个 OOC 综合
+  重来一遍（约一小时）。正确做法是在现有工程上改属性再 `impl`。
