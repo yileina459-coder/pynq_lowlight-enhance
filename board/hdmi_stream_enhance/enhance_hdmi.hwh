@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Mon Oct 19 14:31:37 2026" VIVADOVERSION="2026.1">
+<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Tue Oct 20 21:42:06 2026" VIVADOVERSION="2026.1">
 
   <SYSTEMINFO ARCH="zynq" DEVICE="7z020" NAME="base" PACKAGE="clg400" SPEEDGRADE="-1"/>
 
@@ -70605,7 +70605,7 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_ARQOS"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="M00_AXI_arready" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_ARREADY">
+        <PORT DIR="I" LEFT="0" NAME="M00_AXI_arready" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_ARREADY">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_ARREADY"/>
           </CONNECTIONS>
@@ -70615,7 +70615,7 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_ARSIZE"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="M00_AXI_arvalid" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_ARVALID">
+        <PORT DIR="O" LEFT="0" NAME="M00_AXI_arvalid" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_ARVALID">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_ARVALID"/>
           </CONNECTIONS>
@@ -70660,7 +70660,7 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_AWQOS"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="M00_AXI_awready" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_AWREADY">
+        <PORT DIR="I" LEFT="0" NAME="M00_AXI_awready" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_AWREADY">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_AWREADY"/>
           </CONNECTIONS>
@@ -70670,7 +70670,7 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_AWSIZE"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="M00_AXI_awvalid" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_AWVALID">
+        <PORT DIR="O" LEFT="0" NAME="M00_AXI_awvalid" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_AWVALID">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_AWVALID"/>
           </CONNECTIONS>
@@ -70680,7 +70680,7 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_BID"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="M00_AXI_bready" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_BREADY">
+        <PORT DIR="O" LEFT="0" NAME="M00_AXI_bready" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_BREADY">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_BREADY"/>
           </CONNECTIONS>
@@ -70690,7 +70690,7 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_BRESP"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="M00_AXI_bvalid" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_BVALID">
+        <PORT DIR="I" LEFT="0" NAME="M00_AXI_bvalid" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_BVALID">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_BVALID"/>
           </CONNECTIONS>
@@ -70705,12 +70705,12 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_RID"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="M00_AXI_rlast" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_RLAST">
+        <PORT DIR="I" LEFT="0" NAME="M00_AXI_rlast" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_RLAST">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_RLAST"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="M00_AXI_rready" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_RREADY">
+        <PORT DIR="O" LEFT="0" NAME="M00_AXI_rready" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_RREADY">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_RREADY"/>
           </CONNECTIONS>
@@ -70720,7 +70720,7 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_RRESP"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="M00_AXI_rvalid" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_RVALID">
+        <PORT DIR="I" LEFT="0" NAME="M00_AXI_rvalid" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_RVALID">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_RVALID"/>
           </CONNECTIONS>
@@ -70735,12 +70735,12 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_WID"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="M00_AXI_wlast" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_WLAST">
+        <PORT DIR="O" LEFT="0" NAME="M00_AXI_wlast" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_WLAST">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_WLAST"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="M00_AXI_wready" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_WREADY">
+        <PORT DIR="I" LEFT="0" NAME="M00_AXI_wready" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_WREADY">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_WREADY"/>
           </CONNECTIONS>
@@ -70750,7 +70750,7 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_WSTRB"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="M00_AXI_wvalid" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_WVALID">
+        <PORT DIR="O" LEFT="0" NAME="M00_AXI_wvalid" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_WVALID">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_WVALID"/>
           </CONNECTIONS>
@@ -74370,7 +74370,7 @@
       </DOCUMENTS>
       <PARAMETERS>
         <PARAMETER NAME="kAddBUFG" VALUE="false"/>
-        <PARAMETER NAME="kClkRange" VALUE="1"/>
+        <PARAMETER NAME="kClkRange" VALUE="2"/>
         <PARAMETER NAME="kEdidFileName" VALUE="720p_edid.data"/>
         <PARAMETER NAME="kEmulateDDC" VALUE="true"/>
         <PARAMETER NAME="kIDLY_TapValuePs" VALUE="78"/>

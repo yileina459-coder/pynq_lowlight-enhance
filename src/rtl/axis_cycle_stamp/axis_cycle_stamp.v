@@ -57,7 +57,8 @@ module axis_cycle_stamp #(
     output wire                m_axis_tlast,
 
     output wire [31:0]         first_cycle,
-    output wire                first_seen
+    output wire                first_seen,
+    output wire [31:0]         beats
 );
 
     assign m_axis_tdata  = s_axis_tdata;
@@ -81,17 +82,26 @@ module axis_cycle_stamp #(
         else          cyc <= cyc + 32'd1;
     end
 
+    // first_cycle is latched once, so it cannot tell a running pipeline from one
+    // that stalled after a few beats. `beats` can: read it twice a second apart.
+    reg [31:0] count;
+
     always @(posedge aclk) begin
         if (!aresetn) begin
             stamp <= 32'd0;
             seen  <= 1'b0;
-        end else if (fire && !seen) begin
-            stamp <= cyc;
-            seen  <= 1'b1;
+            count <= 32'd0;
+        end else if (fire) begin
+            count <= count + 32'd1;
+            if (!seen) begin
+                stamp <= cyc;
+                seen  <= 1'b1;
+            end
         end
     end
 
     assign first_cycle = stamp;
     assign first_seen  = seen;
+    assign beats       = count;
 
 endmodule

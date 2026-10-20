@@ -54,6 +54,19 @@ update_compile_order -fileset sources_1
 
 open_bd_design {base/base.srcs/sources_1/bd/base/base.bd}
 
+# --- fix the HDMI input PLL range -------------------------------------------
+# dvi2rgb.vhd: "kClkRange : natural := 2;  -- MULT_F = kClkRange*5
+#               (choose >=120MHz=1, >=60MHz=2, >=40MHz=3)"
+# The stock design uses range 1 (>=120 MHz) yet advertises a 720p EDID, whose TMDS
+# clock is 74.25 MHz: with MULT_F = 5 the VCO would be 371 MHz, below the MMCM
+# minimum, so the input PLL cannot lock. Range 2 (60-120 MHz) is the right choice
+# for 720p60 and is also why the unmodified PYNQ bitstream showed the same symptom.
+foreach cell [get_bd_cells -quiet -filter {NAME =~ "*dvi2rgb*"}] {
+    puts "setting kClkRange=2 on $cell (720p60 TMDS clock is 74.25 MHz)"
+    set_property -dict [list CONFIG.kClkRange {2}] $cell
+}
+
+
 # --- cut the two ends of the VDMA loopback -----------------------------------
 set in_port  [get_bd_intf_pins video/hdmi_in/out_stream]
 set out_port [get_bd_intf_pins video/hdmi_out/in_stream]
