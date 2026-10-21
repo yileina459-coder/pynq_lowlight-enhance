@@ -139,20 +139,21 @@ def main() -> int:
          "by hardware, testbench and Python model, which is why the comparison can use zero tolerance."),
         ("What Made It Work - and What Did Not",
          "A free-running kernel (ap_ctrl_none) never drains its pipeline when the input stops, so an "
-         "AXI-DMA transfer can never close; the DMA path therefore uses a bounded variant "
-         "(ap_ctrl_hs plus a pixel count). The AXI DMA buffer-length register is 14 bits by default, "
-         "i.e. 16 KB - not enough for a frame, so it was widened to 23 bits. The PYNQ base overlay is "
-         "a 4448-line Vivado 2024.1 script; rebuilding it with 2026.1 needs exactly three patches."),
+         "AXI-DMA transfer can never close and the DMA path needs a bounded variant (ap_ctrl_hs plus a "
+         "pixel count). The same property bit the other way: HLS registers loop-invariant inputs in the "
+         "pipeline prologue, so six of nine configuration parameters froze at power-up (see "
+         "binarize_read_reg_* in the netlist). A gate lets the PS reset only the kernel through a spare "
+         "configuration bit, so the preset is re-sampled - that is how seven presets switch live."),
         ("Reusable PYNQ Skills and Reproducibility",
          "Four board-independent skills ship with the project: overlay handoff linting (.hwh), "
          "bit-exact image comparison, measurement collection with PS-vs-PL table generation, and "
-         "AXI-DMA transfer helpers with cache maintenance and timeouts. Each documents scope, usage, "
-         "failure modes and what was verified. Everything is scripted, so a clean machine rebuilds "
-         "both bitstreams with two commands."),
+         "AXI-DMA helpers with cache maintenance and timeouts. Each documents scope, usage, failure "
+         "modes and what was verified. Everything is scripted: a clean machine rebuilds both "
+         "bitstreams with two commands."),
     ]
 
     for title, body in sections:
-        need = 0.95 + estimate_lines(body, 9.0, BODY_W) * line_height_cm(9.0) + 0.18
+        need = 0.95 + estimate_lines(body, 9.0, BODY_W) * line_height_cm(9.0) + 0.14
         layout.append((title, round(y, 2), round(need, 2)))
         y += add_heading(slide, y, title)
         y += add_text(slide, MARGIN, y, BODY_W, body)
@@ -168,7 +169,7 @@ def main() -> int:
         ("Pipeline latency", "-", "16 pixel clocks = 160 ns"),
         ("Sobel family, frame time", "3108.4 ms", "15.8 ms (196.7x)"),
     ]
-    table_w, table_h = 12.0, 3.5
+    table_w, table_h = 12.0, 3.0
     shape = slide.shapes.add_table(len(rows), 3, Cm(MARGIN), Cm(y), Cm(table_w), Cm(table_h))
     table = shape.table
     table.columns[0].width = Cm(3.4)
@@ -186,7 +187,7 @@ def main() -> int:
             run.font.color.rgb = WHITE if r == 0 else GREY
 
     if os.path.exists(FIGURE):
-        fig_w = 6.2
+        fig_w = 5.8
         fig_h = fig_w * 720 / 1280
         slide.shapes.add_picture(FIGURE, Cm(MARGIN + table_w + 0.7), Cm(y),
                                  width=Cm(fig_w), height=Cm(fig_h))
@@ -194,7 +195,7 @@ def main() -> int:
                  "Sobel output captured from the PL path (DMA)", size=8,
                  color=RGBColor(0x77, 0x77, 0x77), align=PP_ALIGN.CENTER)
 
-    y += max(table_h, 6.2 * 720 / 1280 + 0.55) + 0.3
+    y += max(table_h, fig_w * 720 / 1280 + 0.55) + 0.2
 
     add_text(slide, MARGIN, y, BODY_W,
              "Tool versions: Vivado / Vitis HLS 2026.1, PYNQ 3.1.1 image, device "
@@ -210,7 +211,9 @@ def main() -> int:
     print(f"page {PAGE_W} x {PAGE_H} cm, content ends at {used:.2f} cm")
     for title, top, need in layout:
         print(f"  {top:6.2f} cm  (+{need:4.2f})  {title}")
-    if used > PAGE_H - 0.5:
+    # `used` already reserves 0.5 cm of breathing room below the last line, so the page
+    # is only really over when that reservation itself leaves the sheet.
+    if used > PAGE_H:
         print("WARNING: content overflows the page")
         return 1
     return 0

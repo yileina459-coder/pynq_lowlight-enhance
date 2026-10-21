@@ -103,11 +103,24 @@ class Engine:
                 return buf.getvalue(), ms, "image/jpeg"
 
             rgb = np.frombuffer(body, dtype=np.uint8)
-            if rgb.size != self.width * self.height * 3:
+            pixels = self.width * self.height
+            if rgb.size == pixels * 3:
+                stride = 3
+                rgb = rgb.reshape(self.height, self.width, 3)
+            elif rgb.size == pixels * 4:
+                # Browsers hand canvas pixels over as RGBA; drop alpha on the way in
+                # and put it back on the way out so the page can putImageData directly.
+                stride = 4
+                rgb = rgb.reshape(self.height, self.width, 4)[:, :, :3]
+            else:
                 raise ValueError(f"raw body is {rgb.size} bytes, expected "
-                                 f"{self.width * self.height * 3}")
-            rgb = rgb.reshape(self.height, self.width, 3)
+                                 f"{pixels * 3} (RGB) or {pixels * 4} (RGBA)")
             out, ms = self.process(rgb, preset)
+            if stride == 4:
+                out4 = np.empty((self.height, self.width, 4), dtype=np.uint8)
+                out4[:, :, :3] = out
+                out4[:, :, 3] = 255
+                return out4.tobytes(), ms, "application/octet-stream"
             return out.tobytes(), ms, "application/octet-stream"
 
     def close(self) -> None:
@@ -295,7 +308,7 @@ PAGE = r"""<!doctype html>
   label.file input { display:none; }
   canvas { display:block; max-width:100%; image-rendering:pixelated;
            background:#000; border-radius:8px; }
-  #stage { display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap; }
+  #views { display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap; }
   #hud { font-family:ui-monospace,Consolas,monospace; font-size:12px;
          color:#8fa3bf; white-space:pre-line; }
   #log { font-family:ui-monospace,Consolas,monospace; font-size:12px;
@@ -314,6 +327,7 @@ PAGE = r"""<!doctype html>
   <div class="bar">
     <label class="file">选择视频<input type="file" id="file" accept="video/*"></label>
     <select id="preset" title="增强预设"></select>
+    <button id="selftest" title="用内置测试图跑一帧，确认板子和传输都通">自检</button>
     <button class="primary" id="start" disabled>开始处理</button>
     <button id="stop" disabled>停止并生成录像</button>
     <a id="dl" href="#" hidden>下载处理后的视频 (.webm)</a>
@@ -322,7 +336,7 @@ PAGE = r"""<!doctype html>
     浏览器解码你选的视频，逐帧交给板上的 PL 核处理，再把处理后的帧录制下来。
     录像的帧率就是板子的真实处理速度，不是 30 fps 的假象。
   </div>
-  <div id="stage">
+  <div id="views">
     <div>
       <div class="pill">处理结果（板子回传）</div>
       <canvas id="out"></canvas>
@@ -333,16 +347,19 @@ PAGE = r"""<!doctype html>
     </div>
   </div>
   <div id="log"></div>
-  <video id="src" muted playsinline style="display:none"></video>
+  <video id="src" muted playsinline
+         style="position:fixed;left:-10px;top:-10px;width:2px;height:2px;opacity:0.01"></video>
+  <canvas id="stage" hidden></canvas>
 </main>
 <script>
 "use strict";
 const $ = (id) => document.getElementById(id);
-const src = $("src"), out = $("out"), comp = $("comp");
+const src = $("src"), out = $("out"), comp = $("comp"), stage = $("stage");
 const octx = out.getContext("2d", { willReadFrequently: true });
 const cctx = comp.getContext("2d", { willReadFrequently: true });
+const sctx = stage.getContext("2d", { willReadFrequently: true });
 let info = null, running = false, frames = 0, msSum = 0, rtSum = 0, t0 = 0;
-let rec = null, chunks = [], compTrack = null;
+let rec = null, chunks = [], compTrack = null, usedPreset = "document";
 
 function log(msg) { $("log").textContent = msg || ""; }
 function hud(text) { $("hud").textContent = text; }
@@ -355,6 +372,7 @@ async function boot() {
   $("preset").innerHTML = info.presets
     .map((p) => `<option${p === info.preset ? " selected" : ""}>${p}</option>`).join("");
   out.width = info.width; out.height = info.height;
+  stage.width = info.width; stage.height = info.height;
   comp.width = info.width * 2 + 6; comp.height = info.height;
   octx.fillStyle = "#000"; octx.fillRect(0, 0, out.width, out.height);
   cctx.fillStyle = "#000"; cctx.fillRect(0, 0, comp.width, comp.height);
@@ -362,17 +380,18 @@ async function boot() {
   hud(`${info.width}x${info.height} · 待机`);
 }
 
-// draw the video frame into the processing canvas, letterboxed to the kernel size
-function drawSource() {
-  const W = out.width, H = out.height;
-  const vw = src.videoWidth, vh = src.videoHeight;
+// the frame that goes to the board: video letterboxed into the kernel's size
+function renderStage() {
+  const W = stage.width, H = stage.height;
+  const vw = src.videoWidth || 4, vh = src.videoHeight || 3;
   const scale = Math.min(W / vw, H / vh);
   const dw = Math.round(vw * scale), dh = Math.round(vh * scale);
-  octx.fillStyle = "#000"; octx.fillRect(0, 0, W, H);
-  octx.drawImage(src, Math.round((W - dw) / 2), Math.round((H - dh) / 2), dw, dh);
+  sctx.fillStyle = "#000"; sctx.fillRect(0, 0, W, H);
+  sctx.drawImage(src, Math.round((W - dw) / 2), Math.round((H - dh) / 2), dw, dh);
 }
 
-function toBlobRaw(canvas) {
+function toBlobPixels(canvas) {
+  // canvas pixels are RGBA; the server accepts both strides and mirrors it back
   const d = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height);
   return new Blob([d.data], { type: "application/octet-stream" });
 }
@@ -381,35 +400,32 @@ function toBlobJpeg(canvas) {
 }
 
 async function showResult(res) {
-  if (info.transport === "jpeg") {
+  if (res.headers.get("Content-Type") === "image/jpeg") {
     const bmp = await createImageBitmap(await res.blob());
     octx.drawImage(bmp, 0, 0);
-    bmp.close && bmp.close();
+    if (bmp.close) bmp.close();
   } else {
     const ab = await res.arrayBuffer();
     octx.putImageData(new ImageData(new Uint8ClampedArray(ab), out.width, out.height), 0, 0);
   }
 }
 
-function drawRecordingFrame() {
-  const W = out.width, H = out.height;
-  cctx.fillStyle = "#0a0c10"; cctx.fillRect(0, 0, comp.width, H);
-  drawSourceInto(cctx, 0);
-  cctx.drawImage(out, W + 6, 0);
+function label(ctx, text, x, y) {
+  ctx.font = "600 13px Consolas,monospace";
+  ctx.fillStyle = "rgba(0,0,0,.55)";
+  const w = ctx.measureText(text).width + 12;
+  ctx.fillRect(x, y, w, 20);
+  ctx.fillStyle = "#dfe7f5";
+  ctx.fillText(text, x + 6, y + 15);
 }
 
-// the left pane of the recording is the *original* frame, so the video is its
-// own before/after evidence (the processing canvas already holds the result)
-const tmp = document.createElement("canvas");
-function drawSourceInto(ctx, dx) {
-  tmp.width = out.width; tmp.height = out.height;
-  const t = tmp.getContext("2d", { willReadFrequently: true });
-  const vw = src.videoWidth, vh = src.videoHeight;
-  const scale = Math.min(tmp.width / vw, tmp.height / vh);
-  const dw = Math.round(vw * scale), dh = Math.round(vh * scale);
-  t.fillStyle = "#000"; t.fillRect(0, 0, tmp.width, tmp.height);
-  t.drawImage(src, Math.round((tmp.width - dw) / 2), Math.round((tmp.height - dh) / 2), dw, dh);
-  ctx.drawImage(tmp, dx, 0);
+function drawRecordingFrame(preset) {
+  const W = out.width, H = out.height;
+  cctx.fillStyle = "#0a0c10"; cctx.fillRect(0, 0, comp.width, H);
+  cctx.drawImage(stage, 0, 0);
+  cctx.drawImage(out, W + 6, 0);
+  label(cctx, "原始", 6, 6);
+  label(cctx, preset, W + 12, 6);
 }
 
 function startRecording() {
@@ -426,7 +442,7 @@ function startRecording() {
     const d = $("dl");
     if (d.href) URL.revokeObjectURL(d.href);
     d.href = URL.createObjectURL(blob);
-    d.download = `enhanced_${info.preset}_${new Date().toISOString().slice(11, 19).replace(/:/g, "")}.webm`;
+    d.download = `enhanced_${usedPreset}_${new Date().toISOString().slice(11, 19).replace(/:/g, "")}.webm`;
     d.hidden = false;
     log(`录像完成：${frames} 帧，${(blob.size / 1e6).toFixed(2)} MB — 点右上链接下载`);
   };
@@ -449,6 +465,7 @@ async function start() {
   $("start").disabled = true; $("file").disabled = true;
   $("stop").disabled = false;
   frames = 0; msSum = 0; rtSum = 0; t0 = performance.now();
+  usedPreset = $("preset").value;
   running = true;
   startRecording();
   await src.play().catch(() => {});
@@ -456,8 +473,8 @@ async function start() {
 
   while (running && !src.ended) {
     const preset = $("preset").value;
-    drawSource();
-    const blob = info.transport === "jpeg" ? await toBlobJpeg(out) : toBlobRaw(out);
+    renderStage();
+    const blob = info.transport === "jpeg" ? await toBlobJpeg(stage) : toBlobPixels(stage);
     const t1 = performance.now();
     let res;
     try {
@@ -468,7 +485,7 @@ async function start() {
     rtSum += performance.now() - t1;
     msSum += parseFloat(res.headers.get("X-Frame-Ms") || "0");
     await showResult(res);
-    drawRecordingFrame();
+    drawRecordingFrame(preset);
     if (compTrack) compTrack.requestFrame();
     frames += 1;
     const secs = (performance.now() - t0) / 1000;
@@ -487,8 +504,35 @@ function stop() {
   $("stop").disabled = true;
 }
 
-$("start").onclick = () => start();
+// One frame through the board, no video file needed: the on-site "is it alive?"
+// check. The picture is a gradient with dark bars, so the tone curve and the
+// binarise preset both produce an obvious change.
+async function selftest() {
+  if (!info) { log("还没连上板子"); return; }
+  const W = out.width, H = out.height;
+  const g = sctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, "#0d0d0d"); g.addColorStop(1, "#ececec");
+  sctx.fillStyle = g; sctx.fillRect(0, 0, W, H);
+  sctx.fillStyle = "#3a3a3a";
+  for (let y = 50; y < H - 50; y += 32) sctx.fillRect(36, y, W - 72, 11);
+  const preset = $("preset").value;
+  const t1 = performance.now();
+  let res;
+  try {
+    const blob = info.transport === "jpeg" ? await toBlobJpeg(stage) : toBlobPixels(stage);
+    res = await fetch(`/frame?preset=${encodeURIComponent(preset)}`,
+                      { method: "POST", body: blob });
+  } catch (e) { log("自检失败（网络）：" + e); return; }
+  if (!res.ok) { log("自检失败（板子）：" + (await res.text())); return; }
+  const rt = performance.now() - t1;
+  await showResult(res);
+  log(`自检通过：${info.transport} 往返 ${rt.toFixed(1)} ms，板上处理 ` +
+      `${res.headers.get("X-Frame-Ms")} ms，预设 ${preset}，引擎 ${info.mode}`);
+}
+
+$("start").onclick = () => start().catch((e) => { log("出错：" + e); stop(); });
 $("stop").onclick = () => stop();
+$("selftest").onclick = () => selftest();
 boot();
 </script>
 </body>
@@ -542,9 +586,17 @@ def main(argv=None) -> int:
     else:
         try:
             engine = DmaEngine(width, height, args.bitstream, args.clock_mhz)
+        except ModuleNotFoundError as exc:
+            print(f"FAIL: missing module {exc.name!r}.")
+            print("      enhance_dma.py imports golden_enhance (and sim/common/image_ops.py)")
+            print("      at import time; copy them next to it, or use the deploy layout in")
+            print("      docs/video_demo.md. If panel.ipynb runs on the board, they are")
+            print("      already in place - check the working directory instead.")
+            return 1
         except Exception as exc:  # noqa: BLE001
             print(f"FAIL: could not bring up the DMA path: {type(exc).__name__}: {exc}")
-            print("      on a PC that is expected - try --mode mock to test the page.")
+            print("      run 'python3 enhance_dma.py --presets document' first: that is")
+            print("      the hardware baseline this server reuses.")
             return 1
 
     if args.preset not in engine.presets():
