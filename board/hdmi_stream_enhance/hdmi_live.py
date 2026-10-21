@@ -67,10 +67,33 @@ def find(ol, fragment: str):
     return None
 
 
+RST_BIT = 1 << 31          # bit 31 of word 1 asks the kernel to reset
+
+
 def write_preset(cfg_ip, name: str) -> tuple[int, int]:
+    """Write a preset, then re-run the kernel's pipeline prologue.
+
+    The kernel is free-running, so HLS samples its loop-invariant configuration once
+    when the pipeline starts and registers it there (the generated netlist contains
+    ``binarize_read_reg_1446 <= binarize;``). Six of the nine parameters were therefore
+    frozen at whatever was present at power-up and ignored later writes; only clarity,
+    gain_lo and gain_hi stayed combinational.
+
+    ``enh_rst_gate`` lets the PS reset just the kernel, which re-runs that prologue:
+
+        ap_rst_n = board_aresetn & ~cfg_hi[31]
+
+    The sequence is: put the new values on the ports first, then assert the reset, then
+    release it - the prologue samples the configuration during the release, so the new
+    values are the ones latched.
+    """
     lo, hi = pack(PRESETS[name])
-    cfg_ip.mmio.write(GPIO_DATA, lo)
-    cfg_ip.mmio.write(GPIO2_DATA, hi)
+    cfg_ip.mmio.write(GPIO_DATA, lo)                 # parameters that HLS reads live
+    cfg_ip.mmio.write(GPIO2_DATA, hi | RST_BIT)      # remaining ones + reset asserted
+    time.sleep(0.002)                                # let the reset settle
+    cfg_ip.mmio.write(GPIO2_DATA, hi)                # release: prologue re-samples
+    time.sleep(0.002)
+
     rb = (cfg_ip.mmio.read(GPIO_DATA), cfg_ip.mmio.read(GPIO2_DATA))
     if rb != (lo, hi):
         print(f"  WARNING: config readback {rb[0]:#010x},{rb[1]:#010x} "

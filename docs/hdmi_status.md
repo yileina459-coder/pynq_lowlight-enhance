@@ -253,3 +253,58 @@ reg [0:0] mono_read_reg_1437;
   例如 `pass` ↔ `night` 的亮度变化在采集卡上清晰可见；
 - **8 个预设的完整切换**目前只在 AXI-DMA 通路上被逐位验证过（`board/enhance_dma/`，
   8 预设 × 0/2764800 通道不一致），HDMI 通路需要按上面方案 1 或 2 重建后才能全量演示。
+
+---
+
+## 2026-10-22 晚：修复完成，运行期预设切换在 HDMI 上生效
+
+### 修法（方案 1：改配置后复位内核）
+
+新增 `src/rtl/enh_rst_gate/enh_rst_gate.v`：
+
+```verilog
+assign ap_rst_n = aresetn & ~cfg_hi[31];
+```
+
+`cfg_hi[31]` 是第二配置字里的空闲位（`enh_cfg_split` 只用 26:0），PS 用它请求复位。
+`build/overlay_hdmi_enhance/add_kernel_reset.tcl` 把这个门控插在
+`rst_ps7_0_fclk1_peripheral_aresetn` 与 `enhance_0/ap_rst_n` 之间，
+其余 4 个同域外设仍接原来的复位网络。
+
+PS 侧时序（`board/hdmi_stream_enhance/hdmi_live.py` 的 `write_preset`）：
+
+```python
+write(GPIO_DATA,  lo)                 # 先放好只在 prologue 采样的参数
+write(GPIO2_DATA, hi | RST_BIT)       # 断言内核复位
+sleep(0.002)
+write(GPIO2_DATA, hi)                 # 释放 → prologue 重新采样
+```
+
+顺序很关键：**参数先就位，再释放复位**，prologue 采到的就是新值。
+
+### 板端验证
+
+`hdmi_preset_stream.py --a pass --b binarize --preset-hold 12`，3 分钟 14 次切换，
+每次切换后延迟仍稳定为 **21 个像素时钟**（内核复位后能正常重启）。
+
+采集卡截图（`board/hdmi_stream_enhance/evidence/`）：
+
+| 文件 | 画面特征 |
+| --- | --- |
+| `hdmi_preset_02_pass.png` | 平滑渐变 + 灰色带 + 黑色文字条 + 三色块，即原始测试图 |
+| `hdmi_preset_03_binarize.png` | 大面积黑 + 底部一条白带（阈值切分生效） |
+| `hdmi_preset_01_document.png` | 暗部抬起、中段变亮，文字条更清楚 |
+| `hdmi_preset_04_high_gain.png` | 过曝、高对比，色块饱和 |
+
+四张图互不相同，与四个预设的数学效果一致 —— **配置在运行期真的生效了**。
+
+### 现在的完整状态
+
+| 能力 | 状态 |
+| --- | --- |
+| HDMI 输出（640×480，板子上限） | ✅ 已上板 |
+| 内核在像素通路上实时处理 | ✅ 已上板，延迟 21 拍 |
+| 演示循环的 7 档预设运行期切换 | ✅ 已上板，截图证据 4 张 |
+| 8 个预设逐位一致性 | ✅ DMA 通路 0/2764800（`board/enhance_dma/`） |
+| 每次换预设的当帧花屏 | ⚠️ 已知代价（复位清空 line buffer）；方案 2（配置走 BRAM）可消除 |
+| HDMI 直通（笔记本→板子→显示） | ❌ 受限于输出只能 640×480 而输入 IP 不支持该模式 |

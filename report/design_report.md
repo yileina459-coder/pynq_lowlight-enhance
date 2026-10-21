@@ -164,8 +164,9 @@
 | Gaussian 逻辑 | 同上 | 9216 拍，**0 误差** |
 | 边界策略 | 水平复制 / 垂直上一帧行，测试台与 Python 参考同口径 | 逐位一致 |
 | 硬件通路（DMA） | 板上 DMA 回环 + 与 `data/reference/sobel_720p.png` 比对 | **COMPARE PASS，0/2764800 通道不一致** |
-| 硬件通路（HDMI + enhance） | 位流加载、`pynq.lib.video` 绑定、配置寄存器写入/回读 | **通过**（WNS +0.242 ns，LUT 63.1%）；画面待显示设备 |
-| CDC 时序 | 配置/状态总线设为 false path（静态信号），像素流仍全约束 | 时序由 −1.333 ns 变为 **+0.242 ns**，0 个失败端点 |
+| 硬件通路（HDMI，VDMA 供帧） | 采集卡看 640×480 画面；`writeframe` 每帧 6.4 ms 返回；内核前后时间戳相减 | **通过**：延迟 **21 个像素时钟**，7 档预设在运行期切换有效（4 张证据截图见 `board/hdmi_stream_enhance/evidence/`） |
+| HDMI 输出能力上限 | 原厂位流逐模式测 `writeframe` 是否返回（与采集卡无关） | 640×480 通过；800×600、720p、1080p 均阻塞 → **板子只能驱动 640×480** |
+| CDC 时序 | 配置/状态总线设为 false path（静态信号），像素流仍全约束 | 时序由 −1.333 ns 变为 **+0.370 ns**，0 个失败端点 |
 | PS 与 PL 一致性 | 两个输出图直接用 `skill/golden_compare` 比对 | 0 不一致（同板同图） |
 | Overlay 结构 | `.hwh` 离线校验（IP 清单、地址、时钟频率） | 6 个 IP、9 个时钟，PASS |
 
@@ -217,7 +218,13 @@ build\overlay_hdmi\build.bat
 
 ## 9. 尚未完成与已知限制
 
-- **HDMI 两个方向仍未打通，原因已定位到集成/硬件层**（详见 `docs/hdmi_status.md`）：
+- **HDMI 已打通并定位到硬件上限**（详见 `docs/hdmi_status.md`）：这块 PYNQ-Z2 的 HDMI
+  输出只有 640×480 能工作（800×600/720p/1080p 一帧都不消费、不产生 TMDS，原厂位流同样如此，
+  HDMI 口无缓冲直连 PL）；而 HDMI 输入又无法工作在 640×480（`dvi2rgb` 的 `kClkRange`
+  只接受 1/2/3）。因此交付路径改为 VDMA 供帧：PS → DDR → VDMA → 内核 → HDMI OUT，
+  内核仍在真实像素通路上，实测延迟 21 个像素时钟、7 档预设在运行期可切换。
+  遗留：**HDMI 直通**受上述两个硬件限制阻塞；每次换预设的当帧会花屏一帧
+  （自由运行内核的配置被 HLS 在 prologue 锁存，靠复位重新采样）
   IN 侧 EDID 与 HPD 均正常（Windows 能枚举到板子提供的 Generic Monitor），但 TMDS 无法锁定，
   **原厂 base.bit 同样如此**，故与本文设计无关；OUT 侧原厂 overlay 可输出有效信号，
   插入内核后不再产生 TMDS，寄存器读数与时钟/时序配置和原厂完全一致，待用 ILA 定位；

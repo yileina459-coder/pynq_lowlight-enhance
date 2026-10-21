@@ -38,12 +38,18 @@
       （`board/enhance_dma/`，走 AXI-DMA，不需要显示器）
 - [x] 新增 `document` 预设：保住极性的暗页提亮（原 `reading` 在暗页上会把黑白翻转，
       对比度 +41 → −51；新预设 → **+158**，见 `sim/enhance/tune_document_preset.py`）
-- [x] **增强核已进 HDMI overlay**：`board/hdmi_stream_enhance/`，WNS **+0.242 ns**、LUT 63.1%、BRAM 57.5%；板上加载成功（23 个 IP，`video` 绑定正常），配置 GPIO 写入/回读 OK
+- [x] **增强核在 HDMI 通路上实时工作**：`board/hdmi_stream_enhance/`，WNS **+0.370 ns**；采集卡实测 640×480、延迟 **21 个像素时钟**、运行期预设切换四张证据截图在 `evidence/`
 - [x] **Jupyter 交互面板**：`board/enhance_dma/panel.ipynb`（8 预设一键切换、
       实时显示帧时间/延迟/逐位比对，走 DMA 通路，不需要显示器）
-- [ ] **HDMI 两个方向仍待解决**（采集卡已到货，排查记录与下一步见 `docs/hdmi_status.md`）：
-      IN 侧 EDID/HPD 正常但 TMDS 锁不上（原厂 overlay 同样如此）；
-      OUT 侧原厂 overlay 能出信号，插入内核后不产生 TMDS
+- [x] **HDMI 输出打通并定位到硬件上限**（完整推导见 `docs/hdmi_status.md`）：
+      这块 PYNQ-Z2 的 HDMI 输出只有 **640×480** 能工作（800×600/720p/1080p 一帧都不消费、
+      不产生 TMDS，原厂 `base.bit` 行为相同）；HDMI 输入又无法工作在 640×480
+      （`dvi2rgb` 的 `kClkRange` 只接受 1/2/3，25.175 MHz 需要 5 档）。
+      因此帧源改为 **VDMA**：PS 写帧 → VDMA → 内核 → HDMI OUT，内核仍在真实像素通路上
+- [x] **修掉 HLS 配置锁存问题**：自由运行内核的 6 个配置参数被 HLS 在 prologue 锁存
+      （生成 RTL 里 `binarize_read_reg_*` 即证据）；用 `enh_rst_gate` 让 PS 复位内核，
+      预设切换后重新采样，代价是当帧花屏一帧
+- [ ] HDMI **直通**（笔记本 → 板子 → 显示）受上述两个硬件限制阻塞，不再作为交付路径
 - [x] 内部图案源 overlay（`board/hdmi_pattern/`，不依赖任何外部输入）
 - [x] **流水线延迟实测：16 个像素时钟 = 160 ns @100 MHz**（`axis_cycle_stamp` 在内核前后各
       打一次时间戳；720p60 的一行是 17.2 µs，所以延迟只有一行的 1%，原来说的「约一行」是上界）

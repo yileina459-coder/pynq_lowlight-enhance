@@ -1,81 +1,116 @@
 # enhance_hdmi — 真机 HDMI 增强通路
 
 ```
-HDMI 源（笔记本） ──线 A──► PYNQ HDMI IN
-                              │  dvi2rgb → pixel_pack
-                              │  → stamp_in → enhance → stamp_out
-                              │  → pixel_unpack → rgb2dvi
-                              ▼
-                          PYNQ HDMI OUT ──线 B──► HDMI 采集卡 ──USB──► 笔记本
+PS 写一帧到 DDR ──► VDMA MM2S ──► stamp_in ──► enhance ──► stamp_out
+                                                              │
+                                    pixel_unpack ◄────────────┘
+                                          │
+                                    v_axi4s_vid_out ──► rgb2dvi ──► HDMI OUT
+                                                                      │
+                                                                HDMI 采集卡 ──► OBS
 ```
 
-**不经过帧缓冲**：`pixel_pack` 的输出直接进内核，内核输出直接回 `pixel_unpack`，
-原 PYNQ base overlay 里的 VDMA 环回被切断了。副作用是 PS 侧不能再用 `readframe()`
-读帧——画面只能从采集卡看，这是这条通路的既定取舍。
+**内核在像素通路上**，一帧数据从 VDMA 出发、穿过 `enhance_stream`、直接进视频输出，
+全程在 PL 里，PS 只负责送帧和改配置。
+
+## 为什么视频源是 VDMA 而不是 HDMI IN
+
+板上实测（2026-10-22）：这块 PYNQ-Z2 的 HDMI **输出**只有 640×480 能工作，
+720p / 1080p 下一帧都不会被消费、不产生 TMDS：
+
+| 输出模式 | 像素时钟 | `writeframe` 是否返回 | 采集卡 |
+| --- | --- | --- | --- |
+| 640×480 | 25.175 MHz | 立即返回 | 有画面 |
+| 800×600 | 40 MHz | 阻塞 | 无信号 |
+| 1280×720 | 74.25 MHz | 阻塞 | 无信号 |
+| 1920×1080 | 148.5 MHz | 阻塞 | 无信号 |
+
+（判据是 `writeframe()` 只在 VDMA 完成一次帧传输后才返回，所以不依赖采集卡。
+原厂 `base.bit` 行为相同，因此这是板子的物理上限——PYNQ-Z2 的 HDMI 口无缓冲、直连 PL。）
+
+而 **HDMI 输入无法工作在 640×480**：`dvi2rgb` 的 `kClkRange` 只接受 1/2/3，
+25.175 MHz 需要 5 档才能让 VCO 落在 600–1200 MHz。
+
+两个限制叠加的结果是"直通不可行"，所以帧源改成 VDMA，**内核仍然在真实像素通路上**。
+
+## 预设切换与内核复位
+
+内核是自由运行的（`ap_ctrl_none`），HLS 把配置输入当作循环不变量、在流水线
+prologue 里锁存一次：
+
+```
+binarize_read_reg_1446 <= binarize;      // 只在 prologue 采一次
+```
+
+所以 6 个参数（`knee/thresh/binarize/invert/mono/split_x`）在运行期改不动，
+只有 `clarity/gain_lo/gain_hi` 是组合直连的。
+
+修法：`src/rtl/enh_rst_gate/enh_rst_gate.v` 让 PS 用配置字的空闲位 `cfg_hi[31]`
+复位内核，`write_preset()` 按"参数就位 → 断言复位 → 释放"的顺序脉冲一次，
+prologue 就会用新值重新采样。
+
+**代价**：每次换预设的当帧会花屏一帧（line buffer 被清空）。彻底做法是把这 6 个
+参数放进 BRAM，属优化项。
+
+## 真机证据
+
+`evidence/` 里的四张采集卡截图，来自同一次连续运行、四个不同预设：
+
+| 文件 | 画面 |
+| --- | --- |
+| `hdmi_preset_02_pass.png` | 平滑渐变 + 灰带 + 黑色文字条 + 三色块，即原始测试图 |
+| `hdmi_preset_03_binarize.png` | 大面积黑 + 底部白带（阈值切分） |
+| `hdmi_preset_01_document.png` | 暗部抬起、中段变亮 |
+| `hdmi_preset_04_high_gain.png` | 过曝、高对比、色块饱和 |
+
+四张互不相同，与四个预设的数学效果一致。
 
 ## 文件
 
 | 文件 | 作用 |
 | --- | --- |
-| `enhance_hdmi.bit` / `.hwh` | 位流（WNS +0.242 ns，LUT 63.1%，BRAM 57.5%） |
-| `hdmi_enhance.py` | 加载自检：绑定、配置寄存器写入/回读、延迟寄存器方向 |
-| `hdmi_live.py` | **真机演示**：应用预设、循环切换、读回实测延迟 |
+| `enhance_hdmi.bit` / `.hwh` | 位流（WNS +0.370 ns） |
+| `hdmi_solid.py` | 最小验证：一帧纯色，判断整条输出通路是否工作 |
+| `hdmi_vdma_demo.py` | **主演示**：测试图穿过内核 + 预设循环 + 每帧写帧耗时 |
+| `hdmi_preset_stream.py` | 持续推帧 + 定时切预设（用于观察预设效果） |
+| `hdmi_ab.py` | 两档预设 A/B，打印配置写入与回读 |
+| `hdmi_first_preset.py` | 先写配置再推帧（验证 prologue 采样时机） |
+| `hdmi_two_phase.py` | 两阶段诊断：先变内容、再变配置 |
+| `hdmi_content_flip.py` | 只变内容，判断画面是否实时刷新 |
+| `hdmi_live.py` | 预设表、`pack()`、`write_preset()`（含复位脉冲） |
+| `hdmi_in_check.py` | 正确读取 HDMI 输入模式（`_capture` 才报 "No incoming video signal"） |
+| `hdmi_clk_probe.py` | `axi_dynclk` 寄存器与锁定状态 |
 | `timing_impl.rpt` / `util_impl.rpt` | 实现报告 |
-
-## 接线（采集卡已到货）
-
-1. **线 A**：笔记本 HDMI 输出 → PYNQ-Z2 的 **HDMI IN**；
-2. **线 B**：PYNQ-Z2 的 **HDMI OUT** → 采集卡 HDMI 输入；
-3. 采集卡 USB → 笔记本，用系统相机/OBS 打开，看到的是**经过增强后的画面**；
-4. 笔记本显示设置里把外接屏设为 **1280×720 @ 60 Hz**。当前位流的 HDMI 输入和输出均配置为 `kClkRange=2`，只按 720p60 验证。
 
 ## 跑
 
-在板上（Jupyter Terminal 或 SSH，都要 root + venv）：
+板上（root + PYNQ venv）：
 
 ```bash
-cd /home/xilinx/jupyter_notebooks/hdmi_enh
+cd /home/xilinx/jupyter_notebooks/hdmi_enh2
 
-# 1) 先自检：overlay 能否加载、video 是否绑定
+# 最小验证：一帧纯色
 sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=/root \
-  /usr/local/share/pynq-venv/bin/python3 hdmi_enhance.py
+  /usr/local/share/pynq-venv/bin/python3 hdmi_solid.py --colour 0,200,0 --hold 60
 
-# 2) 真机演示：固定一个预设
+# 主演示：测试图 + 7 档预设循环
 sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=/root \
-  /usr/local/share/pynq-venv/bin/python3 hdmi_live.py --preset document
-
-# 3) 录视频用：每 4 秒换一个预设，采集卡里能直接看到画面变化
-sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=/root \
-  /usr/local/share/pynq-venv/bin/python3 hdmi_live.py --cycle 4
-
-# HDMI 输入检测使用 dvi2rgb 前端，等待源信号建立
-sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=/root \
-  /usr/local/share/pynq-venv/bin/python3 hdmi_in_check.py --wait 60
+  /usr/local/share/pynq-venv/bin/python3 hdmi_vdma_demo.py --cycle 8
 ```
 
-脚本会打印：
+预期输出：
 
-```text
-input detected: 1280x720 @60.0 Hz
-[12:34:56] preset document  cfg=0x0c40c014 0x00000000
-           latency: 16 pixel clocks (~0.112 us at 142.857 MHz)
+```
+hdmi_out running at 640x480
+test image (480, 640, 3), mean 124.0
+[...] preset clarity   writeframe 6.5 ms  latency 21 pixel clocks
+[...] preset document  writeframe 6.4 ms  latency 21 pixel clocks
 ```
 
-`latency` 是内核流水线填充延迟（两个时间戳相减），**不是**端到端延迟；端到端还要加
-HDMI 输入/输出链路，那一段只能在采集卡上肉眼/录屏评估。
+## 注意事项
 
-## 没有画面时先查什么
-
-| 现象 | 查 |
-| --- | --- |
-| `input mode: None` | 线 A 是否插紧；笔记本是否真的在往外送（扩展模式而不是仅内置屏） |
-| 有输入但仍黑屏 | 采集卡是否选对了信号源；PYNQ 是否被别的程序占用 |
-| 画面撕裂/闪烁 | 笔记本输出模式是否超过 PYNQ 能力（先降到 720p60） |
-| `TRI = 0xffffffff` 看着奇怪 | 固定方向通道的 TRI 寄存器无意义，方向由位流参数决定 |
-
-## 边界
-
-- 这条通路**没有**通过 PYNQ 读回像素，因此"逐位一致"的证据来自 DMA 通路
-  （`board/enhance_dma/`，8 个预设 0/2764800）；
-- 内核延迟在 DMA 通路上实测 16 个像素时钟；HDMI 版用同一份 RTL 与同一时钟域
-  （clk_142M），像素率 74.25 Mpixel/s 下 II=1 有 1.9 倍余量。
+1. **同时只能有一个进程**占着 overlay/VDMA，否则互相抢占，表现是"跑通了又变彩条"；
+   测试前先 `ps aux | grep hdmi_`。
+2. 每次加载位流会把 HDMI 输入的 HPD 清零，Windows 会认为显示器被拔掉；
+   需要显示 2 号屏时用 `hdmi_restore_hpd.py`。
+3. 进程退出后 VDMA 停止供帧，采集卡会回到兜底彩条——这是正常的，不是故障。
