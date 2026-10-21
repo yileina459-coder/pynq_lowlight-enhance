@@ -32,7 +32,7 @@ from pptx.util import Cm, Pt
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(REPO, "report", "poster", "poster.pptx")
-FIGURE = os.path.join(REPO, "board", "enhance_dma", "evidence", "enhance_document.png")
+FIGURE = os.path.join(REPO, "board", "hdmi_stream_enhance", "evidence", "hdmi_presets_2x2.png")
 
 NAVY = RGBColor(0x12, 0x2B, 0x4A)
 ACCENT = RGBColor(0x1E, 0x88, 0xE5)
@@ -187,15 +187,15 @@ def main() -> int:
             run.font.color.rgb = WHITE if r == 0 else GREY
 
     if os.path.exists(FIGURE):
-        fig_w = 5.8
-        fig_h = fig_w * 720 / 1280
+        fig_w = 5.4
+        fig_h = fig_w * 950 / 1590
         slide.shapes.add_picture(FIGURE, Cm(MARGIN + table_w + 0.7), Cm(y),
                                  width=Cm(fig_w), height=Cm(fig_h))
         add_text(slide, MARGIN + table_w + 0.7, y + fig_h + 0.1, fig_w,
-                 "Sobel output captured from the PL path (DMA)", size=8,
+                 "Four presets captured from the HDMI output of the board", size=8,
                  color=RGBColor(0x77, 0x77, 0x77), align=PP_ALIGN.CENTER)
 
-    y += max(table_h, fig_w * 720 / 1280 + 0.55) + 0.2
+    y += max(table_h, fig_w * 950 / 1590 + 0.55) + 0.2
 
     add_text(slide, MARGIN, y, BODY_W,
              "Tool versions: Vivado / Vitis HLS 2026.1, PYNQ 3.1.1 image, device "

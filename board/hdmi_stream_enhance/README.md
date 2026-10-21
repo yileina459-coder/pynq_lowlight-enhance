@@ -114,3 +114,19 @@ test image (480, 640, 3), mean 124.0
 2. 每次加载位流会把 HDMI 输入的 HPD 清零，Windows 会认为显示器被拔掉；
    需要显示 2 号屏时用 `hdmi_restore_hpd.py`。
 3. 进程退出后 VDMA 停止供帧，采集卡会回到兜底彩条——这是正常的，不是故障。
+
+## 采集序列（2026-10-21 晚）
+
+`evidence/` 里的 `hdmi_capture_*.png` 来自同一次连续运行，按画面特征命名：
+
+| 文件 | 画面 |
+| --- | --- |
+| `hdmi_capture_plain.png` | 原始状态 |
+| `hdmi_capture_split.png` | **垂直分屏**（左 1/3 原样） |
+| `hdmi_capture_binarize.png` | **硬阈值**（黑底 + 白带） |
+| `hdmi_capture_sharpened.png` | 高对比/过锐 |
+| `hdmi_capture_glitch.png` | 换预设当帧的花屏（预期代价） |
+| `hdmi_presets_2x2.png` | 四张拼图，海报配图 |
+
+**闪烁说明**：换预设时内核被复位，line buffer 清空 → 当帧花屏，下一帧恢复。
+这是 `enh_rst_gate` 方案的已知代价。
