@@ -187,3 +187,69 @@ test image (480, 640, 3), mean 124.0
 | HDMI 输入（720p/1080p） | ✅ 能锁 1080p，但输出端无法同分辨率工作 |
 | HDMI 直通 640x480 | ❌ 输入 IP 的 kClkRange 不支持 |
 | 端到端低延迟演示 | ⚠️ 受硬件限制，改由 VDMA 供帧 |
+
+---
+
+## 2026-10-22 凌晨（二）：预设为什么只有一半生效——HLS 把配置锁存了
+
+### 现象
+
+画面实时可见（内容变化能立刻看到），但切换预设时画面不动。排查后画面其实
+**变了一次**：`pass` → `night` 时明显变亮，说明配置链路是通的，只是**部分参数**无效。
+
+### 根因（生成 RTL 里的铁证）
+
+`build/overlay_hdmi_enhance/.work/enhance_ip/hdl/verilog/enhance_stream.v`：
+
+```verilog
+reg [0:0] binarize_read_reg_1446;      // 配置被存进寄存器
+reg [0:0] mono_read_reg_1437;
+1872: binarize_read_reg_1446 <= binarize;   // 只在流水线 prologue 采一次
+2312: y3 = (binarize_read_reg_1446 == 1'b1) ? ... // 之后永远用旧值
+```
+
+而 `clarity` 是组合直连的：
+
+```verilog
+2340: assign zext_ln129_1_fu_387_p1 = clarity;
+```
+
+逐项核对结果：
+
+| 配置项 | 生成 RTL 里的状态 | 结论 |
+| --- | --- | --- |
+| `clarity` | 组合直连 | **实时生效** |
+| `gain_lo` | 组合直连 | **实时生效** |
+| `gain_hi` | 组合直连 | **实时生效** |
+| `knee` | `knee_read_reg_*` | 启动时锁存 |
+| `thresh` | `thresh_read_reg_*` | 启动时锁存 |
+| `binarize` | `binarize_read_reg_*` | 启动时锁存 |
+| `invert` | `invert_read_reg_*` | 启动时锁存 |
+| `mono` | `mono_read_reg_*` | 启动时锁存 |
+| `split_x` | `split_x_read_reg_*` | 启动时锁存 |
+
+### 为什么会这样
+
+内核是**自由运行**的（`ap_ctrl_none` + `while (1)` + `#pragma HLS PIPELINE II=1`）。
+对流水线里的**循环不变量输入**，HLS 会把读取提到循环的 prologue 并用寄存器锁存一次
+（节省寄存器、缩短关键路径）。普通 `ap_ctrl_hs` 内核每帧重新 start，prologue 会重跑，
+所以看不出问题；而 `ap_ctrl_none` 内核的 prologue **只跑一次**，于是这 6 个参数
+永远停在第一个值上。
+
+### 修法（三选一，按改动量排序）
+
+1. **复位内核**：把 `enhance_0/ap_rst_n` 与一个 GPIO 位相与，PS 改完配置后拉低几拍。
+   改动最小（一个 `util_vector_logic` + 一个 GPIO 位 + 一次重建），代价是复位瞬间
+   有 1 帧花屏。
+2. **配置走 BRAM**：把这 6 个参数改成从一块小 BRAM 读取（`volatile` 指针 +
+   `#pragma HLS INTERFACE bram`），AXI BRAM Controller 由 PS 写入。存储器读取
+   HLS 无法提到循环外，语义最干净，但要改 HLS + 重建 IP + 重建 overlay。
+3. **配置走 AXI-Lite 寄存器**：把这 6 个参数改成 `s_axilite`。仍可能被 HLS 视为
+   循环不变量，需实测确认，不如方案 2 可靠。
+
+### 对交付的影响
+
+- HDMI 通路上**已经能演示实时参数调节**（`clarity`/`gain_lo`/`gain_hi`），
+  例如 `pass` ↔ `night` 的亮度变化在采集卡上清晰可见；
+- **8 个预设的完整切换**目前只在 AXI-DMA 通路上被逐位验证过（`board/enhance_dma/`，
+  8 预设 × 0/2764800 通道不一致），HDMI 通路需要按上面方案 1 或 2 重建后才能全量演示。
