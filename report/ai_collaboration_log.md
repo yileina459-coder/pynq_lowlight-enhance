@@ -463,3 +463,35 @@ knee 高于纸面的预设，并把搜索过程写成可复现脚本（`sim/enha
 **记下来的一点**：先复位再写参数是错的——复位期间写入的旧值会被释放时的
 prologue 采走。顺序必须是"参数就位 → 断言 → 释放"。这类时序细节只能靠
 对照 RTL 的 prologue 行为来推，不能凭直觉。
+
+### 39. 复位门控的两个后遗症：端口表缓存与异步释放
+
+**时间**：2026-10-22
+
+**第一个坑：Vivado 按模块名缓存 BD 的 module reference。**
+我给 `enh_rst_gate` 加了时钟端口后重新综合，BD 里的 cell 仍然报
+`the gate has no aclk pin`——即使删掉 cell 重新 `create_bd_cell -type module -reference`
+也一样，因为缓存是按**模块名**索引的。换一个模块名（`enh_rst_bridge`）才拿到新端口表。
+回头看，之前给 `axis_cycle_stamp` 加 `beats` 端口失败、最后放弃拍数计数，也是同一个原因
+（当时误判成"Vivado 不支持"，绕过去了）。
+
+**第二个坑：复位释放没有同步。**
+第一版 `ap_rst_n = aresetn & ~cfg_hi[31]` 是纯组合的，而 `cfg_hi` 来自 100 MHz 的 PS 域、
+内核跑在 142.857 MHz。用户在采集卡上看到的现象很关键：**不是换预设当帧花屏，
+而是某些预设下持续闪烁**。这说明内核带着错乱的 line-buffer 指针退出复位，
+而不是"抖一下就好"。
+
+**修正**：改成标准的异步断言 / 同步释放复位桥：
+
+```verilog
+wire rst_n_async = aresetn & ~cfg_hi[31];
+always @(posedge aclk or negedge rst_n_async)
+    if (!rst_n_async) sync <= 2'b00;
+    else              sync <= {sync[0], 1'b1};
+assign ap_rst_n = sync[1];
+```
+
+**教训**：用户描述的现象必须逐字读。"花屏"和"闪烁"是两种不同的失效：
+前者是瞬态、后者是状态异常。我一开始按"当帧花屏"解释，差点把它归到已知代价里不再查。
+**跨时钟域的控制信号，即使只是"复位一下"，也必须做同步处理**；
+而 BD 里的自定义模块一旦改端口，就要换模块名重建，不能指望刷新。
