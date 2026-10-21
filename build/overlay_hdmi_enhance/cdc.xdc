@@ -30,5 +30,14 @@
 
 set_false_path -from [get_cells -hier -filter {NAME =~ "*gpio_enh_cfg*"}] -to [get_cells -hier -filter {NAME =~ "*enhance_0*"}]
 
+# The reset bridge deliberately uses an asynchronous assert: cfg_hi[31] comes from the
+# 100 MHz PS domain and feeds the asynchronous clear of a two-flop synchroniser clocked by
+# the kernel's 142.86 MHz clock. Vivado times that as a recovery check between the two PS
+# clocks and fails it (-1.377 ns), but by construction it is not a timed path - the
+# synchroniser exists precisely to resolve it. Only the de-assertion has to be synchronous,
+# and that is handled inside the bridge.
+set_false_path -from [get_cells -hier -filter {NAME =~ "*gpio_enh_cfg*"}] -to [get_cells -hier -filter {NAME =~ "*enh_rst_bridge*"}]
+set_false_path -to [get_pins -hier -filter {NAME =~ "*enh_rst_bridge*/sync_reg*/CLR"}]
+
 set_false_path -from [get_cells -hier -filter {NAME =~ "*stamp_in_0*"}]  -to [get_cells -hier -filter {NAME =~ "*gpio_enh_lat*"}]
 set_false_path -from [get_cells -hier -filter {NAME =~ "*stamp_out_0*"}] -to [get_cells -hier -filter {NAME =~ "*gpio_enh_lat*"}]

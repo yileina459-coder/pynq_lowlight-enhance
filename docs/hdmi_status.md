@@ -330,3 +330,47 @@ write(GPIO2_DATA, hi)                 # 释放 → prologue 重新采样
 **判读依据**：截图按"画面里能看到什么"命名（垂直分界、硬阈值、过锐、原始），
 而不是按 PC 时间戳去猜当时是哪个预设——板子的时钟和 PC 不同步，硬对时间会引入
 错误结论。要严格对上档名，需要跑一次由日志实时报档名的采集。
+
+### 2026-10-22 21:30：复位门控改为异步断言 / 同步释放
+
+**现象（用户观察）**：换预设时不是"当帧花屏一下"，而是**某些预设下画面持续闪烁**，
+其他预设稳定。这个区别很关键——瞬态花屏和状态异常是两种失效。
+
+**根因**：第一版门控是纯组合的
+
+```verilog
+assign ap_rst_n = aresetn & ~cfg_hi[31];
+```
+
+`cfg_hi` 来自 100 MHz 的 PS 域，内核跑在 142.857 MHz。复位**释放**落在内核时钟的
+任意相位上，内核可能带着错乱的 line-buffer 指针退出复位 → 该预设下持续闪烁，
+直到下一次复位碰巧落在好的相位。
+
+**修法**：`src/rtl/enh_rst_bridge/enh_rst_bridge.v`，标准的异步断言 / 同步释放：
+
+```verilog
+wire rst_n_async = aresetn & ~cfg_hi[31];
+always @(posedge aclk or negedge rst_n_async)
+    if (!rst_n_async) sync <= 2'b00;
+    else              sync <= {sync[0], 1'b1};
+assign ap_rst_n = sync[1];
+```
+
+约束侧：这条跨时钟路径按设计就是**异步断言**，不做时序检查，因此在 `cdc.xdc` 里加了
+
+```tcl
+set_false_path -from [get_cells -hier -filter {NAME =~ "*gpio_enh_cfg*"}] \
+               -to   [get_cells -hier -filter {NAME =~ "*enh_rst_bridge*"}]
+set_false_path -to [get_pins -hier -filter {NAME =~ "*enh_rst_bridge*/sync_reg*/CLR"}]
+```
+
+补约束前实现报 `WNS −1.377 ns / 2 个失败端点`（`gpio2_Data_Out_reg[0]` →
+`sync_reg[0]/CLR` 的 recovery 检查）；补后 **WNS +0.171 ns，0 失败端点**。
+
+**另一个坑**：给 `enh_rst_gate` 加时钟端口后，BD 里的 cell 仍报
+`the gate has no aclk pin`——Vivado **按模块名缓存 module reference**，同名重建也没用。
+换成新模块名 `enh_rst_bridge` 才拿到新端口表。之前 `axis_cycle_stamp` 加 `beats`
+端口失败也是同一原因（当时没识别出来）。
+
+**板上验证**：`hdmi_vdma_demo.py --cycle 12` 跑 2.5 轮、18 次切换，延迟全程 21 个
+像素时钟、`writeframe` 稳定 6.5 ms，无异常。

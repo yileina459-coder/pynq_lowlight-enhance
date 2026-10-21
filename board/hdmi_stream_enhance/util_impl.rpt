@@ -1,7 +1,7 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2026 Advanced Micro Devices, Inc. All Rights Reserved.
 ---------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version : Vivado v.2026.1 (win64) Build 6511674 Tue Jun 16 11:02:23 MDT 2026
-| Date         : Wed Oct 21 20:21:18 2026
+| Date         : Wed Oct 21 21:24:18 2026
 | Host         : kkkk running 64-bit major release  (build 9200)
 | Command      : report_utilization -file C:/Users/79171/Desktop/FPGA/board/hdmi_stream_enhance/util_impl.rpt
 | Design       : base_wrapper
@@ -32,18 +32,18 @@ Table of Contents
 +----------------------------+-------+-------+------------+-----------+-------+
 |          Site Type         |  Used | Fixed | Prohibited | Available | Util% |
 +----------------------------+-------+-------+------------+-----------+-------+
-| Slice LUTs                 | 33163 |     0 |          0 |     53200 | 62.34 |
-|   LUT as Logic             | 31929 |     0 |          0 |     53200 | 60.02 |
+| Slice LUTs                 | 33159 |     0 |          0 |     53200 | 62.33 |
+|   LUT as Logic             | 31925 |     0 |          0 |     53200 | 60.01 |
 |   LUT as Memory            |  1234 |     0 |          0 |     17400 |  7.09 |
 |     LUT as Distributed RAM |   412 |     0 |            |           |       |
 |     LUT as Shift Register  |   822 |     0 |            |           |       |
-| Slice Registers            | 47251 |    15 |          0 |    106400 | 44.41 |
-|   Register as Flip Flop    | 47247 |    15 |          0 |    106400 | 44.41 |
+| Slice Registers            | 47253 |    15 |          0 |    106400 | 44.41 |
+|   Register as Flip Flop    | 47249 |    15 |          0 |    106400 | 44.41 |
 |   Register as Latch        |     0 |     0 |          0 |    106400 |  0.00 |
 |   Register as AND/OR       |     4 |     0 |          0 |    106400 | <0.01 |
 | F7 Muxes                   |   876 |     0 |          0 |     26600 |  3.29 |
 | F8 Muxes                   |    29 |     0 |          0 |     13300 |  0.22 |
-| Unique Control Sets        |  2474 |       |          0 |     13300 | 18.60 |
+| Unique Control Sets        |  2475 |       |          0 |     13300 | 18.61 |
 +----------------------------+-------+-------+------------+-----------+-------+
 * Warning! LUT value is adjusted to account for LUT combining.
 ** Note: Available Control Sets calculated as Slice * 1, Review the Control Sets Report for more information regarding control sets.
@@ -62,7 +62,7 @@ Table of Contents
 | 0     |            _ |       Reset |            - |
 | 0     |          Yes |           - |            - |
 | 138   |          Yes |           - |          Set |
-| 299   |          Yes |           - |        Reset |
+| 301   |          Yes |           - |        Reset |
 | 1829  |          Yes |         Set |            - |
 | 44984 |          Yes |       Reset |            - |
 +-------+--------------+-------------+--------------+
@@ -74,13 +74,13 @@ Table of Contents
 +--------------------------------------------+-------+-------+------------+-----------+-------+
 |                  Site Type                 |  Used | Fixed | Prohibited | Available | Util% |
 +--------------------------------------------+-------+-------+------------+-----------+-------+
-| Slice                                      | 12852 |     0 |          0 |     13300 | 96.63 |
-|   SLICEL                                   |  8655 |     0 |            |           |       |
-|   SLICEM                                   |  4197 |     0 |            |           |       |
-| LUT as Logic                               | 31929 |     0 |          0 |     53200 | 60.02 |
+| Slice                                      | 12955 |     0 |          0 |     13300 | 97.41 |
+|   SLICEL                                   |  8735 |     0 |            |           |       |
+|   SLICEM                                   |  4220 |     0 |            |           |       |
+| LUT as Logic                               | 31925 |     0 |          0 |     53200 | 60.01 |
 |   using O5 output only                     |     5 |       |            |           |       |
-|   using O6 output only                     | 24996 |       |            |           |       |
-|   using O5 and O6                          |  6928 |       |            |           |       |
+|   using O6 output only                     | 24988 |       |            |           |       |
+|   using O5 and O6                          |  6932 |       |            |           |       |
 | LUT as Memory                              |  1234 |     0 |          0 |     17400 |  7.09 |
 |   LUT as Distributed RAM                   |   412 |     0 |            |           |       |
 |     using O5 output only                   |     0 |       |            |           |       |
@@ -90,11 +90,11 @@ Table of Contents
 |     using O5 output only                   |    39 |       |            |           |       |
 |     using O6 output only                   |   324 |       |            |           |       |
 |     using O5 and O6                        |   459 |       |            |           |       |
-| Slice Registers                            | 47251 |     0 |          0 |    106400 | 44.41 |
-|   Register driven from within the Slice    | 22212 |       |            |           |       |
-|   Register driven from outside the Slice   | 25039 |       |            |           |       |
-|     LUT in front of the register is unused | 16914 |       |            |           |       |
-|     LUT in front of the register is used   |  8125 |       |            |           |       |
+| Slice Registers                            | 47253 |     0 |          0 |    106400 | 44.41 |
+|   Register driven from within the Slice    | 22150 |       |            |           |       |
+|   Register driven from outside the Slice   | 25103 |       |            |           |       |
+|     LUT in front of the register is unused | 17128 |       |            |           |       |
+|     LUT in front of the register is used   |  7975 |       |            |           |       |
 +--------------------------------------------+-------+-------+------------+-----------+-------+
 
 
@@ -198,16 +198,16 @@ Table of Contents
 | FDRE       | 44984 |         Flop & Latch |
 | LUT6       | 10670 |                  LUT |
 | LUT3       |  8571 |                  LUT |
-| LUT4       |  6841 |                  LUT |
+| LUT4       |  6840 |                  LUT |
 | LUT5       |  6612 |                  LUT |
 | LUT2       |  4857 |                  LUT |
 | FDSE       |  1829 |         Flop & Latch |
-| LUT1       |  1306 |                  LUT |
+| LUT1       |  1307 |                  LUT |
 | CARRY4     |  1297 |           CarryLogic |
 | SRL16E     |  1116 |   Distributed Memory |
 | MUXF7      |   876 |                MuxFx |
 | RAMD32     |   628 |   Distributed Memory |
-| FDCE       |   299 |         Flop & Latch |
+| FDCE       |   301 |         Flop & Latch |
 | RAMS32     |   192 |   Distributed Memory |
 | FDPE       |   138 |         Flop & Latch |
 | SRLC32E    |   137 |   Distributed Memory |
@@ -323,54 +323,54 @@ Table of Contents
 | base_microblaze_0_axi_periph_imp_xbar_2          |    1 |
 | base_microblaze_0_axi_periph_imp_xbar_1          |    1 |
 | base_microblaze_0_axi_periph_imp_xbar_0          |    1 |
-| base_microblaze_0_axi_periph_imp_s00_regslice_39 |    1 |
-| base_microblaze_0_axi_periph_imp_s00_regslice_38 |    1 |
-| base_microblaze_0_axi_periph_imp_s00_regslice_37 |    1 |
-| base_microblaze_0_axi_periph_imp_s00_regslice_36 |    1 |
+| base_microblaze_0_axi_periph_imp_s00_regslice_43 |    1 |
+| base_microblaze_0_axi_periph_imp_s00_regslice_42 |    1 |
+| base_microblaze_0_axi_periph_imp_s00_regslice_41 |    1 |
+| base_microblaze_0_axi_periph_imp_s00_regslice_40 |    1 |
 | base_microblaze_0_axi_periph_imp_m15_regslice_0  |    1 |
 | base_microblaze_0_axi_periph_imp_m14_regslice_0  |    1 |
 | base_microblaze_0_axi_periph_imp_m13_regslice_0  |    1 |
 | base_microblaze_0_axi_periph_imp_m12_regslice_0  |    1 |
-| base_microblaze_0_axi_periph_imp_m11_regslice_19 |    1 |
-| base_microblaze_0_axi_periph_imp_m11_regslice_18 |    1 |
-| base_microblaze_0_axi_periph_imp_m10_regslice_19 |    1 |
-| base_microblaze_0_axi_periph_imp_m10_regslice_18 |    1 |
-| base_microblaze_0_axi_periph_imp_m09_regslice_19 |    1 |
-| base_microblaze_0_axi_periph_imp_m09_regslice_18 |    1 |
-| base_microblaze_0_axi_periph_imp_m08_regslice_19 |    1 |
-| base_microblaze_0_axi_periph_imp_m08_regslice_18 |    1 |
-| base_microblaze_0_axi_periph_imp_m07_regslice_39 |    1 |
-| base_microblaze_0_axi_periph_imp_m07_regslice_38 |    1 |
-| base_microblaze_0_axi_periph_imp_m07_regslice_37 |    1 |
-| base_microblaze_0_axi_periph_imp_m07_regslice_36 |    1 |
-| base_microblaze_0_axi_periph_imp_m06_regslice_39 |    1 |
-| base_microblaze_0_axi_periph_imp_m06_regslice_38 |    1 |
-| base_microblaze_0_axi_periph_imp_m06_regslice_37 |    1 |
-| base_microblaze_0_axi_periph_imp_m06_regslice_36 |    1 |
-| base_microblaze_0_axi_periph_imp_m05_regslice_39 |    1 |
-| base_microblaze_0_axi_periph_imp_m05_regslice_38 |    1 |
-| base_microblaze_0_axi_periph_imp_m05_regslice_37 |    1 |
-| base_microblaze_0_axi_periph_imp_m05_regslice_36 |    1 |
-| base_microblaze_0_axi_periph_imp_m04_regslice_39 |    1 |
-| base_microblaze_0_axi_periph_imp_m04_regslice_38 |    1 |
-| base_microblaze_0_axi_periph_imp_m04_regslice_37 |    1 |
-| base_microblaze_0_axi_periph_imp_m04_regslice_36 |    1 |
-| base_microblaze_0_axi_periph_imp_m03_regslice_39 |    1 |
-| base_microblaze_0_axi_periph_imp_m03_regslice_38 |    1 |
-| base_microblaze_0_axi_periph_imp_m03_regslice_37 |    1 |
-| base_microblaze_0_axi_periph_imp_m03_regslice_36 |    1 |
-| base_microblaze_0_axi_periph_imp_m02_regslice_39 |    1 |
-| base_microblaze_0_axi_periph_imp_m02_regslice_38 |    1 |
-| base_microblaze_0_axi_periph_imp_m02_regslice_37 |    1 |
-| base_microblaze_0_axi_periph_imp_m02_regslice_36 |    1 |
-| base_microblaze_0_axi_periph_imp_m01_regslice_39 |    1 |
-| base_microblaze_0_axi_periph_imp_m01_regslice_38 |    1 |
-| base_microblaze_0_axi_periph_imp_m01_regslice_37 |    1 |
-| base_microblaze_0_axi_periph_imp_m01_regslice_36 |    1 |
-| base_microblaze_0_axi_periph_imp_m00_regslice_39 |    1 |
-| base_microblaze_0_axi_periph_imp_m00_regslice_38 |    1 |
-| base_microblaze_0_axi_periph_imp_m00_regslice_37 |    1 |
-| base_microblaze_0_axi_periph_imp_m00_regslice_36 |    1 |
+| base_microblaze_0_axi_periph_imp_m11_regslice_21 |    1 |
+| base_microblaze_0_axi_periph_imp_m11_regslice_20 |    1 |
+| base_microblaze_0_axi_periph_imp_m10_regslice_21 |    1 |
+| base_microblaze_0_axi_periph_imp_m10_regslice_20 |    1 |
+| base_microblaze_0_axi_periph_imp_m09_regslice_21 |    1 |
+| base_microblaze_0_axi_periph_imp_m09_regslice_20 |    1 |
+| base_microblaze_0_axi_periph_imp_m08_regslice_21 |    1 |
+| base_microblaze_0_axi_periph_imp_m08_regslice_20 |    1 |
+| base_microblaze_0_axi_periph_imp_m07_regslice_43 |    1 |
+| base_microblaze_0_axi_periph_imp_m07_regslice_42 |    1 |
+| base_microblaze_0_axi_periph_imp_m07_regslice_41 |    1 |
+| base_microblaze_0_axi_periph_imp_m07_regslice_40 |    1 |
+| base_microblaze_0_axi_periph_imp_m06_regslice_43 |    1 |
+| base_microblaze_0_axi_periph_imp_m06_regslice_42 |    1 |
+| base_microblaze_0_axi_periph_imp_m06_regslice_41 |    1 |
+| base_microblaze_0_axi_periph_imp_m06_regslice_40 |    1 |
+| base_microblaze_0_axi_periph_imp_m05_regslice_43 |    1 |
+| base_microblaze_0_axi_periph_imp_m05_regslice_42 |    1 |
+| base_microblaze_0_axi_periph_imp_m05_regslice_41 |    1 |
+| base_microblaze_0_axi_periph_imp_m05_regslice_40 |    1 |
+| base_microblaze_0_axi_periph_imp_m04_regslice_43 |    1 |
+| base_microblaze_0_axi_periph_imp_m04_regslice_42 |    1 |
+| base_microblaze_0_axi_periph_imp_m04_regslice_41 |    1 |
+| base_microblaze_0_axi_periph_imp_m04_regslice_40 |    1 |
+| base_microblaze_0_axi_periph_imp_m03_regslice_43 |    1 |
+| base_microblaze_0_axi_periph_imp_m03_regslice_42 |    1 |
+| base_microblaze_0_axi_periph_imp_m03_regslice_41 |    1 |
+| base_microblaze_0_axi_periph_imp_m03_regslice_40 |    1 |
+| base_microblaze_0_axi_periph_imp_m02_regslice_43 |    1 |
+| base_microblaze_0_axi_periph_imp_m02_regslice_42 |    1 |
+| base_microblaze_0_axi_periph_imp_m02_regslice_41 |    1 |
+| base_microblaze_0_axi_periph_imp_m02_regslice_40 |    1 |
+| base_microblaze_0_axi_periph_imp_m01_regslice_43 |    1 |
+| base_microblaze_0_axi_periph_imp_m01_regslice_42 |    1 |
+| base_microblaze_0_axi_periph_imp_m01_regslice_41 |    1 |
+| base_microblaze_0_axi_periph_imp_m01_regslice_40 |    1 |
+| base_microblaze_0_axi_periph_imp_m00_regslice_43 |    1 |
+| base_microblaze_0_axi_periph_imp_m00_regslice_42 |    1 |
+| base_microblaze_0_axi_periph_imp_m00_regslice_41 |    1 |
+| base_microblaze_0_axi_periph_imp_m00_regslice_40 |    1 |
 | base_mdm_1_0                                     |    1 |
 | base_mb_bram_ctrl_3                              |    1 |
 | base_mb_bram_ctrl_2                              |    1 |
@@ -416,7 +416,7 @@ Table of Contents
 | base_gpio_1                                      |    1 |
 | base_gpio_0                                      |    1 |
 | base_enhance_0_0                                 |    1 |
-| base_enh_rst_gate_0_0                            |    1 |
+| base_enh_rst_bridge_0_0                          |    1 |
 | base_enh_cfg_split_0_0                           |    1 |
 | base_dvi2rgb_0_0                                 |    1 |
 | base_dlmb_v10_3                                  |    1 |
