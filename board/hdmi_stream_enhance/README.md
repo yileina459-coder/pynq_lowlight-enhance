@@ -108,7 +108,9 @@ board/hdmi_stream_enhance/
 ├── timing_impl.rpt / util_impl.rpt
 ├── base.xsa                 导出给 Vitis 的设计
 ├── hdmi_live.py             共享库：预设表、pack()、write_preset()（含复位脉冲）
-├── hdmi_preset_only.py      **主演示**：写一帧 → 每次切预设后重建输出链路
+├── hdmi_preset_only.py      **主演示**：写一帧 → 切预设定时循环（不复位、不重建输出）
+├── hdmi_show_image.py       显示自己的图片（裸 RGB 或 board 侧解码），可轮播预设
+├── hdmi_live_check.py       量化验证：切档期间连续写帧，统计有无卡顿
 ├── hdmi_vdma_demo.py        备选演示：每次切预设都重写一帧
 ├── hdmi_restore_hpd.py      工具：加载位流后恢复 Windows 的 2 号屏
 ├── evidence/                采集卡截图（按画面特征命名）+ 2×2 拼图
@@ -130,7 +132,7 @@ board/hdmi_stream_enhance/
 ```bash
 cd /home/xilinx/jupyter_notebooks/hdmi_enh2
 
-# 主演示：640×480 测试图 + 8 档预设循环，每次切换重建输出链路
+# 主演示：640×480 测试图 + 8 档预设循环（切预设不中断流）
 sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=/root \
   /usr/local/share/pynq-venv/bin/python3 hdmi_preset_only.py --cycle 15
 ```
@@ -140,8 +142,8 @@ sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=
 ```
 hdmi_out running at 640x480
 test image written once (8.6 ms); no further DDR writes from here on
-[...] preset document  latency 21 (output path restarted)
-[...] preset binarize  latency 21 (output path restarted)
+[...] preset document  latency 21
+[...] preset binarize  latency 21
 ```
 
 排查脚本在 `diagnostics/`，**从本目录运行**（它们 `import hdmi_live`，工作目录要在上一层）：
@@ -189,8 +191,9 @@ sudo env ... /usr/local/share/pynq-venv/bin/python3 diagnostics/hdmi_probe_buffe
 | `hdmi_capture_glitch.png` | 换预设当帧的花屏（预期代价） |
 | `hdmi_presets_2x2.png` | 四张拼图，海报配图 |
 
-**闪烁说明**：换预设时内核被复位，line buffer 清空 → 当帧花屏，下一帧恢复。
-这是 `enh_rst_gate` 方案的已知代价。
+**闪烁说明（已解决）**：这一组截图来自端口配置的旧内核，换预设要复位内核、line buffer
+被清空，当帧会花屏。配置搬进 BRAM 之后切预设不再复位，这个问题已经消失——
+见文末 2026-10-22 的章节与 `hdmi_live_check.py` 的实测。
 
 ## 复位门控（2026-10-22 更新）
 
