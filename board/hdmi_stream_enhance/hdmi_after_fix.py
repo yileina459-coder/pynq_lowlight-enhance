@@ -81,8 +81,7 @@ def main(argv=None) -> int:
 
     if mode is None:
         print("RESULT: still no input lock")
-        print("  next: confirm the laptop is set to 1280x720 (or try 1920x1080,")
-        print("  which also falls in the PLL's range) and that the cable is in HDMI IN")
+        print("  next: confirm the laptop is set to 1280x720 and the cable is in HDMI IN")
         return 2
 
     print(f"RESULT: INPUT LOCKED -> {mode.width}x{mode.height} @{mode.frame_rate} Hz")

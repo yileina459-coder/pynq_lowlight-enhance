@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Tue Oct 20 21:42:06 2026" VIVADOVERSION="2026.1">
+<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Wed Oct 21 18:30:36 2026" VIVADOVERSION="2026.1">
 
   <SYSTEMINFO ARCH="zynq" DEVICE="7z020" NAME="base" PACKAGE="clg400" SPEEDGRADE="-1"/>
 
@@ -62303,37 +62303,32 @@
         </PORT>
         <PORT DIR="I" LEFT="31" NAME="s_axis_tdata" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tdata">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="video_hdmi_in_pixel_pack" PORT="stream_out_32_TDATA"/>
+            <CONNECTION INSTANCE="video_axi_vdma" PORT="m_axis_mm2s_tdata"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="I" LEFT="3" NAME="s_axis_tkeep" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tkeep">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="video_hdmi_in_pixel_pack" PORT="stream_out_32_TKEEP"/>
+            <CONNECTION INSTANCE="video_axi_vdma" PORT="m_axis_mm2s_tkeep"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="I" NAME="s_axis_tlast" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tlast">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="video_hdmi_in_pixel_pack" PORT="stream_out_32_TLAST"/>
+            <CONNECTION INSTANCE="video_axi_vdma" PORT="m_axis_mm2s_tlast"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="O" NAME="s_axis_tready" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tready">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="video_hdmi_in_pixel_pack" PORT="stream_out_32_TREADY"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="3" NAME="s_axis_tstrb" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tstrb">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="video_hdmi_in_pixel_pack" PORT="stream_out_32_TSTRB"/>
+            <CONNECTION INSTANCE="video_axi_vdma" PORT="m_axis_mm2s_tready"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="I" LEFT="0" NAME="s_axis_tuser" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tuser">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="video_hdmi_in_pixel_pack" PORT="stream_out_32_TUSER"/>
+            <CONNECTION INSTANCE="video_axi_vdma" PORT="m_axis_mm2s_tuser"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="I" NAME="s_axis_tvalid" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tvalid">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="video_hdmi_in_pixel_pack" PORT="stream_out_32_TVALID"/>
+            <CONNECTION INSTANCE="video_axi_vdma" PORT="m_axis_mm2s_tvalid"/>
           </CONNECTIONS>
         </PORT>
       </PORTS>
@@ -62364,7 +62359,7 @@
             <PORTMAP LOGICAL="TVALID" PHYSICAL="m_axis_tvalid"/>
           </PORTMAPS>
         </BUSINTERFACE>
-        <BUSINTERFACE BUSNAME="video_hdmi_in_pixel_pack_stream_out_32" NAME="s_axis" TYPE="TARGET" VLNV="xilinx.com:interface:axis:1.0">
+        <BUSINTERFACE BUSNAME="video_axi_vdma_M_AXIS_MM2S" NAME="s_axis" TYPE="TARGET" VLNV="xilinx.com:interface:axis:1.0">
           <PARAMETER NAME="CLK_DOMAIN" VALUE="base_ps7_0_0_FCLK_CLK1"/>
           <PARAMETER NAME="FREQ_HZ" VALUE="142857132"/>
           <PARAMETER NAME="HAS_TKEEP" VALUE="1"/>
@@ -62375,15 +62370,14 @@
           <PARAMETER NAME="LAYERED_METADATA" VALUE="undef"/>
           <PARAMETER NAME="PHASE" VALUE="0.0"/>
           <PARAMETER NAME="TDATA_NUM_BYTES" VALUE="4"/>
-          <PARAMETER NAME="TDEST_WIDTH" VALUE="0"/>
-          <PARAMETER NAME="TID_WIDTH" VALUE="0"/>
+          <PARAMETER NAME="TDEST_WIDTH" VALUE="1"/>
+          <PARAMETER NAME="TID_WIDTH" VALUE="1"/>
           <PARAMETER NAME="TUSER_WIDTH" VALUE="1"/>
           <PORTMAPS>
             <PORTMAP LOGICAL="TDATA" PHYSICAL="s_axis_tdata"/>
             <PORTMAP LOGICAL="TKEEP" PHYSICAL="s_axis_tkeep"/>
             <PORTMAP LOGICAL="TLAST" PHYSICAL="s_axis_tlast"/>
             <PORTMAP LOGICAL="TREADY" PHYSICAL="s_axis_tready"/>
-            <PORTMAP LOGICAL="TSTRB" PHYSICAL="s_axis_tstrb"/>
             <PORTMAP LOGICAL="TUSER" PHYSICAL="s_axis_tuser"/>
             <PORTMAP LOGICAL="TVALID" PHYSICAL="s_axis_tvalid"/>
           </PORTMAPS>
@@ -72794,12 +72788,36 @@
             <CONNECTION INSTANCE="ps7_0" PORT="FCLK_CLK1"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="31" NAME="m_axis_mm2s_tdata" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="3" NAME="m_axis_mm2s_tkeep" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" NAME="m_axis_mm2s_tlast" SIGIS="undef"/>
-        <PORT DIR="I" NAME="m_axis_mm2s_tready" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="0" NAME="m_axis_mm2s_tuser" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" NAME="m_axis_mm2s_tvalid" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="31" NAME="m_axis_mm2s_tdata" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tdata">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="stamp_in_0" PORT="s_axis_tdata"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="3" NAME="m_axis_mm2s_tkeep" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tkeep">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="stamp_in_0" PORT="s_axis_tkeep"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="m_axis_mm2s_tlast" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tlast">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="stamp_in_0" PORT="s_axis_tlast"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="m_axis_mm2s_tready" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tready">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="stamp_in_0" PORT="s_axis_tready"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="0" NAME="m_axis_mm2s_tuser" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tuser">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="stamp_in_0" PORT="s_axis_tuser"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" NAME="m_axis_mm2s_tvalid" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tvalid">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="stamp_in_0" PORT="s_axis_tvalid"/>
+          </CONNECTIONS>
+        </PORT>
         <PORT DIR="O" LEFT="5" NAME="mm2s_frame_ptr_out" RIGHT="0" SIGIS="undef"/>
         <PORT DIR="O" NAME="mm2s_introut" SENSITIVITY="LEVEL_HIGH" SIGIS="INTERRUPT" SIGNAME="video_axi_vdma_mm2s_introut">
           <CONNECTIONS>
@@ -73060,7 +73078,7 @@
             <PORTMAP LOGICAL="WVALID" PHYSICAL="m_axi_s2mm_wvalid"/>
           </PORTMAPS>
         </BUSINTERFACE>
-        <BUSINTERFACE BUSNAME="__NOC__" NAME="M_AXIS_MM2S" TYPE="INITIATOR" VLNV="xilinx.com:interface:axis:1.0">
+        <BUSINTERFACE BUSNAME="video_axi_vdma_M_AXIS_MM2S" NAME="M_AXIS_MM2S" TYPE="INITIATOR" VLNV="xilinx.com:interface:axis:1.0">
           <PARAMETER NAME="CLK_DOMAIN" VALUE="base_ps7_0_0_FCLK_CLK1"/>
           <PARAMETER NAME="FREQ_HZ" VALUE="142857132"/>
           <PARAMETER NAME="HAS_TKEEP" VALUE="1"/>
@@ -73113,6 +73131,7 @@
       </MEMORYMAP>
       <PERIPHERALS>
         <PERIPHERAL INSTANCE="ps7_0"/>
+        <PERIPHERAL INSTANCE="stamp_in_0"/>
       </PERIPHERALS>
     </MODULE>
     <MODULE COREREVISION="35" FULLNAME="/video/hdmi_in/axis_register_slice_0" HWVERSION="1.1" INSTANCE="video_hdmi_in_axis_register_slice_0" IPTYPE="BUS" IS_ENABLE="1" MODCLASS="BUS" MODTYPE="axis_register_slice" VLNV="xilinx.com:ip:axis_register_slice:1.1">
@@ -75238,41 +75257,13 @@
             <CONNECTION INSTANCE="video_hdmi_in_axis_register_slice_0" PORT="m_axis_tvalid"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="31" NAME="stream_out_32_TDATA" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tdata">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="stamp_in_0" PORT="s_axis_tdata"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="3" NAME="stream_out_32_TKEEP" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tkeep">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="stamp_in_0" PORT="s_axis_tkeep"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="0" NAME="stream_out_32_TLAST" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tlast">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="stamp_in_0" PORT="s_axis_tlast"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" NAME="stream_out_32_TREADY" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tready">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="stamp_in_0" PORT="s_axis_tready"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="3" NAME="stream_out_32_TSTRB" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tstrb">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="stamp_in_0" PORT="s_axis_tstrb"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="0" NAME="stream_out_32_TUSER" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tuser">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="stamp_in_0" PORT="s_axis_tuser"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" NAME="stream_out_32_TVALID" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tvalid">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="stamp_in_0" PORT="s_axis_tvalid"/>
-          </CONNECTIONS>
-        </PORT>
+        <PORT DIR="O" LEFT="31" NAME="stream_out_32_TDATA" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="3" NAME="stream_out_32_TKEEP" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="0" NAME="stream_out_32_TLAST" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="I" NAME="stream_out_32_TREADY" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="3" NAME="stream_out_32_TSTRB" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="0" NAME="stream_out_32_TUSER" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="O" NAME="stream_out_32_TVALID" SIGIS="undef"/>
       </PORTS>
       <BUSINTERFACES>
         <BUSINTERFACE BUSNAME="video_axi_interconnect_0_M07_AXI" DATAWIDTH="32" NAME="s_axi_control" TYPE="SLAVE" VLNV="xilinx.com:interface:aximm:1.0">
@@ -75351,7 +75342,7 @@
             <PORTMAP LOGICAL="TVALID" PHYSICAL="stream_in_24_TVALID"/>
           </PORTMAPS>
         </BUSINTERFACE>
-        <BUSINTERFACE BUSNAME="video_hdmi_in_pixel_pack_stream_out_32" NAME="stream_out_32" TYPE="INITIATOR" VLNV="xilinx.com:interface:axis:1.0">
+        <BUSINTERFACE BUSNAME="__NOC__" NAME="stream_out_32" TYPE="INITIATOR" VLNV="xilinx.com:interface:axis:1.0">
           <PARAMETER NAME="CLK_DOMAIN" VALUE="base_ps7_0_0_FCLK_CLK1"/>
           <PARAMETER NAME="FREQ_HZ" VALUE="142857132"/>
           <PARAMETER NAME="HAS_TKEEP" VALUE="1"/>

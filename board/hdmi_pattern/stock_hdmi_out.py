@@ -17,11 +17,14 @@ Why
     It also gives reference values for the timing/clock registers.
 
     sudo python3 stock_hdmi_out.py
+    sudo python3 stock_hdmi_out.py --mode 720p60
+    sudo python3 stock_hdmi_out.py --fps 60
 """
 
 from __future__ import annotations
 
 import time
+import argparse
 
 import numpy as np
 
@@ -29,6 +32,11 @@ STOCK = "/usr/local/share/pynq-venv/lib/python3.10/site-packages/pynq/overlays/b
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--mode", choices=("720p60", "1080p30", "1080p60"),
+                    default="1080p30", help="HDMI output mode (default: 1080p30)")
+    args = ap.parse_args()
+
     from pynq import MMIO, Overlay
     from pynq.lib.video import VideoMode
 
@@ -37,12 +45,17 @@ def main() -> int:
     video = ol.video
     out = video.hdmi_out
 
-    mode = VideoMode(1280, 720, 24, 60)
+    width, height, fps = {
+        "720p60": (1280, 720, 60),
+        "1080p30": (1920, 1080, 30),
+        "1080p60": (1920, 1080, 60),
+    }[args.mode]
+    mode = VideoMode(width, height, 24, fps)
     out.configure(mode)
     # newframe() needs the VDMA write channel to be running (its frame cache is
     # created on start), so start before allocating a frame.
     out.start()
-    print("configured", out.mode)
+    print(f"configured {out.mode.width}x{out.mode.height} @ {fps} Hz")
 
     # A frame that is unmistakable: three horizontal bands.
     frame = out.newframe()

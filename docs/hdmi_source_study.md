@@ -129,3 +129,93 @@ connect_bd_net -net hdmi_in_aPixelClkLckd \
 - 之前以为"改 kClkRange 就能解决笔记本 720p"，但当时没有验证 **IP 是否重新综合**；
   现在已从综合后网表确认 MULT_F=10 真的进了位流。
 - 之前打算用"原厂 overlay 自环"做对照，读了源码才发现原厂输入/输出档位无交集，那个实验设计是错的。
+
+---
+
+## 八、官方文档与社区线索（2026-10-21 凌晨补充）
+
+### 8.1 `v_axi4s_vid_out` 必须收到 SOF 才出帧
+
+[PG044](https://www.xilinx.com/content/dam/xilinx/support/documents/ip_documentation/v_axi4s_vid_out/v2_01_a/pg044_v_axis_vid_out.pdf)：
+
+> "The Start-Of-Frame (SOF) signal, physically transmitted over the AXI4-Stream
+> TUSER0 signal, marks the first pixel of a video frame"
+
+PYNQ 社区里同样症状的帖子，回答就是要检查 TUSER/TLAST：
+
+> "this issue can be caused if the AXI4-Stream channel does not have all the
+> necessary signals, tuser, tlast" —
+> [discuss.pynq.io](https://discuss.pynq.io/t/no-video-output-on-monitor-with-custom-hdmi-passthrough-design-on-pynq-z1/8792/2)
+
+**由此得出一个重要推论**：那次"自环测试"设计上是无效的。
+自环时输入端没有信号 → 内核没有数据 → 没有 SOF → `v_axi4s_vid_out`
+按规格就**不应该**输出任何 TMDS。所以"自环也没有 TMDS"是**预期行为**，
+不能用来判断输出端好坏。这个实验设计是错的，已记录，不再重复。
+
+### 8.2 位宽一致性（已核对，排除）
+
+有人怀疑内核 24 位、`pixel_unpack` 32 位不匹配。查 `.hwh` 实际位宽：
+
+```
+enhance_0        s_in_TDATA = 32   s_out_TDATA = 32
+stamp_in_0       s_axis_tdata = 32
+stamp_out_0      m_axis_tdata = 32
+video_hdmi_out_pixel_unpack  stream_in_32_TDATA = 32  ->  stream_out_24_TDATA = 24
+```
+
+**全程 32 位一致**，`pixel_unpack` 内部再降到 24 位送 `v_axi4s_vid_out`，
+与原厂一致。这条排除。
+
+### 8.3 图案源缺少消隐期（下一个待修的点）
+
+原厂链路能让采集卡锁定（黑屏），说明 `v_axi4s_vid_out` + `rgb2dvi` 是好的。
+而"图案源"版本采集卡看不到画面，最可能的原因是
+`src/rtl/video_pattern_gen/video_pattern_gen.v` **每个时钟都输出有效像素**：
+
+- 真实视频源：每行 1280 拍有效 + 370 拍消隐（720p60 的 H total 是 1650）；
+- 我们的图案：1280 拍一行接一行，**没有消隐**，帧率因此也不是 60 Hz。
+
+`v_axi4s_vid_out` 用 VTC 产生的时序去"套"输入流，输入流速率偏快会持续溢出，
+对齐不上就可能一帧都不发。修法有两种：
+
+1. 让图案源按 1650×750 的节拍产生像素，只在有效区给 `tvalid`（改动小，
+   但要和 `vtc_out` 的时序参数严格对齐）；
+2. 不用自建图案源，改用 PYNQ 的 VDMA 通路 `writeframe()` 喂画面
+   （原厂已验证能出信号，但 `writeframe` 在那次测试里阻塞了，需要单独查）。
+
+### 8.4 当前唯一未解的环节
+
+排除下来只剩"输入端的 TMDS 到底有没有到达"：
+
+| 环节 | 状态 |
+| --- | --- |
+| EDID 合法、HPD 可控 | ✅ 已验证（Windows 能枚举到显示器） |
+| 输入 PLL 档位 | ✅ 已改成 range 2 并在网表核实 |
+| 复位链路（aPixelClkLckd → proc_sys_reset） | ✅ 正常连接 |
+| 内核与位宽 | ✅ 32 位一致、tuser/tlast 透传 |
+| 输出端 IP（vid_out/rgb2dvi） | ✅ 原厂链路能出 TMDS（黑屏） |
+| **输入端是否真的收到 TMDS** | ❓ **未解** |
+
+判断它只有两条路：
+
+1. **换一个已知能出信号、且 TMDS 落在 range 2 内的源**（笔记本设 720p 并用
+   "列出所有模式"强制），在 `htop`/`dmesg` 无关的层面无从观察，只能看 `mode`；
+2. **插 ILA**，直接看 `dvi2rgb` 的 `PixelClk`/`aPixelClkLckd` 以及
+   `vid_pData/vid_pVDE` 有没有翻转——这是唯一能给出"收到/没收到"确定答案的手段。
+
+ILA 方案的成本：需要在 BD 里插 `ila_0`、接 `PixelClk` 域的信号、重新实现，
+然后通过 JTAG 用 Vivado Hardware Manager 抓波形。板子的 JTAG 走 micro-USB，
+本机有 Vivado 2026.1，可行但需要现场配合。
+
+## 九、2026-10-21 配置更正
+
+检查最新导出的 `board/hdmi_stream_enhance/enhance_hdmi.hwh` 后发现，以上结论有
+一处与实际产物不符：该文件中输入 `dvi2rgb` 是 `kClkRange=2`，但输出 `rgb2dvi`
+仍是 `kClkRange=1`。因此“输入输出 range 2”的自环前提并不成立；在 720p60
+时，输出 PLL 的 VCO 仅为 371.25 MHz，低于器件工作范围。此前的输出 PLL 修复
+方向也反了：对当前板卡和 720p60 测试目标，应将输出 `rgb2dvi` 改为 range 2，
+与输入端一致。1080p60 不属于这份双端 range 2 位流的支持目标。
+
+构建脚本 `insert_enhance.tcl` 现对输入和输出 IP 都显式设置 range 2，且使用
+层级查找并在 IP 未找到时中止。板端演示默认模式也统一为 1280x720@60。
+当前导出的 `.bit/.hwh` 尚未重新生成，源码修改要等 Vivado 实现成功后才会生效。

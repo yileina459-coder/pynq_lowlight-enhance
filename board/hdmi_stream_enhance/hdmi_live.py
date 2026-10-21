@@ -123,12 +123,22 @@ def main(argv=None) -> int:
         print("FAIL: configuration or latency GPIO missing from the overlay")
         return 1
 
-    # Wait for the source, but do not lie if it never arrives.
+    # This low-latency design bypasses the input VDMA, so inspect the HDMI frontend
+    # directly instead of the unconfigured VDMA mode exposed by hdmi_in.mode.
+    frontend = video.hdmi_in._hdmi
     deadline = time.monotonic() + args.wait_source
-    mode = video.hdmi_in.mode
+    try:
+        frontend.start(init_timeout=max(1, int(args.wait_source)))
+        mode = frontend.mode
+    except Exception as exc:                          # noqa: BLE001
+        print(f"HDMI input frontend did not lock: {type(exc).__name__}: {exc}")
+        mode = None
     while mode is None and time.monotonic() < deadline:
         time.sleep(0.5)
-        mode = video.hdmi_in.mode
+        try:
+            mode = frontend.mode
+        except Exception:
+            mode = None
     if mode is None:
         print("no HDMI input detected yet - check that the source is powered and")
         print("set to a mode the PYNQ-Z2 can lock (1280x720 is the safe one).")

@@ -61,7 +61,24 @@ open_bd_design {base/base.srcs/sources_1/bd/base/base.bd}
 # clock is 74.25 MHz: with MULT_F = 5 the VCO would be 371 MHz, below the MMCM
 # minimum, so the input PLL cannot lock. Range 2 (60-120 MHz) is the right choice
 # for 720p60 and is also why the unmodified PYNQ bitstream showed the same symptom.
-foreach cell [get_bd_cells -quiet -filter {NAME =~ "*dvi2rgb*"}] {
+set input_clock_cells [get_bd_cells -quiet -hierarchical -filter {NAME =~ "*dvi2rgb*"}]
+if {[llength $input_clock_cells] == 0} {
+    puts "ERROR: dvi2rgb input clock cell not found"
+    exit 1
+}
+foreach cell $input_clock_cells {
+    puts "setting kClkRange=2 on $cell (720p60 TMDS clock is 74.25 MHz)"
+    set_property -dict [list CONFIG.kClkRange {2}] $cell
+}
+
+# Keep the output serializer in the same 720p-compatible clock range. The output
+# clock range is independent of the input dvi2rgb range and must be set explicitly.
+set output_clock_cells [get_bd_cells -quiet -hierarchical -filter {NAME =~ "*rgb2dvi*"}]
+if {[llength $output_clock_cells] == 0} {
+    puts "ERROR: rgb2dvi output clock cell not found"
+    exit 1
+}
+foreach cell $output_clock_cells {
     puts "setting kClkRange=2 on $cell (720p60 TMDS clock is 74.25 MHz)"
     set_property -dict [list CONFIG.kClkRange {2}] $cell
 }

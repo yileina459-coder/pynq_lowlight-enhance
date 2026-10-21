@@ -27,7 +27,7 @@ HDMI 源（笔记本） ──线 A──► PYNQ HDMI IN
 1. **线 A**：笔记本 HDMI 输出 → PYNQ-Z2 的 **HDMI IN**；
 2. **线 B**：PYNQ-Z2 的 **HDMI OUT** → 采集卡 HDMI 输入；
 3. 采集卡 USB → 笔记本，用系统相机/OBS 打开，看到的是**经过增强后的画面**；
-4. 笔记本显示设置里把外接屏设为 **1280×720**（PYNQ-Z2 这版 HDMI 端口的稳妥模式）。
+4. 笔记本显示设置里把外接屏设为 **1280×720 @ 60 Hz**。当前位流的 HDMI 输入和输出均配置为 `kClkRange=2`，只按 720p60 验证。
 
 ## 跑
 
@@ -47,6 +47,10 @@ sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=
 # 3) 录视频用：每 4 秒换一个预设，采集卡里能直接看到画面变化
 sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=/root \
   /usr/local/share/pynq-venv/bin/python3 hdmi_live.py --cycle 4
+
+# HDMI 输入检测使用 dvi2rgb 前端，等待源信号建立
+sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=/root \
+  /usr/local/share/pynq-venv/bin/python3 hdmi_in_check.py --wait 60
 ```
 
 脚本会打印：

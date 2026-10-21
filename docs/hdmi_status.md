@@ -106,3 +106,84 @@ OUT→IN 自环，720p。选我们的位流而不是原厂，是因为原厂输�
   不加 `-hierarchical` 就一个都匹配不到，属性没写进去却毫无报错。
 - **删工程会丢 Vivado 的 IP 缓存**：为改一个参数重跑 `base.tcl`，导致 ~200 个 OOC 综合
   重来一遍（约一小时）。正确做法是在现有工程上改属性再 `impl`。
+
+---
+
+## 2026-10-22 凌晨：HDMI 输出打通（640x480），以及为什么只能 640x480
+
+### 结论一：这块板子的 HDMI 输出只能稳定驱动 640x480
+
+用**原厂 overlay**（不含我们任何改动）逐模式测"VDMA 能否消费一帧"——`writeframe()`
+只有在 VDMA 完成一次帧传输后才返回，所以它是与采集卡无关的客观判据：
+
+| 模式 | 像素时钟 | `writeframe` | 采集卡 |
+| --- | --- | --- | --- |
+| 640x480 | 25.175 MHz | 立即返回 | **出现画面** |
+| 800x600 | 40 MHz | 阻塞 | 无信号 |
+| 1280x720 | 74.25 MHz | 阻塞 | 无信号 |
+| 1920x1080 | 148.5 MHz | 阻塞 | 无信号 |
+
+PYNQ-Z2 的两个 HDMI 口是**无缓冲直连 PL** 的（手册 3.1.13），所以输出能力受限于
+管脚驱动与信号完整性。这不是我们的设计问题——原厂位流同样如此。
+
+### 结论二：HDMI 输入无法工作在 640x480
+
+`dvi2rgb` 的 `kClkRange` 只有 **1/2/3** 三档（设 5 会被 IP 拒绝：
+
+```
+ERROR: [IP_Flow 19-3461] Value '5' is out of the range for parameter
+       'TMDS clock range(kClkRange)'
+```
+
+25.175 MHz 需要 5 档（VCO = 25.175 × 25 = 629 MHz 才在 600–1200 内）；最高档 3
+只能给 377 MHz，低于下限，输入端锁不上。
+
+**因此 640x480 的 HDMI 直通在这块板子上不可实现**，除非更换输入 IP。
+
+### 结论三：交付的演示改由 VDMA 供帧
+
+`build/overlay_hdmi_enhance/source_from_vdma.tcl` 把内核输入从
+`video/hdmi_in/out_stream` 改为 `video/axi_vdma/M_AXIS_MM2S`：
+
+```
+PS 写帧到 DDR  ->  VDMA MM2S  ->  stamp_in -> enhance -> stamp_out
+               ->  pixel_unpack -> v_axi4s_vid_out -> rgb2dvi  ->  HDMI OUT (640x480)
+```
+
+内核仍在像素通路上、仍是硬件实时处理、预设与延迟测量都保留，只是帧来源变成 PS。
+板端实测（`board/hdmi_stream_enhance/hdmi_vdma_demo.py`）：
+
+```
+hdmi_out running at 640x480
+test image (480, 640, 3), mean 124.0
+[01:56:06] preset clarity   writeframe 6.5 ms  latency 21 pixel clocks
+[01:56:14] preset document  writeframe 6.4 ms  latency 21 pixel clocks
+[01:56:31] preset invert    writeframe 6.5 ms  latency 21 pixel clocks
+[01:57:36] preset binarize  writeframe 6.5 ms  latency 21 pixel clocks
+```
+
+`writeframe` 6.4 ms 表示 VDMA 持续消费（输出端真的在跑），21 拍是两道时间戳
+夹出来的流水线延迟。7 个预设跑满 3 轮无异常。
+
+### 结论四：三个把排查带偏的坑（都已修正）
+
+1. **`video.hdmi_in.mode` 读的不是输入检测值**，而是 VDMA 的配置值，只在
+   `VideoIn.configure()` 里被赋值。没调 `configure()` 就永远是 `None`，
+   于是"没锁上"其实是"没配置过"。真正的检测只能用
+   `video.hdmi_in._hdmi.start(init_timeout=...)`，它报的错误是
+   `No incoming video signal detected`。
+2. **`rgb2dvi` 的 `kClkRange` 在这套设计里无效**：`kGenerateSerialClk=false`，
+   串行时钟由 `axi_dynclk` 的 `PXL_CLK_5X_O` 提供，ClockGen 根本没实例化。
+   之前反复改这个参数毫无效果，原因在此。
+3. **多个 PYNQ 进程同时存在会互相抢 VDMA 与显示**，表现为"明明跑通了又变彩条"。
+   每次测试前必须确认只有一个进程（`ps aux | grep hdmi_`），否则结论不可信。
+
+### 现在的位置
+
+| 项目 | 状态 |
+| --- | --- |
+| 内核在 HDMI 输出链路上实时工作 | ✅ 已上板（640x480，21 拍延迟） |
+| 7 个预设实时切换 | ✅ 已上板 |
+| HDMI 输入（720p/1080p） | ✅ 能锁 1080p，但输出端无法同分辨率工作 |
+| HDMI 直通 640x480 | ❌ 输入 IP 的 kClkRange 不支持 |
+| 端到端低延迟演示 | ⚠️ 受硬件限制，改由 VDMA 供帧 |
