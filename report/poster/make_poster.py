@@ -117,10 +117,13 @@ def main() -> int:
         ("Motivation",
          "Around 17 million people in China live with low vision, and shop-bought electronic magnifiers are expensive while phone/PC pipelines take 100-300 ms from capture to display - enough latency to cause dizziness. For this class of device the key metric is not frame rate but end-to-end latency. This project therefore puts the whole enhancement chain inside the pixel stream, with no frame buffer at all."),
         ("Architecture",
-         "Intended main path:  HDMI IN -> pixel_pack -> enhance -> pixel_unpack -> HDMI OUT, no frame "
-         "buffer. Both HDMI directions are still in bring-up and are documented, not claimed: the input "
-         "negotiates EDID/HPD but never locks TMDS (the stock PYNQ bitstream behaves identically), and "
-         "the output stops producing TMDS once the kernel is inserted.\n"
+         "Main path:  PS frame -> VDMA -> enhance -> pixel_unpack -> HDMI OUT, with the kernel sitting in "
+         "the live pixel stream; measured 21 pixel clocks on the board, seven presets switched while "
+         "video keeps running.\n"
+         "The frame source is the VDMA because this board's HDMI output only works at 640x480 "
+         "(800x600/720p/1080p consume no frames; the stock bitstream behaves identically - the pins are "
+         "unbuffered), while the HDMI input IP cannot run at 640x480. With no common mode, frames come "
+         "from DDR and the kernel still processes real pixels.\n"
          "The enhance kernel runs local contrast -> tone curve -> binarise/invert -> split screen, "
          "all integer, one pixel per clock; 59 configuration bits are driven from the PS at "
          "run time.\n"
@@ -195,8 +198,8 @@ def main() -> int:
 
     add_text(slide, MARGIN, y, BODY_W,
              "Tool versions: Vivado / Vitis HLS 2026.1, PYNQ 3.1.1 image, device "
-             "xc7z020clg400-1.  Repository: README.md, docs/ (including docs/hdmi_status.md for the "
-             "open HDMI items), report/design_report.md, report/comparison.md.",
+             "xc7z020clg400-1.  Repository: README.md, docs/ (docs/hdmi_status.md records the HDMI "
+             "measurements and the two hardware limits), report/design_report.md, report/comparison.md.",
              size=8, color=RGBColor(0x88, 0x88, 0x88))
     used = y + 0.5
 
