@@ -85,11 +85,19 @@ board/hdmi_stream_enhance/
 
 板上（root + PYNQ venv）：
 
+**方式一：Jupyter 面板（推荐）**
+
+打开 `notebooks/hdmi_panel.ipynb` → Run All → 出现 **8 个按钮**，点哪个就切到哪个预设，
+下方实时显示流水线延迟；最后一格是自动循环（每档 15 秒），适合录屏。
+
+**方式二：命令行**
+
 ```bash
 cd /home/xilinx/jupyter_notebooks/hdmi_enh2
 
-# 主演示：640×480 测试图 + 7 档预设循环，每次切换重建输出链路
-sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=/root   /usr/local/share/pynq-venv/bin/python3 hdmi_preset_only.py --cycle 15
+# 主演示：640×480 测试图 + 8 档预设循环，每次切换重建输出链路
+sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=/root \
+  /usr/local/share/pynq-venv/bin/python3 hdmi_preset_only.py --cycle 15
 ```
 
 预期输出：

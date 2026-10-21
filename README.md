@@ -54,7 +54,7 @@
 - [x] **流水线延迟实测：16 个像素时钟 = 160 ns @100 MHz**（`axis_cycle_stamp` 在内核前后各
       打一次时间戳；720p60 的一行是 17.2 µs，所以延迟只有一行的 1%，原来说的「约一行」是上界）
 - [ ] 端到端延迟与功耗实测：采集卡已到，但 HDMI 直通受硬件限制（见上），只能测 PL 内部延迟（21 拍）；功耗需外部功率计
-- [x] **参数化与 UI**：8 预设运行期切换，Jupyter 面板 `board/enhance_dma/panel.ipynb`（DMA 通路）+ HDMI 通路按档位切换
+- [x] **参数化与 UI**：8 预设运行期切换，两条通路各有一个 Jupyter 面板 —— `board/enhance_dma/panel.ipynb`（DMA，逐位比对）与 `board/hdmi_stream_enhance/notebooks/hdmi_panel.ipynb`（HDMI，点按钮切预设）
 - [x] **一页英文 A4 海报**：`report/poster/poster.pptx`（由 `make_poster.py` 生成，配图为板子 HDMI 输出的 2×2 采集拼图）；拿到 AMD 官方模板后可直接套版
 
 ## 技术栈
