@@ -78,7 +78,7 @@ board/hdmi_stream_enhance/
 ├── hdmi_restore_hpd.py      工具：加载位流后恢复 Windows 的 2 号屏
 ├── evidence/                采集卡截图（按画面特征命名）+ 2×2 拼图
 ├── diagnostics/             21 个排查脚本，每个对应一个具体问题
-└── notebooks/               Jupyter 版验证与演示 + 生成脚本
+└── notebooks/               Jupyter 版验证与演示（hdmi_panel.ipynb = 点按钮切预设）
 ```
 
 ## 跑

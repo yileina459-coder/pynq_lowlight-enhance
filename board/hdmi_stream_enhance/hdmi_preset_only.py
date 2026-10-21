@@ -85,7 +85,8 @@ def main(argv=None) -> int:
     print(f"test image written once ({(time.monotonic() - t0) * 1000:.1f} ms); "
           f"no further DDR writes from here on", flush=True)
 
-    presets = ["pass", "clarity", "document", "night", "invert", "binarize", "split"]
+    presets = ["pass", "clarity", "reading", "document",
+               "night", "invert", "binarize", "split"]   # all eight
     started = time.monotonic()
     index = 0
     next_switch = 0.0
