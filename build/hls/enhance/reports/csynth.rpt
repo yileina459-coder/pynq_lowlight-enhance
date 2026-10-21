@@ -4,7 +4,7 @@
 == Synthesis Summary Report of 'enhance_stream'
 ================================================================
 + General Information: 
-    * Date:           Mon Oct 19 12:21:55 2026
+    * Date:           Wed Oct 21 23:09:45 2026
     * Version:        2026.1 (Build 6493734 on Jun 16 2026)
     * Project:        proj
     * Solution:       solution1
@@ -110,74 +110,74 @@
 |   mac_muladd_8ns_5ns_15s_15_4_1_U7  | 1   |        | zext_ln79_6    | zext      | dsp_slice              | 3       |
 |   mac_muladd_8ns_5ns_15s_15_4_1_U7  | 1   |        | add_ln79       | add       | dsp_slice              | 3       |
 |   mac_muladd_8ns_8ns_15ns_16_4_1_U8 | 1   |        | acc            | add       | dsp_slice              | 3       |
-|   icmp_ln82_fu_540_p2               |     |        | icmp_ln82      | seteq     | auto                   | 0       |
+|   icmp_ln26_fu_540_p2               |     |        | icmp_ln26      | seteq     | auto                   | 0       |
 |   i_mid_fu_546_p2                   |     |        | i_mid          | add       | fabric                 | 0       |
 |   i_mid_1_fu_552_p3                 |     |        | i_mid_1        | select    | auto_sel               | 0       |
-|   icmp_ln83_fu_560_p2               |     |        | icmp_ln83      | seteq     | auto                   | 0       |
+|   icmp_ln27_fu_560_p2               |     |        | icmp_ln27      | seteq     | auto                   | 0       |
 |   i_bot_fu_566_p2                   |     |        | i_bot          | add       | fabric                 | 0       |
 |   i_bot_1_fu_572_p3                 |     |        | i_bot_1        | select    | auto_sel               | 0       |
 |   sparsemux_7_2_8_1_1_U2            |     |        | tmp_5          | sparsemux | onehotencoding_realdef | 0       |
 |   sparsemux_7_2_8_1_1_U3            |     |        | tmp_6          | sparsemux | onehotencoding_realdef | 0       |
-|   icmp_ln89_fu_610_p2               |     |        | icmp_ln89      | seteq     | auto                   | 0       |
-|   select_ln89_fu_810_p3             |     |        | select_ln89    | select    | auto_sel               | 0       |
-|   select_ln89_1_fu_699_p3           |     |        | select_ln89_1  | select    | auto_sel               | 0       |
-|   select_ln89_2_fu_705_p3           |     |        | select_ln89_2  | select    | auto_sel               | 0       |
-|   select_ln89_3_fu_711_p3           |     |        | select_ln89_3  | select    | auto_sel               | 0       |
-|   select_ln89_4_fu_717_p3           |     |        | select_ln89_4  | select    | auto_sel               | 0       |
-|   select_ln89_5_fu_723_p3           |     |        | select_ln89_5  | select    | auto_sel               | 0       |
+|   icmp_ln33_fu_610_p2               |     |        | icmp_ln33      | seteq     | auto                   | 0       |
+|   select_ln33_fu_810_p3             |     |        | select_ln33    | select    | auto_sel               | 0       |
+|   select_ln33_1_fu_699_p3           |     |        | select_ln33_1  | select    | auto_sel               | 0       |
+|   select_ln33_2_fu_705_p3           |     |        | select_ln33_2  | select    | auto_sel               | 0       |
+|   select_ln33_3_fu_711_p3           |     |        | select_ln33_3  | select    | auto_sel               | 0       |
+|   select_ln33_4_fu_717_p3           |     |        | select_ln33_4  | select    | auto_sel               | 0       |
+|   select_ln33_5_fu_723_p3           |     |        | select_ln33_5  | select    | auto_sel               | 0       |
 |   tmp2_fu_751_p2                    |     |        | tmp2           | add       | fabric                 | 0       |
 |   tmp4_fu_761_p2                    |     |        | tmp4           | add       | fabric                 | 0       |
 |   tmp21_fu_771_p2                   |     |        | tmp21          | add       | fabric                 | 0       |
-|   add_ln112_fu_833_p2               |     |        | add_ln112      | add       | fabric                 | 0       |
-|   add_ln112_2_fu_777_p2             |     |        | add_ln112_2    | add       | fabric                 | 0       |
-|   add_ln112_3_fu_842_p2             |     |        | add_ln112_3    | add       | fabric                 | 0       |
+|   add_ln56_fu_833_p2                |     |        | add_ln56       | add       | fabric                 | 0       |
+|   add_ln56_2_fu_777_p2              |     |        | add_ln56_2     | add       | fabric                 | 0       |
+|   add_ln56_3_fu_842_p2              |     |        | add_ln56_3     | add       | fabric                 | 0       |
 |   detail_fu_889_p2                  |     |        | detail         | sub       | fabric                 | 0       |
 |   mul_9s_8ns_17_1_1_U4              |     |        | prod           | mul       | auto                   | 0       |
 |   y1_fu_919_p2                      |     |        | y1             | add       | fabric                 | 0       |
-|   icmp_ln89_1_fu_947_p2             |     |        | icmp_ln89_1    | setgt     | auto                   | 0       |
+|   icmp_ln89_fu_947_p2               |     |        | icmp_ln89      | setgt     | auto                   | 0       |
 |   xor_ln88_fu_957_p2                |     |        | xor_ln88       | xor       | auto                   | 0       |
 |   select_ln88_fu_963_p3             |     |        | select_ln88    | select    | auto_sel               | 0       |
 |   or_ln88_fu_971_p2                 |     |        | or_ln88        | or        | auto                   | 0       |
 |   y1c_fu_977_p3                     |     |        | y1c            | select    | auto_sel               | 0       |
-|   icmp_ln128_fu_985_p2              |     |        | icmp_ln128     | setgt     | auto                   | 0       |
-|   mul_8ns_8ns_16_1_1_U5             |     |        | mul_ln129      | mul       | auto                   | 0       |
+|   icmp_ln72_fu_985_p2               |     |        | icmp_ln72      | setgt     | auto                   | 0       |
+|   mul_8ns_8ns_16_1_1_U5             |     |        | mul_ln73       | mul       | auto                   | 0       |
 |   above_fu_992_p2                   |     |        | above          | sub       | fabric                 | 0       |
-|   mul_9s_8ns_17_1_1_U6              |     |        | mul_ln132      | mul       | auto                   | 0       |
-|   add_ln132_fu_1036_p2              |     |        | add_ln132      | add       | fabric                 | 0       |
-|   icmp_ln89_2_fu_1067_p2            |     |        | icmp_ln89_2    | setgt     | auto                   | 0       |
+|   mul_9s_8ns_17_1_1_U6              |     |        | mul_ln76       | mul       | auto                   | 0       |
+|   add_ln76_fu_1036_p2               |     |        | add_ln76       | add       | fabric                 | 0       |
+|   icmp_ln89_1_fu_1067_p2            |     |        | icmp_ln89_1    | setgt     | auto                   | 0       |
 |   xor_ln88_1_fu_1077_p2             |     |        | xor_ln88_1     | xor       | auto                   | 0       |
 |   select_ln88_2_fu_1083_p3          |     |        | select_ln88_2  | select    | auto_sel               | 0       |
 |   or_ln88_1_fu_1091_p2              |     |        | or_ln88_1      | or        | auto                   | 0       |
 |   y2c_fu_1097_p3                    |     |        | y2c            | select    | auto_sel               | 0       |
-|   icmp_ln139_fu_1105_p2             |     |        | icmp_ln139     | setlt     | auto                   | 0       |
+|   icmp_ln83_fu_1105_p2              |     |        | icmp_ln83      | setlt     | auto                   | 0       |
 |   y3_1_fu_1110_p2                   |     |        | y3_1           | xor       | auto                   | 0       |
-|   select_ln139_fu_1115_p3           |     |        | select_ln139   | select    | auto_sel               | 0       |
+|   select_ln83_fu_1115_p3            |     |        | select_ln83    | select    | auto_sel               | 0       |
 |   y3_2_fu_1123_p3                   |     |        | y3_2           | select    | auto_sel               | 0       |
-|   xor_ln142_fu_1129_p2              |     |        | xor_ln142      | xor       | auto                   | 0       |
+|   xor_ln86_fu_1129_p2               |     |        | xor_ln86       | xor       | auto                   | 0       |
 |   y3_3_fu_1135_p3                   |     |        | y3_3           | select    | auto_sel               | 0       |
 |   delta_fu_1146_p2                  |     |        | delta          | sub       | fabric                 | 0       |
 |   v_2_fu_1163_p2                    |     |        | v_2            | add       | fabric                 | 0       |
-|   icmp_ln89_3_fu_1187_p2            |     |        | icmp_ln89_3    | seteq     | auto                   | 0       |
+|   icmp_ln89_2_fu_1187_p2            |     |        | icmp_ln89_2    | seteq     | auto                   | 0       |
 |   xor_ln88_2_fu_1197_p2             |     |        | xor_ln88_2     | xor       | auto                   | 0       |
 |   select_ln88_4_fu_1203_p3          |     |        | select_ln88_4  | select    | auto_sel               | 0       |
 |   or_ln88_2_fu_1211_p2              |     |        | or_ln88_2      | or        | auto                   | 0       |
 |   r_out_fu_1217_p3                  |     |        | r_out          | select    | auto_sel               | 0       |
 |   v_3_fu_1225_p2                    |     |        | v_3            | add       | fabric                 | 0       |
-|   icmp_ln89_4_fu_1249_p2            |     |        | icmp_ln89_4    | seteq     | auto                   | 0       |
+|   icmp_ln89_3_fu_1249_p2            |     |        | icmp_ln89_3    | seteq     | auto                   | 0       |
 |   xor_ln88_3_fu_1259_p2             |     |        | xor_ln88_3     | xor       | auto                   | 0       |
 |   select_ln88_6_fu_1265_p3          |     |        | select_ln88_6  | select    | auto_sel               | 0       |
 |   or_ln88_3_fu_1273_p2              |     |        | or_ln88_3      | or        | auto                   | 0       |
 |   g_out_fu_1279_p3                  |     |        | g_out          | select    | auto_sel               | 0       |
 |   v_4_fu_1287_p2                    |     |        | v_4            | add       | fabric                 | 0       |
-|   icmp_ln89_5_fu_1311_p2            |     |        | icmp_ln89_5    | seteq     | auto                   | 0       |
-|   select_ln89_6_fu_1321_p3          |     |        | select_ln89_6  | select    | auto_sel               | 0       |
-|   icmp_ln162_fu_620_p2              |     |        | icmp_ln162     | setlt     | auto                   | 0       |
+|   icmp_ln89_4_fu_1311_p2            |     |        | icmp_ln89_4    | seteq     | auto                   | 0       |
+|   select_ln89_fu_1321_p3            |     |        | select_ln89    | select    | auto_sel               | 0       |
+|   icmp_ln106_fu_620_p2              |     |        | icmp_ln106     | setlt     | auto                   | 0       |
 |   r_out_2_fu_1329_p3                |     |        | r_out_2        | select    | auto_sel               | 0       |
 |   b_out_1_fu_1335_p3                |     |        | b_out_1        | select    | auto_sel               | 0       |
-|   select_ln162_fu_1341_p3           |     |        | select_ln162   | select    | auto_sel               | 0       |
-|   add_ln178_fu_625_p2               |     |        | add_ln178      | add       | fabric                 | 0       |
-|   select_ln174_fu_631_p3            |     |        | select_ln174   | select    | auto_sel               | 0       |
-|   select_ln174_1_fu_588_p3          |     |        | select_ln174_1 | select    | auto_sel               | 0       |
+|   select_ln106_fu_1341_p3           |     |        | select_ln106   | select    | auto_sel               | 0       |
+|   add_ln122_fu_625_p2               |     |        | add_ln122      | add       | fabric                 | 0       |
+|   select_ln118_fu_631_p3            |     |        | select_ln118   | select    | auto_sel               | 0       |
+|   select_ln118_1_fu_588_p3          |     |        | select_ln118_1 | select    | auto_sel               | 0       |
 +-------------------------------------+-----+--------+----------------+-----------+------------------------+---------+
 
 
@@ -199,13 +199,18 @@
 == Pragma Report
 ================================================================
 * Ignored Pragmas
-+-----------------+--------------------------+-------------------------------------------------------------+-----------------+
-| Type            | Options                  | Location                                                    | Messages        |
-+-----------------+--------------------------+-------------------------------------------------------------+-----------------+
-| ARRAY_PARTITION | variable = wtop complete | in enhance_stream (../../../src/hls/enhance/enhance.cpp:57) | Not implemented |
-| ARRAY_PARTITION | variable = wmid complete | in enhance_stream (../../../src/hls/enhance/enhance.cpp:58) | Not implemented |
-| ARRAY_PARTITION | variable = wbot complete | in enhance_stream (../../../src/hls/enhance/enhance.cpp:59) | Not implemented |
-+-----------------+--------------------------+-------------------------------------------------------------+-----------------+
++-----------------+----------------------------------+------------------------------------------------------------------+--------------------------------------------------------------------------------------+
+| Type            | Options                          | Location                                                         | Messages                                                                             |
++-----------------+----------------------------------+------------------------------------------------------------------+--------------------------------------------------------------------------------------+
+| ARRAY_PARTITION | variable = wtop complete         | in enhance_stream (../../../src/hls/enhance/enhance.cpp:57)      | Not implemented                                                                      |
+| ARRAY_PARTITION | variable = wmid complete         | in enhance_stream (../../../src/hls/enhance/enhance.cpp:58)      | Not implemented                                                                      |
+| ARRAY_PARTITION | variable = wbot complete         | in enhance_stream (../../../src/hls/enhance/enhance.cpp:59)      | Not implemented                                                                      |
+| INTERFACE       | bram port = cfg                  | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:100) | Array of size 1 cannot be specified as bram, '#pragma HLS interface bram' is ignored |
+| ARRAY_PARTITION | variable = lbuf complete dim = 1 | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:104) | Not implemented                                                                      |
+| ARRAY_PARTITION | variable = wtop complete         | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:109) | Not implemented                                                                      |
+| ARRAY_PARTITION | variable = wmid complete         | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:110) | Not implemented                                                                      |
+| ARRAY_PARTITION | variable = wbot complete         | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:111) | Not implemented                                                                      |
++-----------------+----------------------------------+------------------------------------------------------------------+--------------------------------------------------------------------------------------+
 
 * Implemented Pragmas
 +-----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+
@@ -217,16 +222,20 @@
 +-----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+
 
 * Valid Pragma Syntax
-+-----------------+----------------------------------+-------------------------------------------------------------+
-| Type            | Options                          | Location                                                    |
-+-----------------+----------------------------------+-------------------------------------------------------------+
-| INTERFACE       | axis port = s_in                 | in enhance_stream (../../../src/hls/enhance/enhance.cpp:31) |
-| INTERFACE       | axis port = s_out                | in enhance_stream (../../../src/hls/enhance/enhance.cpp:32) |
-| INTERFACE       | ap_ctrl_none port = return       | in enhance_stream (../../../src/hls/enhance/enhance.cpp:33) |
-| ARRAY_PARTITION | variable = lbuf complete dim = 1 | in enhance_stream (../../../src/hls/enhance/enhance.cpp:52) |
-| PIPELINE        | II = 1                           | in enhance_stream (../../../src/hls/enhance/enhance.cpp:69) |
-| INLINE          |                                  | in enh_luma (../../../src/hls/enhance/enhance.hpp:75)       |
-| INLINE          |                                  | in enh_clip8 (../../../src/hls/enhance/enhance.hpp:87)      |
-+-----------------+----------------------------------+-------------------------------------------------------------+
++-----------------+----------------------------------+------------------------------------------------------------------+
+| Type            | Options                          | Location                                                         |
++-----------------+----------------------------------+------------------------------------------------------------------+
+| INTERFACE       | axis port = s_in                 | in enhance_stream (../../../src/hls/enhance/enhance.cpp:31)      |
+| INTERFACE       | axis port = s_out                | in enhance_stream (../../../src/hls/enhance/enhance.cpp:32)      |
+| INTERFACE       | ap_ctrl_none port = return       | in enhance_stream (../../../src/hls/enhance/enhance.cpp:33)      |
+| ARRAY_PARTITION | variable = lbuf complete dim = 1 | in enhance_stream (../../../src/hls/enhance/enhance.cpp:52)      |
+| PIPELINE        | II = 1                           | in enhance_stream (../../../src/hls/enhance/enhance.cpp:69)      |
+| INTERFACE       | axis port = s_in                 | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:98)  |
+| INTERFACE       | axis port = s_out                | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:99)  |
+| INTERFACE       | ap_ctrl_none port = return       | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:101) |
+| PIPELINE        | II = 1                           | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:121) |
+| INLINE          |                                  | in enh_luma (../../../src/hls/enhance/enhance.hpp:75)            |
+| INLINE          |                                  | in enh_clip8 (../../../src/hls/enhance/enhance.hpp:87)           |
++-----------------+----------------------------------+------------------------------------------------------------------+
 
 

@@ -69,30 +69,37 @@ def find(ol, fragment: str):
 
 RST_BIT = 1 << 31          # bit 31 of word 1 asks the kernel to reset
 
+# Set this to True only for the old port-configured bitstream.
+#
+# The memory-configured kernel (enhance_stream_cfg, used from 2026-10-22 on) reads all nine
+# parameters from a BRAM word on every pixel, so a preset change takes effect on the next
+# pixel and no reset is needed at all. Pulsing the reset would only interrupt the pixel
+# stream and make the video-output core underflow - the fault that took a whole evening to
+# pin down.
+PULSE_RESET = False
+
 
 def write_preset(cfg_ip, name: str) -> tuple[int, int]:
-    """Write a preset, then re-run the kernel's pipeline prologue.
+    """Write a preset. With the memory-configured kernel this is a plain register write.
 
-    The kernel is free-running, so HLS samples its loop-invariant configuration once
-    when the pipeline starts and registers it there (the generated netlist contains
-    ``binarize_read_reg_1446 <= binarize;``). Six of the nine parameters were therefore
-    frozen at whatever was present at power-up and ignored later writes; only clarity,
-    gain_lo and gain_hi stayed combinational.
-
-    ``enh_rst_gate`` lets the PS reset just the kernel, which re-runs that prologue:
-
-        ap_rst_n = board_aresetn & ~cfg_hi[31]
-
-    The sequence is: put the new values on the ports first, then assert the reset, then
-    release it - the prologue samples the configuration during the release, so the new
-    values are the ones latched.
+    History worth keeping: with the kernel's configuration on plain input ports, HLS sampled
+    it once in the pipeline prologue (the netlist contained
+    ``binarize_read_reg_1446 <= binarize;``), so six of the nine parameters froze at
+    power-up and a preset change required resetting the kernel to re-run that prologue.
+    Resetting interrupted the pixel stream, so the output path had to be rebuilt after every
+    switch. Moving the configuration into memory removed the whole chain of consequences.
     """
     lo, hi = pack(PRESETS[name])
-    cfg_ip.mmio.write(GPIO_DATA, lo)                 # parameters that HLS reads live
-    cfg_ip.mmio.write(GPIO2_DATA, hi | RST_BIT)      # remaining ones + reset asserted
-    time.sleep(0.002)                                # let the reset settle
-    cfg_ip.mmio.write(GPIO2_DATA, hi)                # release: prologue re-samples
-    time.sleep(0.002)
+    cfg_ip.mmio.write(GPIO_DATA, lo)
+    if not PULSE_RESET:
+        # Live path: one write, effective on the next pixel, nothing is interrupted.
+        cfg_ip.mmio.write(GPIO2_DATA, hi)
+        time.sleep(0.001)
+    else:
+        cfg_ip.mmio.write(GPIO2_DATA, hi | RST_BIT)  # remaining ones + reset asserted
+        time.sleep(0.002)                            # let the reset settle
+        cfg_ip.mmio.write(GPIO2_DATA, hi)            # release: prologue re-samples
+        time.sleep(0.002)
 
     rb = (cfg_ip.mmio.read(GPIO_DATA), cfg_ip.mmio.read(GPIO2_DATA))
     if rb != (lo, hi):

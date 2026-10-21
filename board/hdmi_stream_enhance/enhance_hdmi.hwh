@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Wed Oct 21 20:50:10 2026" VIVADOVERSION="2026.1">
+<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Wed Oct 21 23:30:47 2026" VIVADOVERSION="2026.1">
 
   <SYSTEMINFO ARCH="zynq" DEVICE="7z020" NAME="base" PACKAGE="clg400" SPEEDGRADE="-1"/>
 
@@ -4270,6 +4270,53 @@
         </BUSINTERFACE>
       </BUSINTERFACES>
     </MODULE>
+    <MODULE COREREVISION="1" FULLNAME="/cfg_bram_0" HWVERSION="1.0" INSTANCE="cfg_bram_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="cfg_bram" VLNV="xilinx.com:module_ref:cfg_bram:1.0">
+      <DOCUMENTS>
+        <DOCUMENT SOURCE="https://support.amd.com/documentation/ipcores/cfg_bram/1_0"/>
+      </DOCUMENTS>
+      <PARAMETERS>
+        <PARAMETER NAME="Component_Name" VALUE="base_cfg_bram_0_0"/>
+        <PARAMETER NAME="EDK_IPTYPE" VALUE="PERIPHERAL"/>
+      </PARAMETERS>
+      <PORTS>
+        <PORT CLKFREQUENCY="142857132" DIR="I" NAME="aclk" SIGIS="clk" SIGNAME="ps7_0_FCLK_CLK1">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0" PORT="FCLK_CLK1"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="31" NAME="addr_a" RIGHT="0" SIGIS="undef" SIGNAME="enhance_cfg_0_cfg_Addr_A">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="cfg_Addr_A"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="31" NAME="cfg_hi" RIGHT="0" SIGIS="undef" SIGNAME="gpio_enh_cfg_gpio2_io_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="gpio_enh_cfg" PORT="gpio2_io_o"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" LEFT="31" NAME="cfg_lo" RIGHT="0" SIGIS="undef" SIGNAME="gpio_enh_cfg_gpio_io_o">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="gpio_enh_cfg" PORT="gpio_io_o"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="O" LEFT="63" NAME="dout_a" RIGHT="0" SIGIS="undef" SIGNAME="cfg_bram_0_dout_a">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="cfg_Dout_A"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="en_a" SIGIS="undef" SIGNAME="enhance_cfg_0_cfg_EN_A">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="cfg_EN_A"/>
+          </CONNECTIONS>
+        </PORT>
+        <PORT DIR="I" NAME="pclk" SIGIS="undef" SIGNAME="ps7_0_FCLK_CLK0">
+          <CONNECTIONS>
+            <CONNECTION INSTANCE="ps7_0" PORT="FCLK_CLK0"/>
+          </CONNECTIONS>
+        </PORT>
+      </PORTS>
+      <BUSINTERFACES/>
+    </MODULE>
     <MODULE COREREVISION="19" FULLNAME="/clk_wiz_10MHz" HWVERSION="6.0" INSTANCE="clk_wiz_10MHz" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="clk_wiz" VLNV="xilinx.com:ip:clk_wiz:6.0">
       <DOCUMENTS>
         <DOCUMENT SOURCE="https://support.amd.com/documentation/ipcores/clk_wiz/6_0"/>
@@ -5401,73 +5448,6 @@
       </PORTS>
       <BUSINTERFACES/>
     </MODULE>
-    <MODULE COREREVISION="1" FULLNAME="/enh_cfg_split_0" HWVERSION="1.0" INSTANCE="enh_cfg_split_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="enh_cfg_split" VLNV="xilinx.com:module_ref:enh_cfg_split:1.0">
-      <DOCUMENTS>
-        <DOCUMENT SOURCE="https://support.amd.com/documentation/ipcores/enh_cfg_split/1_0"/>
-      </DOCUMENTS>
-      <PARAMETERS>
-        <PARAMETER NAME="Component_Name" VALUE="base_enh_cfg_split_0_0"/>
-        <PARAMETER NAME="EDK_IPTYPE" VALUE="PERIPHERAL"/>
-      </PARAMETERS>
-      <PORTS>
-        <PORT DIR="O" NAME="binarize" SIGIS="undef" SIGNAME="enh_cfg_split_0_binarize">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="binarize"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="31" NAME="cfg_hi" RIGHT="0" SIGIS="undef" SIGNAME="gpio_enh_cfg_gpio2_io_o">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="gpio_enh_cfg" PORT="gpio2_io_o"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="31" NAME="cfg_lo" RIGHT="0" SIGIS="undef" SIGNAME="gpio_enh_cfg_gpio_io_o">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="gpio_enh_cfg" PORT="gpio_io_o"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="7" NAME="clarity" RIGHT="0" SIGIS="undef" SIGNAME="enh_cfg_split_0_clarity">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="clarity"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="7" NAME="gain_hi" RIGHT="0" SIGIS="undef" SIGNAME="enh_cfg_split_0_gain_hi">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="gain_hi"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="7" NAME="gain_lo" RIGHT="0" SIGIS="undef" SIGNAME="enh_cfg_split_0_gain_lo">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="gain_lo"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" NAME="invert" SIGIS="undef" SIGNAME="enh_cfg_split_0_invert">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="invert"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="7" NAME="knee" RIGHT="0" SIGIS="undef" SIGNAME="enh_cfg_split_0_knee">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="knee"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" NAME="mono" SIGIS="undef" SIGNAME="enh_cfg_split_0_mono">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="mono"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="15" NAME="split_x" RIGHT="0" SIGIS="undef" SIGNAME="enh_cfg_split_0_split_x">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="split_x"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="7" NAME="thresh" RIGHT="0" SIGIS="undef" SIGNAME="enh_cfg_split_0_thresh">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="thresh"/>
-          </CONNECTIONS>
-        </PORT>
-      </PORTS>
-      <BUSINTERFACES/>
-    </MODULE>
     <MODULE COREREVISION="1" FULLNAME="/enh_rst_bridge_0" HWVERSION="1.0" INSTANCE="enh_rst_bridge_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="enh_rst_bridge" VLNV="xilinx.com:module_ref:enh_rst_bridge:1.0">
       <DOCUMENTS>
         <DOCUMENT SOURCE="https://support.amd.com/documentation/ipcores/enh_rst_bridge/1_0"/>
@@ -5484,7 +5464,7 @@
         </PORT>
         <PORT DIR="O" NAME="ap_rst_n" POLARITY="ACTIVE_LOW" SIGIS="rst" SIGNAME="enh_rst_bridge_0_ap_rst_n">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="ap_rst_n"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="ap_rst_n"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="I" NAME="aresetn" POLARITY="ACTIVE_LOW" SIGIS="rst" SIGNAME="rst_ps7_0_fclk1_peripheral_aresetn">
@@ -5500,12 +5480,12 @@
       </PORTS>
       <BUSINTERFACES/>
     </MODULE>
-    <MODULE COREREVISION="2114835981" FULLNAME="/enhance_0" HWVERSION="1.0" INSTANCE="enhance_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="enhance_stream" VLNV="xilinx.com:hls:enhance_stream:1.0">
+    <MODULE COREREVISION="2114839512" FULLNAME="/enhance_cfg_0" HWVERSION="1.0" INSTANCE="enhance_cfg_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="enhance_stream_cfg" VLNV="xilinx.com:hls:enhance_stream_cfg:1.0">
       <DOCUMENTS>
-        <DOCUMENT SOURCE="https://support.amd.com/documentation/ipcores/enhance_stream/1_0"/>
+        <DOCUMENT SOURCE="https://support.amd.com/documentation/ipcores/enhance_stream_cfg/1_0"/>
       </DOCUMENTS>
       <PARAMETERS>
-        <PARAMETER NAME="Component_Name" VALUE="base_enhance_0_0"/>
+        <PARAMETER NAME="Component_Name" VALUE="base_enhance_cfg_0_0"/>
         <PARAMETER NAME="II" VALUE="undef"/>
         <PARAMETER NAME="clk_period" VALUE="7"/>
         <PARAMETER NAME="combinational" VALUE="0"/>
@@ -5524,144 +5504,118 @@
             <CONNECTION INSTANCE="enh_rst_bridge_0" PORT="ap_rst_n"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="0" NAME="binarize" RIGHT="0" SIGIS="data" SIGNAME="enh_cfg_split_0_binarize">
+        <PORT DIR="O" LEFT="31" NAME="cfg_Addr_A" RIGHT="0" SIGIS="undef" SIGNAME="enhance_cfg_0_cfg_Addr_A">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enh_cfg_split_0" PORT="binarize"/>
+            <CONNECTION INSTANCE="cfg_bram_0" PORT="addr_a"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="7" NAME="clarity" RIGHT="0" SIGIS="data" SIGNAME="enh_cfg_split_0_clarity">
+        <PORT DIR="O" NAME="cfg_Clk_A" SIGIS="clk"/>
+        <PORT DIR="O" LEFT="63" NAME="cfg_Din_A" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="I" LEFT="63" NAME="cfg_Dout_A" RIGHT="0" SIGIS="undef" SIGNAME="cfg_bram_0_dout_a">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enh_cfg_split_0" PORT="clarity"/>
+            <CONNECTION INSTANCE="cfg_bram_0" PORT="dout_a"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="7" NAME="gain_hi" RIGHT="0" SIGIS="data" SIGNAME="enh_cfg_split_0_gain_hi">
+        <PORT DIR="O" NAME="cfg_EN_A" SIGIS="undef" SIGNAME="enhance_cfg_0_cfg_EN_A">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enh_cfg_split_0" PORT="gain_hi"/>
+            <CONNECTION INSTANCE="cfg_bram_0" PORT="en_a"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="7" NAME="gain_lo" RIGHT="0" SIGIS="data" SIGNAME="enh_cfg_split_0_gain_lo">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="enh_cfg_split_0" PORT="gain_lo"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="0" NAME="invert" RIGHT="0" SIGIS="data" SIGNAME="enh_cfg_split_0_invert">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="enh_cfg_split_0" PORT="invert"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="7" NAME="knee" RIGHT="0" SIGIS="data" SIGNAME="enh_cfg_split_0_knee">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="enh_cfg_split_0" PORT="knee"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="0" NAME="mono" RIGHT="0" SIGIS="data" SIGNAME="enh_cfg_split_0_mono">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="enh_cfg_split_0" PORT="mono"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="31" NAME="s_in_TDATA" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_in_TDATA">
+        <PORT DIR="O" NAME="cfg_Rst_A" SIGIS="rst"/>
+        <PORT DIR="O" LEFT="7" NAME="cfg_WEN_A" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="I" LEFT="31" NAME="s_in_TDATA" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_m_axis_tdata">
           <CONNECTIONS>
             <CONNECTION INSTANCE="stamp_in_0" PORT="m_axis_tdata"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="0" NAME="s_in_TDEST" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_in_TDEST">
+        <PORT DIR="I" LEFT="0" NAME="s_in_TDEST" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_m_axis_tdest">
           <CONNECTIONS>
             <CONNECTION INSTANCE="stamp_in_0" PORT="m_axis_tdest"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="0" NAME="s_in_TID" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_in_TID">
+        <PORT DIR="I" LEFT="0" NAME="s_in_TID" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_m_axis_tid">
           <CONNECTIONS>
             <CONNECTION INSTANCE="stamp_in_0" PORT="m_axis_tid"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="3" NAME="s_in_TKEEP" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_in_TKEEP">
+        <PORT DIR="I" LEFT="3" NAME="s_in_TKEEP" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_m_axis_tkeep">
           <CONNECTIONS>
             <CONNECTION INSTANCE="stamp_in_0" PORT="m_axis_tkeep"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="0" NAME="s_in_TLAST" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_in_TLAST">
+        <PORT DIR="I" LEFT="0" NAME="s_in_TLAST" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_m_axis_tlast">
           <CONNECTIONS>
             <CONNECTION INSTANCE="stamp_in_0" PORT="m_axis_tlast"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="s_in_TREADY" SIGIS="undef" SIGNAME="enhance_0_s_in_TREADY">
+        <PORT DIR="O" NAME="s_in_TREADY" SIGIS="undef" SIGNAME="enhance_cfg_0_s_in_TREADY">
           <CONNECTIONS>
             <CONNECTION INSTANCE="stamp_in_0" PORT="m_axis_tready"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="3" NAME="s_in_TSTRB" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_in_TSTRB">
+        <PORT DIR="I" LEFT="3" NAME="s_in_TSTRB" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_m_axis_tstrb">
           <CONNECTIONS>
             <CONNECTION INSTANCE="stamp_in_0" PORT="m_axis_tstrb"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="0" NAME="s_in_TUSER" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_in_TUSER">
+        <PORT DIR="I" LEFT="0" NAME="s_in_TUSER" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_m_axis_tuser">
           <CONNECTIONS>
             <CONNECTION INSTANCE="stamp_in_0" PORT="m_axis_tuser"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="s_in_TVALID" SIGIS="undef" SIGNAME="enhance_0_s_in_TVALID">
+        <PORT DIR="I" NAME="s_in_TVALID" SIGIS="undef" SIGNAME="stamp_in_0_m_axis_tvalid">
           <CONNECTIONS>
             <CONNECTION INSTANCE="stamp_in_0" PORT="m_axis_tvalid"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="31" NAME="s_out_TDATA" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_out_TDATA">
+        <PORT DIR="O" LEFT="31" NAME="s_out_TDATA" RIGHT="0" SIGIS="undef" SIGNAME="enhance_cfg_0_s_out_TDATA">
           <CONNECTIONS>
             <CONNECTION INSTANCE="stamp_out_0" PORT="s_axis_tdata"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="0" NAME="s_out_TDEST" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_out_TDEST">
+        <PORT DIR="O" LEFT="0" NAME="s_out_TDEST" RIGHT="0" SIGIS="undef" SIGNAME="enhance_cfg_0_s_out_TDEST">
           <CONNECTIONS>
             <CONNECTION INSTANCE="stamp_out_0" PORT="s_axis_tdest"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="0" NAME="s_out_TID" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_out_TID">
+        <PORT DIR="O" LEFT="0" NAME="s_out_TID" RIGHT="0" SIGIS="undef" SIGNAME="enhance_cfg_0_s_out_TID">
           <CONNECTIONS>
             <CONNECTION INSTANCE="stamp_out_0" PORT="s_axis_tid"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="3" NAME="s_out_TKEEP" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_out_TKEEP">
+        <PORT DIR="O" LEFT="3" NAME="s_out_TKEEP" RIGHT="0" SIGIS="undef" SIGNAME="enhance_cfg_0_s_out_TKEEP">
           <CONNECTIONS>
             <CONNECTION INSTANCE="stamp_out_0" PORT="s_axis_tkeep"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="0" NAME="s_out_TLAST" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_out_TLAST">
+        <PORT DIR="O" LEFT="0" NAME="s_out_TLAST" RIGHT="0" SIGIS="undef" SIGNAME="enhance_cfg_0_s_out_TLAST">
           <CONNECTIONS>
             <CONNECTION INSTANCE="stamp_out_0" PORT="s_axis_tlast"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="s_out_TREADY" SIGIS="undef" SIGNAME="enhance_0_s_out_TREADY">
+        <PORT DIR="I" NAME="s_out_TREADY" SIGIS="undef" SIGNAME="stamp_out_0_s_axis_tready">
           <CONNECTIONS>
             <CONNECTION INSTANCE="stamp_out_0" PORT="s_axis_tready"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="3" NAME="s_out_TSTRB" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_out_TSTRB">
+        <PORT DIR="O" LEFT="3" NAME="s_out_TSTRB" RIGHT="0" SIGIS="undef" SIGNAME="enhance_cfg_0_s_out_TSTRB">
           <CONNECTIONS>
             <CONNECTION INSTANCE="stamp_out_0" PORT="s_axis_tstrb"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="0" NAME="s_out_TUSER" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_out_TUSER">
+        <PORT DIR="O" LEFT="0" NAME="s_out_TUSER" RIGHT="0" SIGIS="undef" SIGNAME="enhance_cfg_0_s_out_TUSER">
           <CONNECTIONS>
             <CONNECTION INSTANCE="stamp_out_0" PORT="s_axis_tuser"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="s_out_TVALID" SIGIS="undef" SIGNAME="enhance_0_s_out_TVALID">
+        <PORT DIR="O" NAME="s_out_TVALID" SIGIS="undef" SIGNAME="enhance_cfg_0_s_out_TVALID">
           <CONNECTIONS>
             <CONNECTION INSTANCE="stamp_out_0" PORT="s_axis_tvalid"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="15" NAME="split_x" RIGHT="0" SIGIS="data" SIGNAME="enh_cfg_split_0_split_x">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="enh_cfg_split_0" PORT="split_x"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="7" NAME="thresh" RIGHT="0" SIGIS="data" SIGNAME="enh_cfg_split_0_thresh">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="enh_cfg_split_0" PORT="thresh"/>
-          </CONNECTIONS>
-        </PORT>
       </PORTS>
       <BUSINTERFACES>
-        <BUSINTERFACE BUSNAME="stamp_in_0_m_axis" NAME="s_in" TYPE="TARGET" VLNV="xilinx.com:interface:axis:1.0">
+        <BUSINTERFACE BUSNAME="__NOC__" NAME="s_in" TYPE="TARGET" VLNV="xilinx.com:interface:axis:1.0">
           <PARAMETER NAME="CLK_DOMAIN" VALUE="base_ps7_0_0_FCLK_CLK1"/>
           <PARAMETER NAME="FREQ_HZ" VALUE="142857132"/>
           <PARAMETER NAME="HAS_TKEEP" VALUE="1"/>
@@ -5687,7 +5641,7 @@
             <PORTMAP LOGICAL="TVALID" PHYSICAL="s_in_TVALID"/>
           </PORTMAPS>
         </BUSINTERFACE>
-        <BUSINTERFACE BUSNAME="enhance_0_s_out" NAME="s_out" TYPE="INITIATOR" VLNV="xilinx.com:interface:axis:1.0">
+        <BUSINTERFACE BUSNAME="__NOC__" NAME="s_out" TYPE="INITIATOR" VLNV="xilinx.com:interface:axis:1.0">
           <PARAMETER NAME="CLK_DOMAIN" VALUE="base_ps7_0_0_FCLK_CLK1"/>
           <PARAMETER NAME="FREQ_HZ" VALUE="142857132"/>
           <PARAMETER NAME="HAS_TKEEP" VALUE="1"/>
@@ -5711,6 +5665,24 @@
             <PORTMAP LOGICAL="TSTRB" PHYSICAL="s_out_TSTRB"/>
             <PORTMAP LOGICAL="TUSER" PHYSICAL="s_out_TUSER"/>
             <PORTMAP LOGICAL="TVALID" PHYSICAL="s_out_TVALID"/>
+          </PORTMAPS>
+        </BUSINTERFACE>
+        <BUSINTERFACE BUSNAME="__NOC__" NAME="cfg_PORTA" TYPE="INITIATOR" VLNV="xilinx.com:interface:bram:1.0">
+          <PARAMETER NAME="MASTER_TYPE" VALUE="BRAM_CTRL"/>
+          <PARAMETER NAME="MEM_ADDRESS_MODE" VALUE="BYTE_ADDRESS"/>
+          <PARAMETER NAME="MEM_ECC" VALUE="NONE"/>
+          <PARAMETER NAME="MEM_SIZE" VALUE="16"/>
+          <PARAMETER NAME="MEM_WIDTH" VALUE="64"/>
+          <PARAMETER NAME="READ_LATENCY" VALUE="1"/>
+          <PARAMETER NAME="READ_WRITE_MODE"/>
+          <PORTMAPS>
+            <PORTMAP LOGICAL="ADDR" PHYSICAL="cfg_Addr_A"/>
+            <PORTMAP LOGICAL="CLK" PHYSICAL="cfg_Clk_A"/>
+            <PORTMAP LOGICAL="DIN" PHYSICAL="cfg_Din_A"/>
+            <PORTMAP LOGICAL="DOUT" PHYSICAL="cfg_Dout_A"/>
+            <PORTMAP LOGICAL="EN" PHYSICAL="cfg_EN_A"/>
+            <PORTMAP LOGICAL="RST" PHYSICAL="cfg_Rst_A"/>
+            <PORTMAP LOGICAL="WE" PHYSICAL="cfg_WEN_A"/>
           </PORTMAPS>
         </BUSINTERFACE>
       </BUSINTERFACES>
@@ -5912,13 +5884,13 @@
       <PORTS>
         <PORT DIR="O" LEFT="31" NAME="gpio2_io_o" RIGHT="0" SIGIS="undef" SIGNAME="gpio_enh_cfg_gpio2_io_o">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enh_cfg_split_0" PORT="cfg_hi"/>
             <CONNECTION INSTANCE="enh_rst_bridge_0" PORT="cfg_hi"/>
+            <CONNECTION INSTANCE="cfg_bram_0" PORT="cfg_hi"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="O" LEFT="31" NAME="gpio_io_o" RIGHT="0" SIGIS="undef" SIGNAME="gpio_enh_cfg_gpio_io_o">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enh_cfg_split_0" PORT="cfg_lo"/>
+            <CONNECTION INSTANCE="cfg_bram_0" PORT="cfg_lo"/>
           </CONNECTIONS>
         </PORT>
         <PORT CLKFREQUENCY="100000000" DIR="I" NAME="s_axi_aclk" SIGIS="clk" SIGNAME="ps7_0_FCLK_CLK0">
@@ -55731,6 +55703,7 @@
             <CONNECTION INSTANCE="gpio_enh_lat" PORT="s_axi_aclk"/>
             <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M08_ACLK"/>
             <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M09_ACLK"/>
+            <CONNECTION INSTANCE="cfg_bram_0" PORT="pclk"/>
           </CONNECTIONS>
         </PORT>
         <PORT CLKFREQUENCY="142857132" DIR="O" NAME="FCLK_CLK1" SIGIS="clk" SIGNAME="ps7_0_FCLK_CLK1">
@@ -55757,10 +55730,11 @@
             <CONNECTION INSTANCE="video_axi_vdma" PORT="m_axi_s2mm_aclk"/>
             <CONNECTION INSTANCE="video_axi_vdma" PORT="s_axis_s2mm_aclk"/>
             <CONNECTION INSTANCE="rst_ps7_0_fclk1" PORT="slowest_sync_clk"/>
-            <CONNECTION INSTANCE="enhance_0" PORT="ap_clk"/>
             <CONNECTION INSTANCE="stamp_in_0" PORT="aclk"/>
             <CONNECTION INSTANCE="stamp_out_0" PORT="aclk"/>
             <CONNECTION INSTANCE="enh_rst_bridge_0" PORT="aclk"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="ap_clk"/>
+            <CONNECTION INSTANCE="cfg_bram_0" PORT="aclk"/>
           </CONNECTIONS>
         </PORT>
         <PORT CLKFREQUENCY="200000000" DIR="O" NAME="FCLK_CLK2" SIGIS="clk" SIGNAME="ps7_0_FCLK_CLK2">
@@ -62290,49 +62264,49 @@
           </CONNECTIONS>
         </PORT>
         <PORT DIR="O" NAME="first_seen" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="31" NAME="m_axis_tdata" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_in_TDATA">
+        <PORT DIR="O" LEFT="31" NAME="m_axis_tdata" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_m_axis_tdata">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="s_in_TDATA"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="s_in_TDATA"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="0" NAME="m_axis_tdest" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_in_TDEST">
+        <PORT DIR="O" LEFT="0" NAME="m_axis_tdest" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_m_axis_tdest">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="s_in_TDEST"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="s_in_TDEST"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="0" NAME="m_axis_tid" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_in_TID">
+        <PORT DIR="O" LEFT="0" NAME="m_axis_tid" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_m_axis_tid">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="s_in_TID"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="s_in_TID"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="3" NAME="m_axis_tkeep" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_in_TKEEP">
+        <PORT DIR="O" LEFT="3" NAME="m_axis_tkeep" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_m_axis_tkeep">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="s_in_TKEEP"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="s_in_TKEEP"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="m_axis_tlast" SIGIS="undef" SIGNAME="enhance_0_s_in_TLAST">
+        <PORT DIR="O" NAME="m_axis_tlast" SIGIS="undef" SIGNAME="stamp_in_0_m_axis_tlast">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="s_in_TLAST"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="s_in_TLAST"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="m_axis_tready" SIGIS="undef" SIGNAME="enhance_0_s_in_TREADY">
+        <PORT DIR="I" NAME="m_axis_tready" SIGIS="undef" SIGNAME="enhance_cfg_0_s_in_TREADY">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="s_in_TREADY"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="s_in_TREADY"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="3" NAME="m_axis_tstrb" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_in_TSTRB">
+        <PORT DIR="O" LEFT="3" NAME="m_axis_tstrb" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_m_axis_tstrb">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="s_in_TSTRB"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="s_in_TSTRB"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="0" NAME="m_axis_tuser" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_in_TUSER">
+        <PORT DIR="O" LEFT="0" NAME="m_axis_tuser" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_m_axis_tuser">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="s_in_TUSER"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="s_in_TUSER"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="m_axis_tvalid" SIGIS="undef" SIGNAME="enhance_0_s_in_TVALID">
+        <PORT DIR="O" NAME="m_axis_tvalid" SIGIS="undef" SIGNAME="stamp_in_0_m_axis_tvalid">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="s_in_TVALID"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="s_in_TVALID"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="I" LEFT="31" NAME="s_axis_tdata" RIGHT="0" SIGIS="undef" SIGNAME="stamp_in_0_s_axis_tdata">
@@ -62367,7 +62341,7 @@
         </PORT>
       </PORTS>
       <BUSINTERFACES>
-        <BUSINTERFACE BUSNAME="stamp_in_0_m_axis" NAME="m_axis" TYPE="INITIATOR" VLNV="xilinx.com:interface:axis:1.0">
+        <BUSINTERFACE BUSNAME="__NOC__" NAME="m_axis" TYPE="INITIATOR" VLNV="xilinx.com:interface:axis:1.0">
           <PARAMETER NAME="CLK_DOMAIN" VALUE="base_ps7_0_0_FCLK_CLK1"/>
           <PARAMETER NAME="FREQ_HZ" VALUE="142857132"/>
           <PARAMETER NAME="HAS_TKEEP" VALUE="1"/>
@@ -62482,49 +62456,49 @@
             <CONNECTION INSTANCE="video_hdmi_out_pixel_unpack" PORT="stream_in_32_TVALID"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="31" NAME="s_axis_tdata" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_out_TDATA">
+        <PORT DIR="I" LEFT="31" NAME="s_axis_tdata" RIGHT="0" SIGIS="undef" SIGNAME="enhance_cfg_0_s_out_TDATA">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="s_out_TDATA"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="s_out_TDATA"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="0" NAME="s_axis_tdest" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_out_TDEST">
+        <PORT DIR="I" LEFT="0" NAME="s_axis_tdest" RIGHT="0" SIGIS="undef" SIGNAME="enhance_cfg_0_s_out_TDEST">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="s_out_TDEST"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="s_out_TDEST"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="0" NAME="s_axis_tid" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_out_TID">
+        <PORT DIR="I" LEFT="0" NAME="s_axis_tid" RIGHT="0" SIGIS="undef" SIGNAME="enhance_cfg_0_s_out_TID">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="s_out_TID"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="s_out_TID"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="3" NAME="s_axis_tkeep" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_out_TKEEP">
+        <PORT DIR="I" LEFT="3" NAME="s_axis_tkeep" RIGHT="0" SIGIS="undef" SIGNAME="enhance_cfg_0_s_out_TKEEP">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="s_out_TKEEP"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="s_out_TKEEP"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="s_axis_tlast" SIGIS="undef" SIGNAME="enhance_0_s_out_TLAST">
+        <PORT DIR="I" NAME="s_axis_tlast" SIGIS="undef" SIGNAME="enhance_cfg_0_s_out_TLAST">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="s_out_TLAST"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="s_out_TLAST"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="s_axis_tready" SIGIS="undef" SIGNAME="enhance_0_s_out_TREADY">
+        <PORT DIR="O" NAME="s_axis_tready" SIGIS="undef" SIGNAME="stamp_out_0_s_axis_tready">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="s_out_TREADY"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="s_out_TREADY"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="3" NAME="s_axis_tstrb" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_out_TSTRB">
+        <PORT DIR="I" LEFT="3" NAME="s_axis_tstrb" RIGHT="0" SIGIS="undef" SIGNAME="enhance_cfg_0_s_out_TSTRB">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="s_out_TSTRB"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="s_out_TSTRB"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="0" NAME="s_axis_tuser" RIGHT="0" SIGIS="undef" SIGNAME="enhance_0_s_out_TUSER">
+        <PORT DIR="I" LEFT="0" NAME="s_axis_tuser" RIGHT="0" SIGIS="undef" SIGNAME="enhance_cfg_0_s_out_TUSER">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="s_out_TUSER"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="s_out_TUSER"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="s_axis_tvalid" SIGIS="undef" SIGNAME="enhance_0_s_out_TVALID">
+        <PORT DIR="I" NAME="s_axis_tvalid" SIGIS="undef" SIGNAME="enhance_cfg_0_s_out_TVALID">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="enhance_0" PORT="s_out_TVALID"/>
+            <CONNECTION INSTANCE="enhance_cfg_0" PORT="s_out_TVALID"/>
           </CONNECTIONS>
         </PORT>
       </PORTS>
@@ -62553,7 +62527,7 @@
             <PORTMAP LOGICAL="TVALID" PHYSICAL="m_axis_tvalid"/>
           </PORTMAPS>
         </BUSINTERFACE>
-        <BUSINTERFACE BUSNAME="enhance_0_s_out" NAME="s_axis" TYPE="TARGET" VLNV="xilinx.com:interface:axis:1.0">
+        <BUSINTERFACE BUSNAME="__NOC__" NAME="s_axis" TYPE="TARGET" VLNV="xilinx.com:interface:axis:1.0">
           <PARAMETER NAME="CLK_DOMAIN" VALUE="base_ps7_0_0_FCLK_CLK1"/>
           <PARAMETER NAME="FREQ_HZ" VALUE="142857132"/>
           <PARAMETER NAME="HAS_TKEEP" VALUE="1"/>
@@ -70633,7 +70607,7 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_ARQOS"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="0" NAME="M00_AXI_arready" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_ARREADY">
+        <PORT DIR="I" NAME="M00_AXI_arready" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_ARREADY">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_ARREADY"/>
           </CONNECTIONS>
@@ -70643,7 +70617,7 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_ARSIZE"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="0" NAME="M00_AXI_arvalid" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_ARVALID">
+        <PORT DIR="O" NAME="M00_AXI_arvalid" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_ARVALID">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_ARVALID"/>
           </CONNECTIONS>
@@ -70688,7 +70662,7 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_AWQOS"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="0" NAME="M00_AXI_awready" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_AWREADY">
+        <PORT DIR="I" NAME="M00_AXI_awready" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_AWREADY">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_AWREADY"/>
           </CONNECTIONS>
@@ -70698,7 +70672,7 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_AWSIZE"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="0" NAME="M00_AXI_awvalid" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_AWVALID">
+        <PORT DIR="O" NAME="M00_AXI_awvalid" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_AWVALID">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_AWVALID"/>
           </CONNECTIONS>
@@ -70708,7 +70682,7 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_BID"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="0" NAME="M00_AXI_bready" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_BREADY">
+        <PORT DIR="O" NAME="M00_AXI_bready" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_BREADY">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_BREADY"/>
           </CONNECTIONS>
@@ -70718,7 +70692,7 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_BRESP"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="0" NAME="M00_AXI_bvalid" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_BVALID">
+        <PORT DIR="I" NAME="M00_AXI_bvalid" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_BVALID">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_BVALID"/>
           </CONNECTIONS>
@@ -70733,12 +70707,12 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_RID"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="0" NAME="M00_AXI_rlast" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_RLAST">
+        <PORT DIR="I" NAME="M00_AXI_rlast" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_RLAST">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_RLAST"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="0" NAME="M00_AXI_rready" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_RREADY">
+        <PORT DIR="O" NAME="M00_AXI_rready" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_RREADY">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_RREADY"/>
           </CONNECTIONS>
@@ -70748,7 +70722,7 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_RRESP"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="0" NAME="M00_AXI_rvalid" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_RVALID">
+        <PORT DIR="I" NAME="M00_AXI_rvalid" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_RVALID">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_RVALID"/>
           </CONNECTIONS>
@@ -70763,12 +70737,12 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_WID"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="0" NAME="M00_AXI_wlast" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_WLAST">
+        <PORT DIR="O" NAME="M00_AXI_wlast" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_WLAST">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_WLAST"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="0" NAME="M00_AXI_wready" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_WREADY">
+        <PORT DIR="I" NAME="M00_AXI_wready" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_WREADY">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_WREADY"/>
           </CONNECTIONS>
@@ -70778,7 +70752,7 @@
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_WSTRB"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="0" NAME="M00_AXI_wvalid" RIGHT="0" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_WVALID">
+        <PORT DIR="O" NAME="M00_AXI_wvalid" SIGIS="undef" SIGNAME="ps7_0_S_AXI_HP0_WVALID">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0" PORT="S_AXI_HP0_WVALID"/>
           </CONNECTIONS>

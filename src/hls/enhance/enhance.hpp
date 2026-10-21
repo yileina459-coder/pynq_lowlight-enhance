@@ -102,4 +102,10 @@ void enhance_stream(enh_stream_t& s_in,
                     ap_uint<1> mono,
                     ap_uint<16> split_x);
 
+// Same pipeline, configuration read from a BRAM port on every pixel instead of arriving on
+// plain ports. Used by the HDMI overlay so a preset switch does not need a kernel reset.
+void enhance_stream_cfg(enh_stream_t& s_in,
+                        enh_stream_t& s_out,
+                        ap_uint<64> cfg[2]);
+
 #endif // ENHANCE_HPP
