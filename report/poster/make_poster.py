@@ -187,15 +187,15 @@ def main() -> int:
             run.font.color.rgb = WHITE if r == 0 else GREY
 
     if os.path.exists(FIGURE):
-        fig_w = 5.4
-        fig_h = fig_w * 950 / 1590
+        fig_w = 4.5
+        fig_h = fig_w * 576 / 766
         slide.shapes.add_picture(FIGURE, Cm(MARGIN + table_w + 0.7), Cm(y),
                                  width=Cm(fig_w), height=Cm(fig_h))
         add_text(slide, MARGIN + table_w + 0.7, y + fig_h + 0.1, fig_w,
-                 "Four presets captured from the HDMI output of the board", size=8,
+                 "Four states captured from the board's HDMI output; top right shows the split", size=8,
                  color=RGBColor(0x77, 0x77, 0x77), align=PP_ALIGN.CENTER)
 
-    y += max(table_h, fig_w * 950 / 1590 + 0.55) + 0.2
+    y += max(table_h, fig_w * 576 / 766 + 0.45) + 0.15
 
     add_text(slide, MARGIN, y, BODY_W,
              "Tool versions: Vivado / Vitis HLS 2026.1, PYNQ 3.1.1 image, device "

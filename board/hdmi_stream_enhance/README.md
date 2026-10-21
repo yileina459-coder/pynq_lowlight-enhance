@@ -157,3 +157,18 @@ OBS 缩放锯齿（改 1:1 后仍闪）、写 DDR 撕裂（只写一帧仍闪）
 
 **修法**：复位之后立刻 `stop() / configure() / start()` 并重新填满 4 块帧缓冲，
 让输出链路从确定状态重新开始，而不是靠采集卡自己恢复。
+
+## 最终采集序列（稳定版演示）
+
+| 文件 | 画面 |
+| --- | --- |
+| `hdmi_final_a_plain.png` | 干净原图 |
+| `hdmi_final_b_brighter.png` | 提亮 + 竖纹 |
+| `hdmi_final_c_dark.png` | 暗场 |
+| `hdmi_final_d_desaturated.png` | 去色/反相倾向 |
+| `hdmi_final_e_inverted.png` | 暗场 + 亮文字条 |
+| `hdmi_final_f_split.png` | **垂直分屏：左原样、右处理** |
+| `hdmi_presets_2x2.png` | 四张拼图（海报配图，含分屏那张） |
+
+`hdmi_final_f_split.png` 是最强的单帧证据：同一帧内同时有原样区与处理区，说明内核在实时
+处理像素流。旧的一组（`hdmi_capture_*`）保留作排查记录。

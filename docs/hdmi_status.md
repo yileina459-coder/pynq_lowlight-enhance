@@ -407,3 +407,22 @@ for _ in range(4):                      # 填满 4 块帧缓冲
 
 **现在的演示主脚本**：`board/hdmi_stream_enhance/hdmi_preset_only.py`。
 其余带"循环写帧"或"只复位不重启输出"的脚本只保留作排查记录，不再作为演示路径。
+
+### 最终采集序列（2026-10-22 22:15，稳定版演示）
+
+`hdmi_preset_only.py --cycle 15`（每次切预设后重建输出链路）连跑 5 分钟，用户按档位截图，
+归档在 `board/hdmi_stream_enhance/evidence/`：
+
+| 文件 | 画面 |
+| --- | --- |
+| `hdmi_final_a_plain.png` | 干净原图：平滑渐变、灰带、黑色文字条、三色块 |
+| `hdmi_final_b_brighter.png` | 明显提亮，渐变上出现细密竖纹（增益效果） |
+| `hdmi_final_c_dark.png` | 暗场，文字条被拎出、色块发闷 |
+| `hdmi_final_d_desaturated.png` | 强烈去色/反相倾向 |
+| `hdmi_final_e_inverted.png` | 暗场竖纹 + 亮文字条 |
+| `hdmi_final_f_split.png` | **约 2/3 处出现垂直分界：左侧原样、右侧被处理** |
+
+`hdmi_final_f_split.png` 是最有说服力的一张：**同一帧里同时存在"原样"和"处理后"两块区域**，
+直接证明内核在实时处理这条像素流，而不是 PS 事后合成的图。
+
+文件按"画面里能看到什么"命名，不按 PC 时间戳硬对档名——板子时钟与 PC 不同步。
