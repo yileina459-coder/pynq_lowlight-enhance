@@ -1,17 +1,30 @@
 #!/bin/sh
-# Kill leftover HDMI demo processes without matching this script's own command line.
+# Kill leftover HDMI demo processes without matching this script or the invoking shell.
 #
-# `pkill -f hdmi_preset_only` kills the invoking shell too, because that shell's command
-# line contains the same string - which is exactly what happened twice while testing:
-# exit code 1 and no log file, with the real cause hidden.
+# Three different traps have bitten here:
+#   1. `pkill -f hdmi_preset_only` also matches the shell that runs it, because that shell's
+#      command line contains the same string - the session dies and the redirect never runs,
+#      so the failure looks like "the script crashed with no log".
+#   2. `grep "python3 -u hdmi_"` matches the shell wrapping the run for the same reason.
+#   3. Even with a bracket trick in the pattern, the bracket form appears in the calling
+#      command line and can match itself.
 #
-# Here the pattern is assembled at run time so that no process listing ever contains the
-# literal string being searched for.
+# So: match on the argument vector of real python processes only. The awk program compares
+# argv[1] (the interpreter) and argv[3] (the script name) instead of pattern-matching the
+# whole command line, which cannot match awk itself or the shell around it.
 
-for pid in $(ps -eo pid=,args= | grep "python3 -u hdmi_" | grep -v grep | awk '{print $1}'); do
+ps -eo pid=,args= | awk '
+{
+    pid = $1
+    # argv[1] is the interpreter, argv[2] is "-u", argv[3] is the script
+    if ($2 ~ /python3$/ && $3 == "-u" && $4 ~ /^hdmi_/) {
+        print pid
+    }
+}' | while read -r pid; do
     echo "killing $pid"
     kill "$pid" 2>/dev/null || true
 done
 
 sleep 2
-echo "remaining hdmi processes: $(ps -eo args= | grep -c '[h]dmi_')"
+count=$(ps -eo args= | awk '$1 ~ /python3$/ && $2 == "-u" && $3 ~ /^hdmi_/' | wc -l)
+echo "remaining hdmi demo processes: $count"

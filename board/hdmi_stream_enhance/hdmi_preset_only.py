@@ -54,6 +54,9 @@ def main(argv=None) -> int:
     ap.add_argument("--mode", default="640x480")
     ap.add_argument("--cycle", type=float, default=12.0)
     ap.add_argument("--total", type=float, default=200.0)
+    ap.add_argument("--rebuild-output", action="store_true",
+                    help="old bitstream: reset the kernel and rebuild the output "
+                         "path after each switch (causes a short black flash)")
     args = ap.parse_args(argv)
 
     from pynq import Overlay
@@ -92,22 +95,30 @@ def main(argv=None) -> int:
     next_switch = 0.0
 
     def apply(name):
-        # The preset pulse resets the kernel, which interrupts the pixel stream; the video
-        # output core then underflows and the capture card has to re-lock on its own. That
-        # recovery is what looks like flicker. Restarting the output path explicitly puts
-        # it back into a known state instead of letting it wander: stop, reconfigure,
-        # start, then refill every frame buffer.
+        """Select a preset.
+
+        With the memory-configured kernel this is one register write and the next pixel uses
+        the new values - nothing is reset, so the stream never pauses and the picture never
+        blanks. That was measured, not assumed: hdmi_live_check.py writes frames while
+        switching and reports zero writes over 60 ms with latency constant at 21.
+
+        The older port-configured kernel needed a reset here, which interrupted the stream and
+        made the output path have to be rebuilt - the black flash on every switch. Pass
+        --rebuild-output to get that behaviour back for an old bitstream.
+        """
         hl.write_preset(cfg, name)
-        out.stop()
-        out.configure(VideoMode(width, height, 24, 60))
-        out.start()
-        for _ in range(4):
-            f = out.newframe()
-            f[:] = image
-            out.writeframe(f)
+        if args.rebuild_output:
+            out.stop()
+            out.configure(VideoMode(width, height, 24, 60))
+            out.start()
+            for _ in range(4):
+                f = out.newframe()
+                f[:] = image
+                out.writeframe(f)
         n = hl.read_latency(lat)
-        print(f"[{time.strftime('%H:%M:%S')}] preset {name:<9} latency {n} "
-              f"(output path restarted)", flush=True)
+        suffix = " (output path restarted)" if args.rebuild_output else ""
+        print(f"[{time.strftime('%H:%M:%S')}] preset {name:<9} latency {n}{suffix}",
+              flush=True)
 
     apply(presets[0])
 

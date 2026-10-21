@@ -65,6 +65,41 @@ prologue 就会用新值重新采样。
 
 四张互不相同，与四个预设的数学效果一致。
 
+## 用自己的图片（2026-10-22 新增）
+
+不用再盯着测试图了：随便一张照片都能显示在这块屏幕上，并且照样穿过增强内核。
+
+**方式一：Jupyter 上传（最省事）**
+
+打开 `notebooks/hdmi_panel.ipynb` → 跑完前面的单元格 → 在"显示你自己的图片"那格点
+**选择图片**，选一张 PNG/JPEG 即可。脚本会自动按比例缩放并加黑边（letterbox），
+不裁掉内容。
+
+**方式二：电脑转码 + 板上显示**
+
+```powershell
+# 电脑上（任何 Pillow 能读的格式）
+python tools\make_frame.py photo.jpg --out frame.bin          # 640x480 黑边
+python tools\make_frame.py photo.jpg --out frame.bin --fit crop   # 裁满屏
+python tools\check_frame.py                                   # 校验格式与通道顺序
+scp frame.bin xilinx@192.168.2.99:/home/xilinx/
+```
+
+```bash
+# 板上
+sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=/root \
+  /usr/local/share/pynq-venv/bin/python3 hdmi_show_image.py --raw frame.bin --preset document
+# 想让它自己轮播 8 档预设：
+  ... hdmi_show_image.py --raw frame.bin --cycle 8 --hold 600
+```
+
+**为什么在电脑上转码**：PYNQ 3.1.1 不一定带 Pillow，而且解码图片属于 CPU 活——
+这条通路的卖点恰恰是"像素由 PL 处理"。转成裸 RGB 后板上只是 `numpy.frombuffer`，
+格式一眼可见。
+
+`tools/check_frame.py` 会验证 PC 侧和板侧的测试图**逐字节一致**、通道是 R,G,B 顺序、
+尺寸正好 640×480×3——红蓝互换或上下颠倒这种问题否则能一路带到答辩现场。
+
 ## 目录结构
 
 ```
@@ -198,3 +233,30 @@ OBS 缩放锯齿（改 1:1 后仍闪）、写 DDR 撕裂（只写一帧仍闪）
 
 `hdmi_final_f_split.png` 是最强的单帧证据：同一帧内同时有原样区与处理区，说明内核在实时
 处理像素流。旧的一组（`hdmi_capture_*`）保留作排查记录。
+
+## 2026-10-22 凌晨：切换不再闪（配置走 BRAM）
+
+位流已更新为 **memory-configured kernel**：`enhance_stream_cfg` 每像素从 BRAM 读一次
+64 位配置，切预设只是写一次 GPIO，不复位、不中断像素流。WNS **+0.289 ns**。
+
+实测（`hdmi_live_check.py`，150 秒、25 次切换、741 次写帧）：
+
+```
+write time     : min 2.1 ms, median 2.2 ms, max 17.1 ms
+stalls > 60 ms: 0
+latency values : [21]
+RESULT: LIVE SWITCH STABLE
+```
+
+**主演示现在直接跑实时切换**：
+
+```bash
+sudo env ... python3 hdmi_preset_only.py --cycle 15      # 8 档循环，无黑屏
+sudo env ... python3 hdmi_show_image.py --raw frame.bin --cycle 8   # 自己的图片
+```
+
+旧位流仍可用 `--rebuild-output` 复现"复位 + 重建输出链路"的老路径（会有一次短暂黑屏），
+仅作对比用。
+
+新增文件：`hdmi_show_image.py`（显示自己的图片）、`hdmi_live_check.py`（量化验证切换
+不中断流）、`diagnostics/hdmi_image_debug.py` / `hdmi_order_test.py`（排查用的分步计时）。

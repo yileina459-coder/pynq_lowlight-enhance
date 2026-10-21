@@ -35,7 +35,7 @@
 | Jupyter 交互面板 | `board/enhance_dma/panel.ipynb` + `enhance_panel.py` | **已验证**（板上构建成功，8 预设表全 0 误差） |
 | 真机演示脚本 | `board/hdmi_stream_enhance/hdmi_vdma_demo.py` | **已上板**：640×480、延迟 21 个像素时钟、7 档预设运行期切换 |
 | HDMI overlay 位流（Sobel） | `board/hdmi_stream/sobel_hdmi.bit|.hwh` | **板上加载验证通过**（21 个 IP、`video` 层次绑定成功）；出图待显示设备 |
-| HDMI overlay 位流（enhance，含配置与延迟） | `board/hdmi_stream_enhance/enhance_hdmi.bit|.hwh` | **已上板出图**：WNS **+0.171 ns**、延迟 21 拍、7 档预设在运行期切换（4 张采集卡截图在 `evidence/`） |
+| HDMI overlay 位流（enhance，含配置与延迟） | `board/hdmi_stream_enhance/enhance_hdmi.bit|.hwh` | **已上板出图**：WNS **+0.289 ns**、延迟 21 拍、7 档预设在运行期切换（4 张采集卡截图在 `evidence/`） |
 | 软件黄金模型与比对 | `sim/common/`、`sim/*/golden_*.py`、`skill/golden_compare` | 已验证 |
 | PS 软件基线 | `board/ps_baseline/ps_sobel.py` | 已验证（板上 3108 ms/帧） |
 | 性能数据与对比表 | `sim/perf/make_comparison.py`、`report/comparison.md` | 已验证 |
@@ -45,7 +45,7 @@
 | 采购与接线清单 | `docs/bom.md` | 已完成（预算 ≤200 元，含验收标准） |
 | 增强效果图 | `report/figures/preview_synthetic.png` | 已完成（8 个预设中的 4 个） |
 | HDMI 排查记录 | `docs/hdmi_status.md` | 已完成（含已排除的假设与下一步） |
-| 大模型协作记录 | `report/ai_collaboration_log.md` | 已完成（38 条） |
+| 大模型协作记录 | `report/ai_collaboration_log.md` | 已完成（42 条） |
 | 英文 A4 海报 | `report/poster/poster.pptx`（由 `make_poster.py` 生成） | **已完成**：一页 A4 竖版英文海报，内容与数据全部来自仓库；拿到 AMD 官方模板后可直接套版 |
 
 ## 三、已知限制（报告里同样写明）
@@ -60,11 +60,9 @@
 3. **功耗未测**：PYNQ-Z2 无板载功率计，报告中没有功耗数据，也没有编造。
 4. **`axis_mux3` 缺功能仿真**：本机 `xsim` 启动即崩（共享内存映射失败），
    只做到综合级验证；在交互式终端重跑 `build/rtl/axis_mux3/run_sim.tcl` 即可补上。
-5. **换预设的当帧会闪一下**：自由运行内核的 6 个配置参数被 HLS 在流水线 prologue 锁存
-   （生成 RTL 里 `binarize_read_reg_*` 即证据），所以换预设时要复位内核重新采样；复位会
-   截断像素流、让 `v_axi4s_vid_out` 欠载。现在的做法是复位后立刻重建输出链路
-   （`stop → configure → start` + 重填 4 块帧缓冲），代价是切换瞬间一帧。
-   彻底消除需把这 6 个参数移入 BRAM，属优化项。
+5. ~~换预设的当帧会闪一下~~ **已解决（2026-10-22）**：配置改为每像素从 BRAM 读取
+   （`enhance_stream_cfg`），切预设只需一次寄存器写，不复位、不中断流。
+   实测 150 秒 / 25 次切换 / 741 次写帧，**0 次卡顿**，延迟恒定 21 拍。
 6. **HDMI 通路不能用 `readframe()` 取帧**：VDMA 环回被切断，数据只在 PL 内流动，
    因此逐位验证走 DMA 通路，HDMI 通路只提供视觉与延迟证据。
 
