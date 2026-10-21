@@ -28,7 +28,7 @@
 1. **换 HDMI 线**（最高优先）——用"笔记本直连采集卡能出图"的那根线接笔记本→板子 IN；
 2. 换信号源（手机 USB-C→HDMI、另一台电脑）；
 3. 若仍不行，怀疑板子 HDMI IN 的 DDC/TMDS 引脚（拍接头针脚照片）；
-4. 排查工具已就位：`board/hdmi_stream_enhance/hdmi_hpd_retry.ipynb`（拉低再拉高 HPD，监视 60 秒）、`hdmi_stock_check.ipynb`（原厂对照）。
+4. 排查工具已就位：`board/hdmi_stream_enhance/notebooks/hdmi_hpd_retry.ipynb`（拉低再拉高 HPD，监视 60 秒）、`hdmi_stock_check.ipynb`（原厂对照）。
 
 ## 三、HDMI OUT：板子能出信号，我们插入内核后不产生 TMDS
 
@@ -85,7 +85,7 @@
 
 **因此明天只剩一个实验需要做**
 
-`board/hdmi_stream_enhance/hdmi_loopback_ours.ipynb`：用**我们的位流**做
+`board/hdmi_stream_enhance/notebooks/hdmi_loopback_ours.ipynb`：用**我们的位流**做
 OUT→IN 自环，720p。选我们的位流而不是原厂，是因为原厂输入 range 1、输出 range 2，
 两端没有交集，那个实验设计本身就是错的（今晚读源码才发现）。
 

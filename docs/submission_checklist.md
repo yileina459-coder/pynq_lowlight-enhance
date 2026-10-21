@@ -60,18 +60,28 @@
 3. **功耗未测**：PYNQ-Z2 无板载功率计，报告中没有功耗数据，也没有编造。
 4. **`axis_mux3` 缺功能仿真**：本机 `xsim` 启动即崩（共享内存映射失败），
    只做到综合级验证；在交互式终端重跑 `build/rtl/axis_mux3/run_sim.tcl` 即可补上。
-5. **换预设有当帧花屏**：自由运行内核的 6 个配置参数被 HLS 在流水线 prologue 锁存
-   （生成 RTL 里 `binarize_read_reg_*` 即证据），因此换预设时用 `enh_rst_gate` 复位内核
-   重新采样，代价是当帧 line buffer 被清空。彻底做法是把这 6 个参数放进 BRAM。
+5. **换预设的当帧会闪一下**：自由运行内核的 6 个配置参数被 HLS 在流水线 prologue 锁存
+   （生成 RTL 里 `binarize_read_reg_*` 即证据），所以换预设时要复位内核重新采样；复位会
+   截断像素流、让 `v_axi4s_vid_out` 欠载。现在的做法是复位后立刻重建输出链路
+   （`stop → configure → start` + 重填 4 块帧缓冲），代价是切换瞬间一帧。
+   彻底消除需把这 6 个参数移入 BRAM，属优化项。
+6. **HDMI 通路不能用 `readframe()` 取帧**：VDMA 环回被切断，数据只在 PL 内流动，
+   因此逐位验证走 DMA 通路，HDMI 通路只提供视觉与延迟证据。
 
 
 ## 四、复现最短路径
 
 ```powershell
-tools\env\vitis_hls.bat -f build\hls\sobel\run_hls.tcl          # 算子 + 仿真
-tools\env\vitis_hls.bat -f build\hls\sobel_bounded\run_hls.tcl  # DMA 用的有界核
-build\overlay_dma\build.bat                                     # 约 12 分钟出位流
+tools\env\vitis_hls.bat -f build\hls\enhance\run_hls.tcl         # 增强核 + C 仿真
+tools\env\vitis_hls.bat -f build\hls\enhance_bounded\run_hls.tcl # DMA 用的有界核
+build\overlay_dma\build.bat                                    # DMA 通路位流
+build\overlay_hdmi_enhance\build.bat                           # HDMI 通路位流（含复位桥）
+
 # 板上（PYNQ 3.1.1，需 root + venv）：
+#   DMA 通路：8 预设逐位比对
 sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=/root \
-  /usr/local/share/pynq-venv/bin/python3 sobel_dma.py
+  /usr/local/share/pynq-venv/bin/python3 enhance_dma.py
+#   HDMI 通路：640×480 实时增强，切预设后重建输出链路
+sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=/root \
+  /usr/local/share/pynq-venv/bin/python3 hdmi_preset_only.py --cycle 15
 ```

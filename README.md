@@ -53,9 +53,9 @@
 - [x] 内部图案源 overlay（`board/hdmi_pattern/`，不依赖任何外部输入）
 - [x] **流水线延迟实测：16 个像素时钟 = 160 ns @100 MHz**（`axis_cycle_stamp` 在内核前后各
       打一次时间戳；720p60 的一行是 17.2 µs，所以延迟只有一行的 1%，原来说的「约一行」是上界）
-- [ ] 端到端延迟与功耗实测（需采集卡 + 功率计）
-- [ ] 参数化与 UI（算子切换、阈值/增益调节）
-- [ ] 决赛用一页英文 A4 海报
+- [ ] 端到端延迟与功耗实测：采集卡已到，但 HDMI 直通受硬件限制（见上），只能测 PL 内部延迟（21 拍）；功耗需外部功率计
+- [x] **参数化与 UI**：8 预设运行期切换，Jupyter 面板 `board/enhance_dma/panel.ipynb`（DMA 通路）+ HDMI 通路按档位切换
+- [x] **一页英文 A4 海报**：`report/poster/poster.pptx`（由 `make_poster.py` 生成，配图为板子 HDMI 输出的 2×2 采集拼图）；拿到 AMD 官方模板后可直接套版
 
 ## 技术栈
 
@@ -69,25 +69,35 @@
 
 ```
 .
-├── README.md                 # 项目简介 + 复现步骤
-├── docs/                     # 架构、路线图、环境基线、HDMI 移植记录、参考资料
-├── src/                      # HLS 源码：enhance（主算子）、sobel/gaussian/sharpen（算子族）
-├── sim/                      # 软件黄金模型、比对脚本、离线预演、性能对比表
-├── build/                    # 可复现构建脚本 + 综合实现报告
-│   ├── smoke/                # 工具链冒烟（Vivado / Vitis HLS）
-│   ├── hls/                  # 每个算子的 HLS 工程脚本（enhance 也有有界版本）
-│   ├── overlay_dma/          # DMA 版 overlay 构建（Sobel）
-│   ├── overlay_enhance/      # DMA 版 overlay 构建（enhance）
-│   └── overlay_hdmi/         # HDMI 版 overlay 构建（含 PYNQ base overlay 移植）
-├── board/                    # 上板脚本与实测输出
-│   ├── dma_sobel/            # DMA 版：逐位比对
-│   ├── enhance_dma/          # 增强核：8 个预设的板上逐位比对（不需要显示器）
-│   ├── hdmi_stream/          # HDMI 版：实时出图
+├── README.md                 # 项目简介 + 状态清单 + 复现步骤
+├── docs/                     # 架构、路线图、环境基线、HDMI 全部实测记录、提交清单
+├── src/
+│   ├── hls/                  # enhance（主算子 + 有界版）、sobel/gaussian/sharpen（算子族）
+│   └── rtl/                  # axis_cycle_stamp（延迟/拍数）、enh_cfg_split、enh_rst_bridge、
+│                             # video_pattern_gen、axis_mux3、edid/
+├── sim/                      # numpy 黄金模型、离线预演、预设调参、性能对比表
+├── build/
+│   ├── smoke/                # 工具链冒烟
+│   ├── hls/                  # 每个算子的 HLS 工程脚本（流式 + 有界）
+│   ├── overlay_dma/          # DMA 版 overlay（Sobel）
+│   ├── overlay_enhance/      # DMA 版 overlay（enhance，8 预设验证）
+│   ├── overlay_hdmi/         # HDMI 版 overlay（Sobel）
+│   ├── overlay_hdmi_enhance/ # HDMI 版 overlay（enhance + 复位桥 + EDID 定制）
+│   └── rtl/                  # 独立 RTL 的综合脚本
+├── board/
+│   ├── dma_sobel/            # DMA 版：Sobel 逐位比对
+│   ├── enhance_dma/          # 增强核：8 预设板上逐位比对 + Jupyter 面板
+│   ├── hdmi_stream/          # HDMI 版（Sobel 算子族）
+│   ├── hdmi_stream_enhance/  # **HDMI 版主通路**：640×480、21 拍、演示循环的 7 档预设可切
+│   │   ├── evidence/         #   采集卡截图（真机证据）
+│   │   ├── diagnostics/      #   21 个排查脚本，按"回答什么问题"索引
+│   │   └── notebooks/        #   Jupyter 版验证与演示
+│   ├── hdmi_pattern/         # 内部图案源（不依赖任何外部输入）
 │   └── ps_baseline/          # PS 软件基线
-├── data/                     # 测试图与各算子的黄金参考
-├── skill/                    # 可复用 Skill（overlay_check / golden_compare / perf_collect）
-├── tools/                    # 工具链入口脚本（Vivado / Vitis HLS 包装）
-└── report/                   # 设计报告 + 大模型协作记录
+├── data/                     # 测试图与各算子黄金参考
+├── skill/                    # 5 个可复用 Skill + 踩坑清单
+├── tools/                    # 工具链入口 + 文档/位流/海报/EDID 检查脚本
+└── report/                   # 设计报告、协作记录、校赛材料、海报
 ```
 
 ## 复现步骤

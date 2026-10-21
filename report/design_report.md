@@ -263,70 +263,102 @@ for _ in range(4):               # 填满 4 块帧缓冲，避免任何黑帧
 ## 6. 大模型协作记录
 
 完整交互记录见 [`report/ai_collaboration_log.md`](ai_collaboration_log.md)，包含提示词、产出、
-**每一次错误的诊断与纠正**（截至当前 15 条），以及哪些决定是队员拍板的。几条典型：
+**每一次错误的诊断与纠正**（截至当前 **40 条**），以及哪些决定是队员拍板的。后期 HDMI 调试贡献了信息量最大的几条：
 
 - PDF 解析：`bfrange` 数组形式与 `/Lang` 属性导致乱码，两轮定位；
 - `export_design` 缺 `XILINX_VIVADO`；HLS 启动器缺失；ap_int 三元表达式位宽歧义；
 - PowerShell 重定向把 UTF-8 写成 UTF-16；`Set-Content` 写的 tcl 带 BOM 导致 Vivado 解析失败；
 - `git sparse-checkout` 在仓库子目录执行，把整个工作区设成稀疏检出（最危险的一次，已记录恢复方法）；
-- PYNQ base overlay 的 3 个移植补丁，以及 `-jobs 4` 并发引发的 Tcl app store 竞争。
+- PYNQ base overlay 的 3 个移植补丁，以及 `-jobs 4` 并发引发的 Tcl app store 竞争；
+- `video.hdmi_in.mode` 读的是 VDMA 配置值而非输入检测值——于是把"没配置"误判成"没锁上"，
+  连续多轮在错误方向上排查（第 36 条）；
+- 自由运行内核的配置被 HLS 在流水线 prologue 锁存，六成参数在开机后冻结
+  （生成 RTL 里 `binarize_read_reg_*` 即证据，第 37 条）；
+- 跨时钟域的复位释放没同步，表现为"某些预设持续闪烁"而不是"花屏一下"（第 39 条）；
+- 连续几轮靠"看现象猜原因"，最后靠**读回 VDMA 帧缓冲**这一客观判据破局（第 40 条）。
 
 ## 7. 技能包提炼过程
 
-三个 Skill 都来自"实际踩过的坑"，而不是凭空设计：
+五个 Skill 都来自"实际踩过的坑"，而不是凭空设计：
 
 | Skill | 从什么失败中提炼 | 已验证效果 |
 | --- | --- | --- |
 | `skill/overlay_check` | 位流/`.hwh` 不配套、IP 没接时钟，上板才发现 | 对真实 `.hwh` PASS（6 IP / 9 时钟），缺 `.bit` 时正确 FAIL |
 | `skill/golden_compare` | "看着差不多"掩盖了边界策略不一致 | PASS / FAIL / 容差三种情形均验证；报出首个差异像素坐标 |
 | `skill/perf_collect` | 手抄性能数字无法复核 | 记录→汇总→生成报告表格全链路验证 |
+| `skill/dma_stream` | AXI-DMA 传输收不了尾、cache 不一致导致数据错 | 缓存维护 + 超时 + 长度检查；板上 8 预设逐位一致 |
+| `skill/pitfalls` | 同样的坑反复踩（BOM、编码、并发、复位域） | 逐条给出**判据**而非结论，40 条纠错里沉淀出可复用部分 |
 
 每个 Skill 的 README 都写了**适用范围 / 使用方法 / 失效条件 / 已验证效果**四段。
 
 ## 8. 复现说明
 
 ```powershell
-# 0) 环境：Vivado / Vitis HLS 2026.1，许可与坑位见 docs/env.md
+# 0) 环境：Vivado / Vitis HLS 2026.1；路径与坑位见 docs/env.md
+
 # 1) 工具链冒烟（各约 1 分钟）
 cd build\smoke\vivado ; ..\..\..\tools\env\vivado.bat -mode batch -source synth_smoke.tcl
 cd build\smoke\hls    ; ..\..\..\tools\env\vitis_hls.bat -f run_hls.tcl
 
 # 2) HLS 算子（C 仿真 + 综合 + 导出 IP）
-tools\env\vitis_hls.bat -f build\hls\sobel\run_hls.tcl
-tools\env\vitis_hls.bat -f build\hls\gaussian\run_hls.tcl
+tools\env\vitis_hls.bat -f build\hls\enhance\run_hls.tcl
+tools\env\vitis_hls.bat -f build\hls\sobel\run_hls.tcl        # 算子族
 
-# 3) DMA overlay 位流
+# 3) DMA 通路位流（逐位验证用，不需要显示器）
 build\overlay_dma\build.bat
 
-# 4) HDMI overlay 位流（拉取 PYNQ v3.1.2 源码并打补丁）
-build\overlay_hdmi\build.bat
+# 4) HDMI 通路位流（拉取 PYNQ 源码 + 打补丁 + 插入内核 + 复位桥）
+build\overlay_hdmi_enhance\build.bat
 
-# 5) 上板
-#    板上：python3 sobel_dma.py            （DMA 版，逐位比对）
-#          python3 hdmi_sobel.py --seconds 10  （HDMI 版，需显示/采集）
+# 5) 离线检查（不接板子也能跑）
+python tools\check_consistency.py --strict      # 文档一致性
+python tools\check_edid.py                      # EDID 合法性
+python tools\check_poster.py                    # 海报版面
 ```
+
+```bash
+# 6) 上板（板上 root + PYNQ venv）
+#    DMA 通路：8 预设逐位比对，15.6 ms/帧
+python3 enhance_dma.py
+
+#    HDMI 通路：640×480 实时增强，切预设后重建输出链路
+python3 hdmi_preset_only.py --cycle 15
+```
+
+两条通路共用 `src/hls/enhance/enhance.cpp` 同一份算法源码：DMA 版走 `ap_ctrl_hs` 有界核，
+HDMI 版走 `ap_ctrl_none` 自由运行核。
 
 ## 9. 尚未完成与已知限制
 
-- **HDMI 已打通并定位到硬件上限**（详见 `docs/hdmi_status.md`）：这块 PYNQ-Z2 的 HDMI
-  输出只有 640×480 能工作（800×600/720p/1080p 一帧都不消费、不产生 TMDS，原厂位流同样如此，
-  HDMI 口无缓冲直连 PL）；而 HDMI 输入又无法工作在 640×480（`dvi2rgb` 的 `kClkRange`
-  只接受 1/2/3）。因此交付路径改为 VDMA 供帧：PS → DDR → VDMA → 内核 → HDMI OUT，
-  内核仍在真实像素通路上，实测延迟 21 个像素时钟、7 档预设在运行期可切换。
-  遗留：**HDMI 直通**受上述两个硬件限制阻塞；每次换预设的当帧会花屏一帧
-  （自由运行内核的配置被 HLS 在 prologue 锁存，靠复位重新采样）
-  IN 侧 EDID 与 HPD 均正常（Windows 能枚举到板子提供的 Generic Monitor），但 TMDS 无法锁定，
-  **原厂 base.bit 同样如此**，故与本文设计无关；OUT 侧原厂 overlay 可输出有效信号，
-  插入内核后不再产生 TMDS，寄存器读数与时钟/时序配置和原厂完全一致，待用 ILA 定位；
-  内核本身的正确性由 DMA 通路 8 预设逐位一致证明（15.6 ms/帧、0/2764800 通道）；
-- **流水线延迟已实测**：16 个像素时钟 = 160 ns @100 MHz（`axis_cycle_stamp` 在内核前后取样）；
-  端到端延迟（含 HDMI 输入/输出链路）无法测量，因为 HDMI 两侧均未打通（见 §9 与
-  `docs/hdmi_status.md`）；
-- **功耗未测**：PYNQ-Z2 无板载功率计，功率计已列入采购清单（`docs/bom.md`），到货后补齐；
-- HDMI 版绕过 VDMA，因此 PS 侧不能 `readframe()`（取舍已文档化，用 DMA 版做数字验证）；
-- DMA 版的整帧传输（15.8 ms）已可用；逐行传输（659 ms）保留为 `--per-row` 对照，
-  它的慢来自软件开销而不是算子；
-- 算子族：Sobel、Gaussian、Sharpen 已验证；色彩空间转换按设计复用 PYNQ 官方
-  `color_convert` IP，不自研；
-- 时间约束：提交截止 2026-11-04，团队设定的止损线是 11-01 —— 到那天若增强核仍进不了
-  overlay，就用现有 HDMI（Sobel）+ DMA 双通路作为可交付版本，本报告已按这个口径写明分工。
+**HDMI 通路已达到的状态**（推导与逐条证据见 `docs/hdmi_status.md`）
+
+| 项目 | 状态 |
+| --- | --- |
+| 输出画面 | ✅ 640×480 @60，采集卡实测稳定 |
+| 内核在像素通路上 | ✅ 延迟 **21 个像素时钟**（两道时间戳夹出来） |
+| 运行期切换预设 | ✅ 7 档循环，每次切换后重建输出链路，之后稳定 |
+| 逐位正确性 | ✅ DMA 通路 8 预设各 **0/2764800** 通道不一致 |
+
+**已知限制（都是实测结论，不是推测）**
+
+1. **HDMI 只能 640×480，且无法直通。** 这块 PYNQ-Z2 的 HDMI 输出只有 640×480 能驱动
+   （800×600 / 720p / 1080p 下 VDMA 一帧都不消费、不产生 TMDS，**原厂 `base.bit` 同样如此**，
+   HDMI 口无缓冲直连 PL）；而 HDMI 输入又无法工作在 640×480（`dvi2rgb` 的 `kClkRange`
+   只接受 1/2/3，25.175 MHz 需要 5 档才能让 VCO 落在 600–1200 MHz）。两者叠加使
+   "输入输出同分辨率"无解，因此帧源改为 VDMA。
+2. **换预设的当帧会闪一下。** 配置必须复位内核才能被 HLS 重新采样（见 §5.1），
+   复位会截断像素流、使 `v_axi4s_vid_out` 欠载。当前做法是复位后立刻重建输出链路
+   （`stop → configure → start` + 重填 4 块帧缓冲），代价是切换瞬间一帧。
+   彻底消除需要把 6 个锁存参数移入 BRAM，属优化项。
+3. **HDMI 通路无法用 `readframe()` 取帧。** VDMA 环回被切断，数据只在 PL 内流动，
+   因此数字验证走 DMA 通路（`board/enhance_dma/`），HDMI 通路只提供视觉与延迟证据。
+4. **功耗未测。** PYNQ-Z2 无板载功率计，报告中没有功耗数据，也没有估算值。
+5. **算子三路并行未接进同一个 overlay。** Sobel / Gaussian / Sharpen 各自验证充分，
+   但 `axis_mux3` 只做到综合级验证（本机 `xsim` 启动即崩），且时序余量不足以再叠三路。
+6. **DMA 逐行传输慢（659 ms/帧）。** 那是刻意保留的对照配置（`--per-row`），
+   用于说明"每行一次传输的固定开销"会让帧率崩掉；默认路径是整帧传输 15.8 ms。
+7. **时间约束**：提交截止 2026-11-04，团队自设止损 2026-11-01。
+
+**交付形态**：HDMI 实时增强通路（640×480，21 拍延迟，7 档预设可切）+ DMA 逐位验证通路
+（8 预设 0 误差、15.6 ms/帧、相对 PS 196.7×）共用同一份 HLS 源码，两条通路的证据互相独立。
+

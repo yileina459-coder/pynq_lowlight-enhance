@@ -65,22 +65,21 @@ prologue 就会用新值重新采样。
 
 四张互不相同，与四个预设的数学效果一致。
 
-## 文件
+## 目录结构
 
-| 文件 | 作用 |
-| --- | --- |
-| `enhance_hdmi.bit` / `.hwh` | 位流（WNS +0.370 ns） |
-| `hdmi_solid.py` | 最小验证：一帧纯色，判断整条输出通路是否工作 |
-| `hdmi_vdma_demo.py` | **主演示**：测试图穿过内核 + 预设循环 + 每帧写帧耗时 |
-| `hdmi_preset_stream.py` | 持续推帧 + 定时切预设（用于观察预设效果） |
-| `hdmi_ab.py` | 两档预设 A/B，打印配置写入与回读 |
-| `hdmi_first_preset.py` | 先写配置再推帧（验证 prologue 采样时机） |
-| `hdmi_two_phase.py` | 两阶段诊断：先变内容、再变配置 |
-| `hdmi_content_flip.py` | 只变内容，判断画面是否实时刷新 |
-| `hdmi_live.py` | 预设表、`pack()`、`write_preset()`（含复位脉冲） |
-| `hdmi_in_check.py` | 正确读取 HDMI 输入模式（`_capture` 才报 "No incoming video signal"） |
-| `hdmi_clk_probe.py` | `axi_dynclk` 寄存器与锁定状态 |
-| `timing_impl.rpt` / `util_impl.rpt` | 实现报告 |
+```
+board/hdmi_stream_enhance/
+├── enhance_hdmi.bit / .hwh  位流与硬件描述（WNS +0.171 ns）
+├── timing_impl.rpt / util_impl.rpt
+├── base.xsa                 导出给 Vitis 的设计
+├── hdmi_live.py             共享库：预设表、pack()、write_preset()（含复位脉冲）
+├── hdmi_preset_only.py      **主演示**：写一帧 → 每次切预设后重建输出链路
+├── hdmi_vdma_demo.py        备选演示：每次切预设都重写一帧
+├── hdmi_restore_hpd.py      工具：加载位流后恢复 Windows 的 2 号屏
+├── evidence/                采集卡截图（按画面特征命名）+ 2×2 拼图
+├── diagnostics/             21 个排查脚本，每个对应一个具体问题
+└── notebooks/               Jupyter 版验证与演示 + 生成脚本
+```
 
 ## 跑
 
@@ -89,23 +88,42 @@ prologue 就会用新值重新采样。
 ```bash
 cd /home/xilinx/jupyter_notebooks/hdmi_enh2
 
-# 最小验证：一帧纯色
-sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=/root \
-  /usr/local/share/pynq-venv/bin/python3 hdmi_solid.py --colour 0,200,0 --hold 60
-
-# 主演示：测试图 + 7 档预设循环
-sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=/root \
-  /usr/local/share/pynq-venv/bin/python3 hdmi_vdma_demo.py --cycle 8
+# 主演示：640×480 测试图 + 7 档预设循环，每次切换重建输出链路
+sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=/root   /usr/local/share/pynq-venv/bin/python3 hdmi_preset_only.py --cycle 15
 ```
 
 预期输出：
 
 ```
 hdmi_out running at 640x480
-test image (480, 640, 3), mean 124.0
-[...] preset clarity   writeframe 6.5 ms  latency 21 pixel clocks
-[...] preset document  writeframe 6.4 ms  latency 21 pixel clocks
+test image written once (8.6 ms); no further DDR writes from here on
+[...] preset document  latency 21 (output path restarted)
+[...] preset binarize  latency 21 (output path restarted)
 ```
+
+排查脚本在 `diagnostics/`，**从本目录运行**（它们 `import hdmi_live`，工作目录要在上一层）：
+
+```bash
+cd /home/xilinx/jupyter_notebooks/hdmi_enh2
+sudo env ... /usr/local/share/pynq-venv/bin/python3 diagnostics/hdmi_probe_buffers.py
+```
+
+## diagnostics/ 索引（按"回答什么问题"排列）
+
+| 脚本 | 回答的问题 |
+| --- | --- |
+| `hdmi_enhance.py` | overlay 能否加载、`video` 是否绑定、配置寄存器能否读写 |
+| `hdmi_solid.py` / `hdmi_static_frame.py` | 输出通路是否工作（纯色 / 静态图） |
+| `hdmi_probe_buffers.py` | VDMA 的帧缓冲里到底装着什么（读回 numpy 统计） |
+| `hdmi_in_check.py` | HDMI 输入到底有没有信号（`_capture` 才会报 "No incoming video signal"） |
+| `hdmi_clk_probe.py` | `axi_dynclk` 是否锁定、寄存器读数 |
+| `hdmi_stock_check.py` / `hdmi_out_lowclk.py` | 原厂位流能否出图、各分辨率的输出上限 |
+| `hdmi_hpd_probe.py` / `hdmi_hpd_out_test.py` / `hdmi_restore_hpd.py` | HPD 与显示器枚举 |
+| `hdmi_follow.py` / `hdmi_presets.py` / `hdmi_passthrough.py` | 跟随输入模式、按档位跑、直通尝试 |
+| `hdmi_ab.py` / `hdmi_live_only.py` / `hdmi_first_preset.py` | 配置写入与采样时机（prologue 锁存） |
+| `hdmi_two_phase.py` / `hdmi_content_flip.py` / `hdmi_one_preset.py` | 分离"内容变化"与"配置变化" |
+| `hdmi_preset_stream.py` / `hdmi_smooth_demo.py` | 不同节奏/不同画面的预设循环 |
+| `hdmi_after_fix.py` | 给 `kClkRange` 修复后做输入检测的那一版 |
 
 ## 注意事项
 
