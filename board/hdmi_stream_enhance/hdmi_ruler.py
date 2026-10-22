@@ -58,6 +58,8 @@ def main(argv=None) -> int:
     ap.add_argument("--bitstream", default="enhance_hdmi.bit")
     ap.add_argument("--mode", default="640x480")
     ap.add_argument("--preset", default="pass")
+    ap.add_argument("--roll", type=int, default=0,
+                    help="shift the pattern right by N px (compensates pipeline latency)")
     ap.add_argument("--hold", type=float, default=120.0)
     args = ap.parse_args(argv)
 
@@ -71,6 +73,9 @@ def main(argv=None) -> int:
     lat = hl.find(ol, "gpio_enh_lat")
 
     picture = ruler(width, height)
+    if args.roll:
+        picture = hl.roll_frame(picture, args.roll)
+        print(f"ruler rolled right by {args.roll} px", flush=True)
     out.configure(VideoMode(width, height, 24, 60))
     out.start()
     for _ in range(4):

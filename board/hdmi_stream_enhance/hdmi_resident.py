@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+"""A resident demo whose parameters are re-read from files, so tuning never restarts it.
+
+Why this shape
+    Restarting the demo is what breaks the picture on this bench: the process exit stops the
+    VDMA, the video core starves, TMDS drops, and the USB capture dongle - which only samples HPD
+    at connect time - frequently fails to re-lock and sits on its own test pattern until the cable
+    is physically re-plugged. Every parameter tweak therefore cost a re-plug.
+
+    This script owns the output for its whole lifetime and watches a few small files instead:
+
+        /tmp/hdmi_roll.txt      horizontal compensation in pixels (empty or 0 = none)
+        /tmp/hdmi_preset.txt    preset name
+        /tmp/hdmi_image.txt     picture path (PNG/JPEG readable by Pillow, or a .bin raw frame)
+
+    Changing a file re-renders and re-pushes the frame on the next tick - no reset, no clock
+    reprogramming, no interruption. Frames are also re-pushed periodically so the VDMA never
+    runs dry.
+
+    sudo python3 -u hdmi_resident.py --image testcard_640x480.png --roll 89 --preset pass
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import time
+
+import numpy as np
+
+import hdmi_live as hl
+
+ROLL_FILE = "/tmp/hdmi_roll.txt"
+PRESET_FILE = "/tmp/hdmi_preset.txt"
+IMAGE_FILE = "/tmp/hdmi_image.txt"
+
+
+def read_text(path: str, default: str = "") -> str:
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return fh.read().strip()
+    except OSError:
+        return default
+
+
+def load_picture(path: str, width: int, height: int) -> np.ndarray:
+    if path.endswith(".bin"):
+        data = np.fromfile(path, dtype=np.uint8)
+        expected = width * height * 3
+        if data.size != expected:
+            raise ValueError(f"{path}: {data.size} bytes, expected {expected}")
+        return data.reshape(height, width, 3)
+
+    from PIL import Image
+
+    with Image.open(path) as img:
+        img = img.convert("RGB")
+        if img.size != (width, height):
+            scale = min(width / img.width, height / img.height)
+            size = (max(1, round(img.width * scale)), max(1, round(img.height * scale)))
+            resized = img.resize(size, Image.LANCZOS)
+            canvas = Image.new("RGB", (width, height), (0, 0, 0))
+            canvas.paste(resized, ((width - size[0]) // 2, (height - size[1]) // 2))
+            img = canvas
+        return np.asarray(img, dtype=np.uint8)
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--bitstream", default="enhance_hdmi.bit")
+    ap.add_argument("--mode", default="640x480")
+    ap.add_argument("--image", default="testcard_640x480.png")
+    ap.add_argument("--roll", type=int, default=0)
+    ap.add_argument("--preset", default="pass")
+    ap.add_argument("--tick", type=float, default=2.0, help="seconds between file checks")
+    ap.add_argument("--force-clock", action="store_true",
+                    help="reprogram the pixel clock even if the mode already matches")
+    ap.add_argument("--refresh", type=float, default=10.0,
+                    help="re-push the frame this often even when nothing changed")
+    args = ap.parse_args(argv)
+
+    width, height = (int(v) for v in args.mode.lower().split("x"))
+
+    ol = hl.open_overlay(args.bitstream)
+    out = ol.video.hdmi_out
+    cfg = hl.find(ol, "gpio_enh_cfg")
+    lat = hl.find(ol, "gpio_enh_lat")
+
+    state = {"roll": args.roll, "preset": args.preset, "image": args.image}
+    picture = load_picture(state["image"], width, height)
+    frame = None
+
+    def render() -> np.ndarray:
+        rolled = hl.roll_frame(picture, state["roll"]) if state["roll"] else picture
+        return rolled
+
+    def fill_all_buffers(pixels) -> None:
+        """Write the picture into every VDMA frame buffer.
+
+        The VDMA cycles a list of four buffers, and a buffer that was never written keeps the
+        all-zero frame that start() queued. Filling one buffer therefore makes the display
+        alternate between the picture and black - which reads as 'the screen is black' whenever
+        the sampled frame happens to be an empty one.
+        """
+        for _ in range(4):
+            buf = out.newframe()
+            buf[:] = pixels
+            out.writeframe(buf)
+
+    hl.start_output(ol, out, width, height, force=args.force_clock)
+    fill_all_buffers(render())
+    hl.write_preset(cfg, state["preset"])
+    print(f"resident demo up: roll {state['roll']}, preset {state['preset']}, "
+          f"latency {hl.read_latency(lat)}", flush=True)
+    print("watching /tmp/hdmi_roll.txt, /tmp/hdmi_preset.txt, /tmp/hdmi_image.txt", flush=True)
+
+    last_refresh = time.monotonic()
+    while True:
+        time.sleep(args.tick)
+        changed = False
+
+        roll_text = read_text(ROLL_FILE)
+        if roll_text:
+            try:
+                value = int(roll_text)
+            except ValueError:
+                value = state["roll"]
+            if value != state["roll"]:
+                state["roll"] = value
+                changed = True
+                print(f"  roll -> {value}", flush=True)
+
+        preset_text = read_text(PRESET_FILE)
+        if preset_text and preset_text != state["preset"] and preset_text in hl.PRESETS:
+            state["preset"] = preset_text
+            hl.write_preset(cfg, preset_text)
+            print(f"  preset -> {preset_text}  (latency {hl.read_latency(lat)})", flush=True)
+
+        image_text = read_text(IMAGE_FILE)
+        if image_text and image_text != state["image"]:
+            try:
+                picture = load_picture(image_text, width, height)
+                state["image"] = image_text
+                changed = True
+                print(f"  image -> {image_text}", flush=True)
+            except Exception as exc:                       # noqa: BLE001
+                print(f"  image load failed: {exc}", flush=True)
+
+        if changed:
+            fill_all_buffers(render())
+            print(f"  frame re-pushed to all buffers (roll {state['roll']})", flush=True)
+            last_refresh = time.monotonic()
+        elif time.monotonic() - last_refresh >= args.refresh:
+            # Keep the VDMA fed; one buffer is enough while nothing has changed.
+            buf = out.newframe()
+            buf[:] = render()
+            out.writeframe(buf)
+            last_refresh = time.monotonic()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

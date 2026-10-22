@@ -591,3 +591,55 @@ out.start()
 
 板端验证：连续两次启动都打印
 `pixel clock already correct (640x480 locked), left untouched`，且帧正常消费（latency 24）。
+
+### 2026-10-22 深夜：水平偏移的真正原因——缺 SOF（帧起始），不是固定偏移
+
+**关键观察**：同一份位流、同一套脚本，三次开机测到的偏移分别是 **约 0 px、45 px、89 px**。
+固定偏移可以补偿，**随机的相位不能**——所以之前用 `--roll` 补偿的思路本身是错的。
+
+**根因**：`v_axi4s_vid_out` 用 **SOF（帧起始）** 把输入帧对齐到自己的时序发生器。按 Xilinx
+PG044 的原文，SOF 通过 AXI4-Stream 的 **TUSER0** 传输，标记一帧的第一个像素。本设计的
+TUSER 来自 AXI VDMA 的 `m_axis_mm2s_tuser`，而 **VDMA 把它恒置 0**——于是输出核收不到
+帧起始，只能按自己的时基自由跑：画面落在"启动那一刻像素相位"决定的位置上，所以每次开机
+都不一样。
+
+PYNQ 官方论坛对同类现象（自定义 HDMI 通路没画面）的答复也指向同一处：
+
+> "this issue can be caused if the AXI4-Stream channel does not have all the necessary
+> signals, tuser, tlast."
+> —— <https://discuss.pynq.io/t/no-video-output-on-monitor-with-custom-hdmi-passthrough-design-on-pynq-z1/8792/2>
+
+**修法**：`src/rtl/axis_sof_gen/axis_sof_gen.v`——用 TLAST（每行一个）+ 行计数器（480 行）
+在每帧第一个像素上产生 TUSER，插在 `pixel_unpack` 与 `v_axi4s_vid_out` 之间。数据通路是
+组合直通，只改写 tuser，因此**不增加延迟、不影响时序收敛**。
+
+**为什么行计数器可靠**：VDMA 连续输出同一几何的帧，行数固定为 480；复位后第一个像素即
+置位，所以第一帧也是对齐的。
+
+**同时可能解释偶发彩条**：相位不稳的帧会让 HDMI 接收端难以稳定锁定；帧起始对齐后，
+接收端拿到的是每个场都确定对齐的时序。
+
+**踩到的两个坑**：
+1. `opt_design` 报 `[Opt 31-67] A LUT4 ... missing a connection on input pin I3 ...
+   sof_i_4`——根因是 `line == LINES - 1` 里常量按 32 位展开，与 9 位计数器比较时综合出
+   悬空输入。改成同为 9 位的 `localparam [8:0] LAST_LINE` 后通过。
+2. BD 的 module reference 只缓存元数据（`mref/<name>/component.xml`），**RTL 仍取工程源
+   文件**——这次不需要像 `cfg_bram` 那样删 cell 重建，判据是 `mref` 目录里没有 `.v` 副本。
+
+**当前状态（2026-10-22 23:50）：SOF 生成器已实现并通过综合，但尚未启用在交付位流中。**
+
+- src/rtl/axis_sof_gen/axis_sof_gen.v 通过 	ools/check_sof_gen.py 静态检查；
+- BD 集成脚本齐备（dd_sof_gen.tcl / ix_sof_reset.tcl / inalize_sof.tcl / 
+ecreate_sof.tcl）；
+- 含 SOF 的位流构建成功：**WNS +0.241 ns，0 失败端点**；
+- **但上板后 VDMA 不再消费帧**（writeframe 不返回），说明 TUSER 的断言时机与
+  _axi4s_vid_out 期望的 SOF 位置不一致（可能需要 SOF 与 vsync 对齐、或只在场首行的
+  第一个像素断言且要求 tready 有效时的严格时序）。
+
+因此**交付位流回退到已验证的 +0.289 ns 版本**（git show 811bcb5:... 可取回），
+SOF 作为独立成果保留，下一步应先用 ILA 观察 s_axis_video_tuser/tvalid/tready/tlast
+与 tg_vsync 的相对时序，再决定断言位置。
+
+**交付状态下的偏移处理**：偏移是每会话随机的相位（实测 0 / 45 / 89 px），
+--roll N 只能按当次测得值补偿；	ools/measure_bars.py 与 	ools/calibrate_roll.py
+用于测量。演示时建议先测一次再定值，并在同一会话内不再重启。

@@ -606,3 +606,27 @@ hpd GPIO: ch1=0x00000000 tri1=0xffffffff
 `writeframe()` 依旧秒回、延迟计数依旧更新，因为断在时钟/串行化层。
 修法是读回硬件模式，已匹配就只重启 VDMA 与时序发生器、不动时钟——**漏掉 `_hdmi.start()`
 会让 VDMA 配好却无人消费**，这一点我也踩了一次。
+
+### 45. 偏移不是常数：三次开机三个值，逼出了 SOF
+
+**时间**：2026-10-22 深夜
+
+我一直把水平偏移当成"固定值"，先测 43–46，再测 89，还用 `--roll` 去补。用户第三次截图时
+我量出 **约 0 像素**——同一个位流、同一套脚本。三个值摆在一起，"固定偏移"的假设当场崩塌。
+
+**重新推理**：什么机制会让相位每次开机不同？`v_axi4s_vid_out` 靠 SOF 对齐帧，SOF 走
+TUSER；而我们的 TUSER 来自 VDMA 的 `m_axis_mm2s_tuser`，恒为 0。没有 SOF，输出核只能按
+自己的时基自由跑——相位自然随机。
+
+**验证线索**：Xilinx PG044 明确写 "SOF ... physically transmitted over the AXI4-Stream
+TUSER0 signal, marks the first pixel of a video frame"；PYNQ 论坛对"自定义 HDMI 通路没画面"
+的答复也是 "does not have all the necessary signals, tuser, tlast"。
+
+**修法**：写 `axis_sof_gen`，用 TLAST + 行计数器造出缺失的 SOF，插在 pixel_unpack 与
+vid_out 之间，组合直通不改延迟。
+
+**教训**：当一个"常数"在不同会话里给出不同值，不要急着测得更准，先问"它凭什么应该是常数"。
+我在这上面浪费了两轮 `--roll` 校准。
+
+**附带**：`opt_design` 的 `[Opt 31-67] LUT4 ... missing a connection on input pin I3` 是
+参数化比较（32 位常量 vs 9 位计数器）导致的，改成同宽度 `localparam` 即过。

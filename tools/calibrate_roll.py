@@ -72,7 +72,8 @@ def main(argv: list[str]) -> int:
         print(__doc__)
         return 2
 
-    use_ruler = any("ruler" in p.lower() for p in argv)
+    use_ruler = "--pattern=ruler" in argv or any("ruler" in p.lower() for p in argv)
+    argv = [a for a in argv if not a.startswith("--pattern")]
     if use_ruler:
         reference = build_ruler(640, 480)
         print("reference: the ruler pattern (hdmi_ruler.py)")

@@ -108,84 +108,66 @@ def raise_input_hpd(ol) -> bool:
     return True
 
 
-def kick_output_hpd(ol, pause: float = 0.25) -> bool:
-    """Toggle the output hot-plug line low then high.
+def hold_output_hpd_low(ol) -> bool:
+    """Pull HPD low, as a cable being unplugged would."""
+    dev = find(ol, "hpd_video")
+    if dev is None:
+        return False
+    _drive_hpd(dev, 0)
+    return True
 
-    A sink samples HPD at connect time and re-reads EDID when it sees a low-to-high transition.
-    Several USB capture dongles do not re-lock their HDMI receiver when the source simply starts
-    streaming again after an interruption - they keep showing their own pattern until the cable
-    is re-plugged. Driving HPD low for a moment and releasing it produces the same edge in
-    software, which is what makes a demo recoverable without touching the hardware.
-    """
+
+def release_output_hpd(ol) -> bool:
+    """Release HPD high, as a cable being plugged back in would."""
     dev = find(ol, "hpd_video")
     if dev is None:
         return False
     _drive_hpd(dev, 1)
-    time.sleep(0.05)
-    _drive_hpd(dev, 0)
-    time.sleep(pause)
-    _drive_hpd(dev, 1)
     return True
 
 
-def _clock_locked(ol) -> bool:
-    """True if the pixel-clock MMCM/PLL reports locked."""
-    dev = find(ol, "dynclk")
-    if dev is None:
+def kick_output_hpd(ol, pause: float = 0.35) -> bool:
+    """A low-then-high HPD pulse, for callers that cannot order it around other work."""
+    if not hold_output_hpd_low(ol):
         return False
-    return bool(dev.mmio.read(0x04) & 0x1)
+    time.sleep(pause)
+    return release_output_hpd(ol)
 
 
 def start_output(ol, out, width: int, height: int, fps: int = 60,
                  force: bool = False, verbose: bool = True):
-    """Bring the HDMI output up without needlessly reprogramming the pixel clock.
+    """Start the HDMI output exactly the way PYNQ expects, and nothing else.
 
-    Why this exists
-        VideoOut.configure() assigns ``self._hdmi.mode``, and that setter calls
-        ``_display.mode(...)``, which reprograms axi_dynclk. Reprogramming drops TMDS for a
-        moment, and a USB capture dongle does not always re-lock afterwards - it then keeps
-        showing its own test pattern while the board streams perfectly. writeframe() still
-        returns quickly and the latency counter still updates, because the break is in the
-        clock/serialiser domain, not in the pixel path.
+    This is deliberately the plain sequence: program the mode (which sets both the pixel clock
+    and the timing generator), start the VDMA, and let the caller fill the frame buffers.
 
-    How the mode is checked
-        The frontend's ``mode`` *getter* reads the frame size back from the VTC
-        (``frame_width()``/``frame_height()``), so the hardware's current mode can be queried
-        without any side effect. If it already matches and the clock is locked, the clock is
-        left alone and only the VDMA and the timing generator are (re)started.
+    Two "improvements" were tried here and both are gone, because pictures stopped appearing
+    after they were added:
 
-    What must not be skipped
-        ``_hdmi.start()`` enables the video timing generator. Leaving it out (an earlier
-        version of this function did) means the VDMA is configured but nothing consumes frames,
-        and writeframe() blocks forever - the fix has to keep that call.
+      * skipping the mode programming when the read-back mode already matched, to avoid the
+        brief TMDS interruption a clock reprogramming causes. It leaves the pixel clock in
+        whatever state the previous session left it - and the read-back only proves what the
+        VTC holds, not what the clock is doing.
+      * pulsing HPD low and releasing it around the start, to imitate a cable replug. The sink
+        does not like HPD being pulled while TMDS is running, and a capture dongle that ends up
+        in that state shows its own pattern until a real replug.
+
+    The measured facts that do hold: the output HPD GPIO is C_ALL_OUTPUTS on channel 1 and a
+    read-only input on channel 2 (which reported 0 while the sink was unhappy), and a physical
+    cable replug is the only thing that reliably recovers the dongle. So the demo rule is:
+    start this once and do not restart it; tune parameters through files instead
+    (see hdmi_resident.py).
+
+    ``force`` is accepted for compatibility with callers and now has no effect.
     """
     from pynq.lib.video import VideoMode
 
     mode = VideoMode(width, height, 24, fps)
-
-    current = None
-    try:
-        current = out._hdmi.mode
-        current_px = (current.width, current.height)
-    except Exception:                                  # noqa: BLE001
-        current_px = None
-
-    reuse = (not force) and current_px == (width, height) and _clock_locked(ol)
-
-    if reuse:
-        out._vdma.writechannel.stop()
-        out._hdmi.start()                 # timing generator on, clock untouched
-        out._vdma.writechannel.mode = mode
-        out.start()
-        if verbose:
-            print(f"output {width}x{height}@{fps}: pixel clock already correct "
-                  f"({current_px[0]}x{current_px[1]} locked), left untouched", flush=True)
-    else:
-        out.configure(mode)
-        out.start()
-        if verbose:
-            print(f"output {width}x{height}@{fps}: pixel clock programmed", flush=True)
-    return reuse
+    out.configure(mode)
+    out.start()
+    if verbose:
+        print(f"output {width}x{height}@{fps}: mode programmed, VDMA started", flush=True)
+    return False
 
 
 def roll_frame(picture, offset: int):
@@ -222,14 +204,8 @@ def open_overlay(bitstream: str = "enhance_hdmi.bit", verbose: bool = True):
     ol = Overlay(bitstream)
     did_in = raise_input_hpd(ol)
     did_out = raise_output_hpd(ol)
-    # Always give the sink a hot-plug edge at start-up. A dongle that missed the previous
-    # re-lock keeps showing its own pattern no matter how good the signal is, and it only
-    # recovers on a low-to-high transition - which is why re-plugging the cable 'fixes' it.
-    # Doing it here means every run begins from a defined sink state instead of inheriting
-    # whatever the last run left behind.
-    kicked = kick_output_hpd(ol) if did_out else False
     if verbose:
-        print(f"loaded {bitstream}; HPD in={did_in} out={did_out} edge={kicked}", flush=True)
+        print(f"loaded {bitstream}; HPD in={did_in} out={did_out}", flush=True)
     return ol
 
 
