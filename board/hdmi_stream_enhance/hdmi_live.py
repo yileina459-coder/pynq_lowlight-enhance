@@ -108,6 +108,26 @@ def raise_input_hpd(ol) -> bool:
     return True
 
 
+def open_overlay(bitstream: str = "enhance_hdmi.bit", verbose: bool = True):
+    """Load an overlay and assert both hot-plug lines.
+
+    Every load reprograms the PL, which resets the HPD GPIOs back to all-inputs. Writing the
+    data register without clearing the direction register does nothing, so the sink sees a
+    floating hot-plug line, a capture dongle keeps its receiver off, and the screen shows the
+    dongle's own test pattern - indistinguishable from "the board is not producing video".
+
+    Loading through this helper makes that step impossible to forget.
+    """
+    from pynq import Overlay
+
+    ol = Overlay(bitstream)
+    did_in = raise_input_hpd(ol)
+    did_out = raise_output_hpd(ol)
+    if verbose:
+        print(f"loaded {bitstream}; HPD in={did_in} out={did_out}", flush=True)
+    return ol
+
+
 RST_BIT = 1 << 31          # bit 31 of word 1 asks the kernel to reset
 
 # Set this to True only for the old port-configured bitstream.

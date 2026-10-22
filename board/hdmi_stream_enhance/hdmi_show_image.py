@@ -57,8 +57,21 @@ def load_frame(args, width: int, height: int) -> np.ndarray:
         return data.reshape(height, width, 3)
 
     from PIL import Image
+
     with Image.open(args.image) as img:
-        return np.asarray(img.convert("RGB").resize((width, height)), dtype=np.uint8)
+        img = img.convert("RGB")
+        # Letterbox rather than stretch: a stretched photo is obviously wrong on screen, and
+        # the borders make it clear which part of the picture is the picture. The same rule is
+        # used by tools/make_frame.py and by the notebook's upload cell, so all three paths
+        # produce identical frames.
+        scale = min(width / img.width, height / img.height)
+        size = (max(1, round(img.width * scale)), max(1, round(img.height * scale)))
+        resized = img.resize(size, Image.LANCZOS)
+        canvas = Image.new("RGB", (width, height), (0, 0, 0))
+        canvas.paste(resized, ((width - size[0]) // 2, (height - size[1]) // 2))
+        print(f"picture {img.width}x{img.height} -> {size[0]}x{size[1]} centred "
+              f"(letterboxed)", flush=True)
+        return np.asarray(canvas, dtype=np.uint8)
 
 
 def main(argv=None) -> int:
@@ -85,15 +98,10 @@ def main(argv=None) -> int:
 
     width, height = (int(v) for v in args.mode.lower().split("x"))
 
-    print(f"loading {args.bitstream}", flush=True)
-    ol = Overlay(args.bitstream)
+    ol = hl.open_overlay(args.bitstream)
     video = ol.video
     out = video.hdmi_out
 
-    # Both HPD GPIOs come up tri-stated; the sink has to see HPD asserted or a capture
-    # dongle keeps its receiver off and shows its own test pattern.
-    hl.raise_input_hpd(ol)
-    hl.raise_output_hpd(ol)
 
     cfg = hl.find(ol, "gpio_enh_cfg")
     lat = hl.find(ol, "gpio_enh_lat")
@@ -177,6 +185,8 @@ def main(argv=None) -> int:
         pass
 
     print("done", flush=True)
+    print("the display returns to the capture device's own pattern now - that is expected: "
+          "the VDMA stops feeding frames when this process exits", flush=True)
     return 0
 
 

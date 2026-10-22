@@ -264,6 +264,20 @@ sudo env ... python3 hdmi_show_image.py --raw frame.bin --cycle 8   # 自己的�
 新增文件：`hdmi_show_image.py`（显示自己的图片）、`hdmi_live_check.py`（量化验证切换
 不中断流）、`diagnostics/hdmi_image_debug.py` / `hdmi_order_test.py`（排查用的分步计时）。
 
+## 运行时的两个常识（否则很容易误判成故障）
+
+**1. 进程一退出，画面就回到彩条。** VDMA 停止供帧，采集卡按自己的兜底图案显示。
+所以演示脚本默认**一直跑**（--total 0，Ctrl-C 结束），命令行结束时会打印一行说明。
+看到彩条先确认进程还活着：
+
+`ash
+ps -eo args= | grep [h]dmi_
+`
+
+**2. 每次加载位流都会把 HPD 复位成输入。** 因此脚本统一用
+hl.open_overlay(bitstream)：它加载 overlay 并把两侧 HPD 都驱动起来，日志里会打印
+HPD in=True out=True。自己写新脚本时也走这个入口，别用裸 Overlay()。
+
 ## 输出 HPD 必须显式驱动（2026-10-22 下午）
 
 AXI GPIO 上电时方向寄存器是 `0xFFFFFFFF`（全输入），**只写数据寄存器不会改变引脚**。

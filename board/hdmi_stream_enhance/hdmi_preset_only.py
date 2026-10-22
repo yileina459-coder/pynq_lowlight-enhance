@@ -53,7 +53,9 @@ def main(argv=None) -> int:
     ap.add_argument("--bitstream", default="enhance_hdmi.bit")
     ap.add_argument("--mode", default="640x480")
     ap.add_argument("--cycle", type=float, default=12.0)
-    ap.add_argument("--total", type=float, default=200.0)
+    ap.add_argument("--total", type=float, default=0.0,
+                    help="run length in seconds (0 = keep going until Ctrl-C; the demo "
+                         "defaults to that because a script that quits blanks the screen)")
     ap.add_argument("--rebuild-output", action="store_true",
                     help="old bitstream: reset the kernel and rebuild the output "
                          "path after each switch (causes a short black flash)")
@@ -64,15 +66,10 @@ def main(argv=None) -> int:
 
     width, height = (int(v) for v in args.mode.lower().split("x"))
 
-    print(f"loading {args.bitstream}", flush=True)
-    ol = Overlay(args.bitstream)
+    ol = hl.open_overlay(args.bitstream)
     video = ol.video
     out = video.hdmi_out
 
-    # Both HPD GPIOs come up tri-stated; the sink has to see HPD asserted or a capture
-    # dongle keeps its receiver off and shows its own test pattern.
-    hl.raise_input_hpd(ol)
-    hl.raise_output_hpd(ol)
 
     cfg = hl.find(ol, "gpio_enh_cfg")
     lat = hl.find(ol, "gpio_enh_lat")
@@ -123,7 +120,7 @@ def main(argv=None) -> int:
 
     apply(presets[0])
 
-    while time.monotonic() - started < args.total:
+    while args.total <= 0 or time.monotonic() - started < args.total:
         elapsed = time.monotonic() - started
         if elapsed >= next_switch:
             next_switch = elapsed + args.cycle
@@ -132,6 +129,8 @@ def main(argv=None) -> int:
         time.sleep(0.5)
 
     print("done", flush=True)
+    print("the display returns to the capture device's own pattern now - that is expected: "
+          "the VDMA stops feeding frames when this process exits", flush=True)
     return 0
 
 
