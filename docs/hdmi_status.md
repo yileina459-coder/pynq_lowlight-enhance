@@ -856,3 +856,22 @@ Pillow（GIF / 动态 WebP）。装 ffmpeg（`winget install Gyan.FFmpeg`）后�
 在收到 SOF 后停等下一帧，导致流不连续。这一点需要在下一轮用 ILA 或连续推帧确认。
 
 因此**提亮仍然在 PC 侧完成**（`page` 自适应曲线 + 板上 `clarity`），交付说法不变。
+
+### 2026-10-23 06:30 更正：SOF 位流会间歇停流，**未交付**
+
+上一条记录说"SOF 集成成功、流正常"，这是**过早的结论**。继续测试后发现：
+
+- 带 SOF 的位流跑一会儿后 **`writeframe` 阻塞**（`/tmp/hdmi_state.txt` 的时间戳停住、播放模式起不来、
+  `load average` 降到 0.01），表现为画面停在最后一帧、只有换图时才刷新；
+- 同一份位流下，改配置（增益、二值化）**不改变屏幕**，这曾让我误判"配置没生效"；
+- 而**不带 SOF 的位流（WNS +0.289）**昨晚播放 24 帧动画是正常的
+  （`playing=24 frames at 12 fps`，画面连续变化）。
+
+因此**交付位流回退到不带 SOF 的版本**（`git checkout 68372f6 -- ...enhance_hdmi.bit`），
+SOF 的 RTL/HLS 与全部集成脚本保留在仓库里，状态记为"已实现、时序收敛、但会停流，未交付"。
+
+**对偏移的处理回到原来的结论**：相位每次会话都可能不同，用 `tools/measure_offset_screen.py`
+量出来后写 `--roll` 补偿（`/tmp/hdmi_roll.txt` 可实时生效）。
+
+**下一轮的第一步**：上 ILA 抓 `s_axis_video_{tuser,tvalid,tready,tlast}` 与 `vtg_vsync`，
+确认 SOF 断言时机与流是否连续——停顿、条纹、配置不可见这三个现象可能是同一个根因。
