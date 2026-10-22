@@ -24,6 +24,40 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageOps
 
+# The board's tone curve is two-segment: below the knee y*gain_lo/16, above it
+# knee + (y-knee)*gain_hi/16. These are the same numbers as the board presets, so a picture
+# brightened here looks like the one the kernel would produce - it just happens on the PC.
+TONE_PRESETS = {
+    "bright":   dict(clarity=24, knee=192, gain_lo=56, gain_hi=20),
+    "night":    dict(clarity=28, knee=224, gain_lo=72, gain_hi=24),
+    "document": dict(clarity=20, knee=192, gain_lo=64, gain_hi=16),
+    "reading":  dict(clarity=24, knee=48,  gain_lo=88, gain_hi=14),
+}
+
+
+def apply_tone(rgb: np.ndarray, preset: dict) -> np.ndarray:
+    """Apply the board's two-segment tone curve to the luma and carry the delta into RGB.
+
+    Identical arithmetic to src/hls/enhance/enhance_body.inc stage 3 and 5 (minus the local
+    contrast stage, which the board still runs), so this is a preview of the same curve rather
+    than a different one.
+    """
+    r = rgb[..., 0].astype(np.int32)
+    g = rgb[..., 1].astype(np.int32)
+    b = rgb[..., 2].astype(np.int32)
+    y = (77 * r + 150 * g + 29 * b) >> 8
+
+    knee = preset.get("knee", 255)
+    gain_lo = preset.get("gain_lo", 16)
+    gain_hi = preset.get("gain_hi", 16)
+    below = (y * gain_lo) >> 4
+    above = knee + (((y - knee) * gain_hi) >> 4)
+    y2 = np.where(y <= knee, below, above)
+    y2 = np.clip(y2, 0, 255)
+
+    delta = (y2 - y)[..., None]
+    return np.clip(rgb.astype(np.int32) + delta, 0, 255).astype(np.uint8)
+
 WIDTH, HEIGHT = 640, 480
 
 
@@ -61,6 +95,8 @@ def main(argv=None) -> int:
     ap.add_argument("--out", required=True, help="output PNG path")
     ap.add_argument("--fit", choices=("letterbox", "crop", "stretch"), default="letterbox")
     ap.add_argument("--background", type=int, default=0, help="letterbox colour 0..255")
+    ap.add_argument("--tone", choices=sorted(TONE_PRESETS), default=None,
+                    help="apply a brightness curve here instead of on the board")
     args = ap.parse_args(argv)
 
     source = Path(args.image)
@@ -70,6 +106,10 @@ def main(argv=None) -> int:
 
     img = load(str(source))
     fitted = fit(img, args.fit, args.background)
+    if args.tone:
+        before = np.asarray(fitted).mean()
+        fitted = Image.fromarray(apply_tone(np.asarray(fitted), TONE_PRESETS[args.tone]))
+        print(f"tone {args.tone}: brightness {before:.0f} -> {np.asarray(fitted).mean():.0f}")
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     fitted.save(out, "PNG")

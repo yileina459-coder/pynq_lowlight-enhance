@@ -34,6 +34,10 @@ param(
     [ValidateSet('letterbox', 'crop', 'stretch')][string]$Fit = 'letterbox',
     [int]$Background = 0,
     [string]$Preset = '',
+    # Apply the brightness curve here, on the PC, instead of on the board. The hardware gain path
+    # produces column striping in the current bitstream (see docs/hdmi_status.md), so this is the
+    # route that gives a clean bright picture today; the board then only adds local contrast.
+    [ValidateSet('', 'bright', 'night', 'document', 'reading')][string]$Tone = '',
     [switch]$KeepLocal
 )
 
@@ -62,7 +66,10 @@ function Invoke-Board {
 $stamp = Get-Date -Format 'HHmmss'
 $name = "mine_${stamp}_640x480.png"
 $local = Join-Path $repo ".tmp\upload\$name"
-& $python (Join-Path $repo 'tools\prepare_image.py') $Image --out $local --fit $Fit --background $Background
+$prepareArgs = @((Join-Path $repo 'tools\prepare_image.py'), $Image, '--out', $local,
+                 '--fit', $Fit, '--background', $Background)
+if ($Tone) { $prepareArgs += @('--tone', $Tone) }
+& $python @prepareArgs
 if ($LASTEXITCODE -ne 0) { throw "conversion failed" }
 
 # --- 2) copy to the board ---------------------------------------------------------------
@@ -78,7 +85,14 @@ if ($LASTEXITCODE -ne 0) {
 $null = Invoke-Board "echo $uploadDir/$name > /tmp/hdmi_image.txt"
 
 $chosenPreset = $Preset
-if ($Preset -eq 'auto') {
+if ($Tone) {
+    # The brightness curve already happened on the PC, so the board only has to sharpen. 'clarity'
+    # is local contrast with unity gain, which is the part of the kernel that is verified clean;
+    # the gain path currently stripes (see docs/hdmi_status.md).
+    $chosenPreset = if ($Preset -in @('', 'auto')) { 'clarity' } else { $Preset }
+    Write-Host "brightened on the PC (tone=$Tone); board preset '$chosenPreset'" -ForegroundColor Cyan
+}
+elseif ($Preset -eq 'auto') {
     # Let the simulator look at the converted picture and pick the tone curve that suits it.
     # Same code path as tools\preview_enhance.py, so the preview and the board agree.
     $advice = & $python (Join-Path $repo 'tools\preview_enhance.py') $local --recommend 2>&1

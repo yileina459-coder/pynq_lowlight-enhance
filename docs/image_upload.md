@@ -154,3 +154,36 @@ $sc.Save()
 - `tools/board/show_image.ps1` —— 一键上传（转换 → 传输 → 切换 → 校验）
 - `tools/prepare_image.py` —— 图片转 640×480 PNG，可单独用来预览效果
 - `board/hdmi_stream_enhance/hdmi_resident.py` —— 板上常驻演示
+
+## 提亮的两种方式（重要）
+
+板上的增益乘法级**当前有缺陷**：任何 `gain_lo != 16` 的预设都会给画面打上规则竖条纹，
+幅度随增益增大（详见 `docs/hdmi_status.md`）。`pass` 与 `clarity` 不受影响。
+
+因此**提亮默认在电脑上完成**：
+
+| 方式 | 谁在做 | 效果 | 状态 |
+|---|---|---|---|
+| **本机提亮（默认）** | PC 上的同一条曲线 + 板上 `clarity` 锐化 | 干净、明亮、清晰 | ✅ 推荐 |
+| 板上增益（`bright`/`night`/…） | FPGA | 亮但有条纹 | ⚠️ 有缺陷，仅用于演示对比 |
+
+窗口里 **“在本机提亮（推荐）”默认勾选**；勾选时板上预设自动设为 `clarity`
+（只做局部对比增强，把文字边缘拉清楚）。
+
+命令行等价：
+
+```powershell
+# 推荐：本机提亮 + 板上锐化
+... -Image page.jpg -Fit crop -Tone bright
+
+# 只看板上锐化（不提亮）
+... -Image page.jpg -Preset clarity
+
+# 对比缺陷：板上增益
+... -Image page.jpg -Preset night
+```
+
+四种提亮强度：`bright`（默认）、`document`、`reading`、`night`（最亮）。
+
+实测同一张暗书页：亮度 **49 → 171**，屏幕上均匀无条纹。
+

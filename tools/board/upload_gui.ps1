@@ -129,6 +129,16 @@ $btnPreview.Location = New-Object System.Drawing.Point(310, 131)
 $btnPreview.Size = New-Object System.Drawing.Size(100, 26)
 $form.Controls.Add($btnPreview)
 
+# Brightening happens on the PC by default. The board's gain stage stripes the picture in the
+# current bitstream (a defect recorded in docs/hdmi_status.md), while its local-contrast stage is
+# verified clean - so the PC applies the tone curve and the board sharpens.
+$chkTone = New-Object System.Windows.Forms.CheckBox
+$chkTone.Text = '在本机提亮（推荐）'
+$chkTone.Location = New-Object System.Drawing.Point(430, 132)
+$chkTone.AutoSize = $true
+$chkTone.Checked = $true
+$form.Controls.Add($chkTone)
+
 $btnUpload = New-Object System.Windows.Forms.Button
 $btnUpload.Text = '上传到开发板'
 $btnUpload.Location = New-Object System.Drawing.Point(16, 192)
@@ -172,7 +182,8 @@ $btnPreview.Add_Click({
     $work = Join-Path $repo '.tmp\upload'
     New-Item -ItemType Directory -Force -Path $work | Out-Null
     $prepared = Join-Path $work 'preview_src_640x480.png'
-    & $python (Join-Path $repo 'tools\prepare_image.py') $path --out $prepared --fit $fitChoice | Out-Null
+    $tonePreview = if ($chkTone.Checked) { @('--tone', 'bright') } else { @() }
+    & $python (@((Join-Path $repo 'tools\prepare_image.py'), $path, '--out', $prepared, '--fit', $fitChoice) + $tonePreview) | Out-Null
 
     $sheet = Join-Path $work 'preview.png'
     if ($presetValue -eq 'auto') {
@@ -212,7 +223,8 @@ $btnUpload.Add_Click({
     $form.Refresh()
 
     try {
-        $output = & $showScript -Image $path -Fit $fit -Preset $presetArg 2>&1
+        $toneArg = if ($chkTone.Checked) { 'bright' } else { '' }
+        $output = & $showScript -Image $path -Fit $fit -Preset $presetArg -Tone $toneArg 2>&1
         $raw = ($output | Out-String)
         $text = $raw.Trim()
 
