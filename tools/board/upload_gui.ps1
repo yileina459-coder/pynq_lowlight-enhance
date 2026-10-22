@@ -182,7 +182,7 @@ $btnPreview.Add_Click({
     $work = Join-Path $repo '.tmp\upload'
     New-Item -ItemType Directory -Force -Path $work | Out-Null
     $prepared = Join-Path $work 'preview_src_640x480.png'
-    $tonePreview = if ($chkTone.Checked) { @('--tone', 'bright') } else { @() }
+    $tonePreview = if ($chkTone.Checked) { @('--tone', 'page') } else { @() }
     & $python (@((Join-Path $repo 'tools\prepare_image.py'), $path, '--out', $prepared, '--fit', $fitChoice) + $tonePreview) | Out-Null
 
     $sheet = Join-Path $work 'preview.png'
@@ -223,7 +223,7 @@ $btnUpload.Add_Click({
     $form.Refresh()
 
     try {
-        $toneArg = if ($chkTone.Checked) { 'bright' } else { '' }
+        $toneArg = if ($chkTone.Checked) { 'page' } else { '' }
         $output = & $showScript -Image $path -Fit $fit -Preset $presetArg -Tone $toneArg 2>&1
         $raw = ($output | Out-String)
         $text = $raw.Trim()

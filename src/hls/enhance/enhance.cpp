@@ -113,6 +113,29 @@ void enhance_stream_cfg(enh_stream_t& s_in,
     static ap_uint<12> col = 0;
     static ap_uint<2> phase = 0;
 
+    // Configuration is latched into plain registers at the start of every line and then used from
+    // those registers for the rest of the line.
+    //
+    // The previous version used the value straight from the memory read on every pixel. That made
+    // any per-cycle wobble in the read path show up as a fixed pattern on screen, and it did: with
+    // a *uniform* input, any preset whose gain differed from 1.0x produced vertical stripes whose
+    // amplitude grew with the gain (measured std 0.23 at gain 1.0x, 2.97 at 1.06x, 21.98 at 1.5x),
+    // identical on every row. Presets that do not exercise the gain (pass, clarity) were clean, which
+    // is what localised the fault to this path.
+    //
+    // Latching costs one line of latency for a preset change (about 32 microseconds) and removes
+    // the dependency entirely: the memory is still read every cycle to keep II = 1, but only the
+    // value sampled on the first pixel of a line is used.
+    static ap_uint<8> clarity_q = 16;
+    static ap_uint<8> knee_q = 255;
+    static ap_uint<8> gain_lo_q = 16;
+    static ap_uint<8> gain_hi_q = 16;
+    static ap_uint<8> thresh_q = 0;
+    static ap_uint<1> binarize_q = 0;
+    static ap_uint<1> invert_q = 0;
+    static ap_uint<1> mono_q = 0;
+    static ap_uint<16> split_x_q = 0;
+
 #ifdef __SYNTHESIS__
     while (1) {
 #else
@@ -120,24 +143,31 @@ void enhance_stream_cfg(enh_stream_t& s_in,
 #endif
 #pragma HLS PIPELINE II = 1
 
-        // Live configuration: re-read from memory for every pixel.
-        //
-        // The address is data-dependent on purpose. With a constant index HLS folds the
-        // one-element array into a plain input port and then registers the one-bit flags in
-        // the prologue - the exact latch this variant exists to avoid. A runtime address
-        // forces a real memory port, so the word is re-read every cycle and cannot be held
-        // in a register. Word 1 is never selected in practice.
-        ap_uint<1> cfg_index = (col == (ap_uint<12>)0xFFF) ? ap_uint<1>(1) : ap_uint<1>(0);
-        ap_uint<64> word = cfg[cfg_index];
-        ap_uint<8> clarity  = word.range(7, 0);
-        ap_uint<8> knee     = word.range(15, 8);
-        ap_uint<8> gain_lo  = word.range(23, 16);
-        ap_uint<8> gain_hi  = word.range(31, 24);
-        ap_uint<8> thresh   = word.range(39, 32);
-        ap_uint<1> binarize = word.range(40, 40);
-        ap_uint<1> invert   = word.range(41, 41);
-        ap_uint<1> mono     = word.range(42, 42);
-        ap_uint<16> split_x = word.range(58, 43);
+        // Unconditional read so the pipeline stays at II = 1; the value only matters on a boundary.
+        ap_uint<64> word = cfg[0];
+
+        if (col == 0) {
+            clarity_q  = word.range(7, 0);
+            knee_q     = word.range(15, 8);
+            gain_lo_q  = word.range(23, 16);
+            gain_hi_q  = word.range(31, 24);
+            thresh_q   = word.range(39, 32);
+            binarize_q = word.range(40, 40);
+            invert_q   = word.range(41, 41);
+            mono_q     = word.range(42, 42);
+            split_x_q  = word.range(58, 43);
+        }
+
+        // The pipeline below uses the latched copies; the names match what enhance_body.inc expects.
+        ap_uint<8> clarity  = clarity_q;
+        ap_uint<8> knee     = knee_q;
+        ap_uint<8> gain_lo  = gain_lo_q;
+        ap_uint<8> gain_hi  = gain_hi_q;
+        ap_uint<8> thresh   = thresh_q;
+        ap_uint<1> binarize = binarize_q;
+        ap_uint<1> invert   = invert_q;
+        ap_uint<1> mono     = mono_q;
+        ap_uint<16> split_x = split_x_q;
 
         #include "enhance_body.inc"
     }

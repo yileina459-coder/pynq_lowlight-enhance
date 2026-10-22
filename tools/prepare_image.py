@@ -35,6 +35,31 @@ TONE_PRESETS = {
 }
 
 
+def normalize_page(rgb: np.ndarray, low_pct: float = 10, high_pct: float = 85,
+                   out_low: int = 18, out_high: int = 240) -> np.ndarray:
+    """Stretch the ink and paper levels to a fixed range, per picture.
+
+    A fixed tone curve cannot serve a photo of a page: the shadowed corner and the lit paper end up
+    in very different places depending on the light, and a large low-end gain turns the shadow into a
+    blown-out white blob (that is exactly what the 'reading' curve did to the test photo). Measuring
+    where the ink and the paper actually sit and mapping those to 18..240 keeps the whole page in
+    range without clipping, and keeps the lighting gradient as a gradient instead of a blob.
+    """
+    r = rgb[..., 0].astype(np.int32)
+    g = rgb[..., 1].astype(np.int32)
+    b = rgb[..., 2].astype(np.int32)
+    y = (77 * r + 150 * g + 29 * b) >> 8
+
+    ink = np.percentile(y, low_pct)
+    paper = np.percentile(y, high_pct)
+    if paper - ink < 8:                       # flat or almost flat picture: leave it alone
+        return rgb
+    scale = (out_high - out_low) / (paper - ink)
+    y2 = np.clip((y - ink) * scale + out_low, 0, 255)
+    delta = (y2 - y)[..., None]
+    return np.clip(rgb.astype(np.int32) + delta, 0, 255).astype(np.uint8)
+
+
 def apply_tone(rgb: np.ndarray, preset: dict) -> np.ndarray:
     """Apply the board's two-segment tone curve to the luma and carry the delta into RGB.
 
@@ -88,6 +113,68 @@ def fit(img: Image.Image, mode: str, background: int) -> Image.Image:
     return canvas
 
 
+def _legibility(rgb: np.ndarray) -> float:
+    """Same shape of metric as tools/score_capture.py, applied to the frame before upload.
+
+    Scoring offline means the choice costs nothing: no upload, no board, no screenshot.
+    """
+    r = rgb[..., 0].astype(np.int32)
+    g = rgb[..., 1].astype(np.int32)
+    b = rgb[..., 2].astype(np.int32)
+    y = (77 * r + 150 * g + 29 * b) >> 8
+    contrast = float(np.percentile(y, 95) - np.percentile(y, 5))
+    clip = float(((y <= 2) | (y >= 253)).mean() * 100)
+    midtone = float(((y >= 60) & (y <= 200)).mean() * 100)
+    lap = (4 * y[1:-1, 1:-1] - y[:-2, 1:-1] - y[2:, 1:-1] - y[1:-1, :-2] - y[1:-1, 2:])
+    edge = float(np.abs(lap).mean())
+    return (contrast * 0.6 + edge * 8.0 + midtone * 0.8
+            - max(0.0, clip - 5) * 3.0 - abs(float(y.mean()) - 130) * 0.25)
+
+
+def looks_like_document(rgb: np.ndarray) -> bool:
+    """True when the picture is mostly paper with ink on it.
+
+    A page under uneven light has one dominant bright mode (the paper) covering a large share of the
+    frame, with the ink well below it. Photos rarely look like that. The distinction matters because
+    the two families want different curves: a page wants the adaptive stretch that pins the paper to
+    a fixed level (no glare), while a photo wants a tone curve that keeps its shadows.
+    """
+    y = ((77 * rgb[..., 0].astype(np.int32)
+          + 150 * rgb[..., 1].astype(np.int32)
+          + 29 * rgb[..., 2].astype(np.int32)) >> 8)
+    hist, edges = np.histogram(y, bins=32, range=(0, 256))
+    centres = (edges[:-1] + edges[1:]) / 2
+    bright_modes = centres > 90
+    if not bright_modes.any():
+        return False
+    top = int(np.argmax(np.where(bright_modes, hist, 0)))
+    peak = centres[top]
+    paper_share = float(((y > peak - 16) & (y < peak + 16)).mean())
+    ink_share = float((y < peak - 40).mean())
+    return paper_share > 0.22 and ink_share > 0.03
+
+
+def choose_tone(rgb: np.ndarray) -> tuple[str, list[tuple[str, float]]]:
+    """Pick the curve that makes this particular picture most readable.
+
+    Candidates are the fixed curves plus the adaptive page normalisation, plus doing nothing.
+    The adaptive one usually wins on photographs of text and the fixed ones on ordinary dark
+    photos, but which is which depends on the light in the picture - so it is measured instead of
+    assumed.
+    """
+    scores: list[tuple[str, float]] = [("none", _legibility(rgb))]
+    for name, preset in TONE_PRESETS.items():
+        scores.append((name, _legibility(apply_tone(rgb, preset))))
+    scores.append(("page", _legibility(normalize_page(rgb))))
+    if looks_like_document(rgb):
+        # Documents go to the adaptive stretch regardless of the raw score: it is the only candidate
+        # that pins the paper level, so the page cannot develop a glare patch where the light fell
+        # unevenly. The fixed curves score well on contrast while blowing exactly that patch.
+        return "page", scores
+    best = max(scores, key=lambda item: item[1])
+    return best[0], scores
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -95,7 +182,7 @@ def main(argv=None) -> int:
     ap.add_argument("--out", required=True, help="output PNG path")
     ap.add_argument("--fit", choices=("letterbox", "crop", "stretch"), default="letterbox")
     ap.add_argument("--background", type=int, default=0, help="letterbox colour 0..255")
-    ap.add_argument("--tone", choices=sorted(TONE_PRESETS), default=None,
+    ap.add_argument("--tone", choices=sorted(TONE_PRESETS) + ["page", "auto"], default=None,
                     help="apply a brightness curve here instead of on the board")
     args = ap.parse_args(argv)
 
@@ -108,7 +195,20 @@ def main(argv=None) -> int:
     fitted = fit(img, args.fit, args.background)
     if args.tone:
         before = np.asarray(fitted).mean()
-        fitted = Image.fromarray(apply_tone(np.asarray(fitted), TONE_PRESETS[args.tone]))
+        if args.tone == "auto":
+            chosen, scores = choose_tone(np.asarray(fitted))
+            print("tone candidates: " + ", ".join(f"{n}={s:.0f}" for n, s in
+                                                   sorted(scores, key=lambda i: -i[1])))
+            print(f"tone auto -> {chosen}")
+            args.tone = chosen
+            if chosen == "none":
+                fitted.save(args.out) if False else None
+        if args.tone == "none":
+            pass
+        elif args.tone == "page":
+            fitted = Image.fromarray(normalize_page(np.asarray(fitted)))
+        else:
+            fitted = Image.fromarray(apply_tone(np.asarray(fitted), TONE_PRESETS[args.tone]))
         print(f"tone {args.tone}: brightness {before:.0f} -> {np.asarray(fitted).mean():.0f}")
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)

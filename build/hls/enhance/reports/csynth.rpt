@@ -4,7 +4,7 @@
 == Synthesis Summary Report of 'enhance_stream'
 ================================================================
 + General Information: 
-    * Date:           Wed Oct 21 23:09:45 2026
+    * Date:           Thu Oct 22 23:12:28 2026
     * Version:        2026.1 (Build 6493734 on Jun 16 2026)
     * Project:        proj
     * Solution:       solution1
@@ -199,18 +199,17 @@
 == Pragma Report
 ================================================================
 * Ignored Pragmas
-+-----------------+----------------------------------+------------------------------------------------------------------+--------------------------------------------------------------------------------------+
-| Type            | Options                          | Location                                                         | Messages                                                                             |
-+-----------------+----------------------------------+------------------------------------------------------------------+--------------------------------------------------------------------------------------+
-| ARRAY_PARTITION | variable = wtop complete         | in enhance_stream (../../../src/hls/enhance/enhance.cpp:57)      | Not implemented                                                                      |
-| ARRAY_PARTITION | variable = wmid complete         | in enhance_stream (../../../src/hls/enhance/enhance.cpp:58)      | Not implemented                                                                      |
-| ARRAY_PARTITION | variable = wbot complete         | in enhance_stream (../../../src/hls/enhance/enhance.cpp:59)      | Not implemented                                                                      |
-| INTERFACE       | bram port = cfg                  | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:100) | Array of size 1 cannot be specified as bram, '#pragma HLS interface bram' is ignored |
-| ARRAY_PARTITION | variable = lbuf complete dim = 1 | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:104) | Not implemented                                                                      |
-| ARRAY_PARTITION | variable = wtop complete         | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:109) | Not implemented                                                                      |
-| ARRAY_PARTITION | variable = wmid complete         | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:110) | Not implemented                                                                      |
-| ARRAY_PARTITION | variable = wbot complete         | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:111) | Not implemented                                                                      |
-+-----------------+----------------------------------+------------------------------------------------------------------+--------------------------------------------------------------------------------------+
++-----------------+----------------------------------+------------------------------------------------------------------+-----------------+
+| Type            | Options                          | Location                                                         | Messages        |
++-----------------+----------------------------------+------------------------------------------------------------------+-----------------+
+| ARRAY_PARTITION | variable = wtop complete         | in enhance_stream (../../../src/hls/enhance/enhance.cpp:57)      | Not implemented |
+| ARRAY_PARTITION | variable = wmid complete         | in enhance_stream (../../../src/hls/enhance/enhance.cpp:58)      | Not implemented |
+| ARRAY_PARTITION | variable = wbot complete         | in enhance_stream (../../../src/hls/enhance/enhance.cpp:59)      | Not implemented |
+| ARRAY_PARTITION | variable = lbuf complete dim = 1 | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:104) | Not implemented |
+| ARRAY_PARTITION | variable = wtop complete         | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:109) | Not implemented |
+| ARRAY_PARTITION | variable = wmid complete         | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:110) | Not implemented |
+| ARRAY_PARTITION | variable = wbot complete         | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:111) | Not implemented |
++-----------------+----------------------------------+------------------------------------------------------------------+-----------------+
 
 * Implemented Pragmas
 +-----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+
@@ -232,8 +231,9 @@
 | PIPELINE        | II = 1                           | in enhance_stream (../../../src/hls/enhance/enhance.cpp:69)      |
 | INTERFACE       | axis port = s_in                 | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:98)  |
 | INTERFACE       | axis port = s_out                | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:99)  |
+| INTERFACE       | bram port = cfg                  | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:100) |
 | INTERFACE       | ap_ctrl_none port = return       | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:101) |
-| PIPELINE        | II = 1                           | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:121) |
+| PIPELINE        | II = 1                           | in enhance_stream_cfg (../../../src/hls/enhance/enhance.cpp:144) |
 | INLINE          |                                  | in enh_luma (../../../src/hls/enhance/enhance.hpp:75)            |
 | INLINE          |                                  | in enh_clip8 (../../../src/hls/enhance/enhance.hpp:87)           |
 +-----------------+----------------------------------+------------------------------------------------------------------+

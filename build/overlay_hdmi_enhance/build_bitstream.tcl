@@ -19,13 +19,27 @@ set out_dir    [file join $repo_root "board" "hdmi_stream_enhance"]
 # Structural gate: a block design whose stream interfaces are broken still synthesises and still
 # produces a bitstream - it just never shows a picture, and the failure looks like a software bug.
 # Several block-design experiments had to be repaired, so the check runs first and refuses here.
-if {[catch {source [file join $script_dir "check_bd.tcl"]}]} {
-    # check_bd.tcl calls exit, so reaching this catch means it did not run at all.
-    puts "WARNING: the block-design check did not run; building anyway"
+#
+# check_bd.tcl only calls exit when it is run standalone; with this flag set it returns and reports
+# through ::bd_check_result. (It used to exit unconditionally, which ended this session at the gate
+# and silently skipped an entire build - the log looked like a success.)
+set ::bd_check_standalone 0
+catch {source [file join $script_dir "check_bd.tcl"]} bd_err
+unset -nocomplain ::bd_check_standalone
+if {![info exists ::bd_check_result] || $::bd_check_result ne "OK"} {
+    puts "BD STRUCTURE BROKEN - refusing to build ($bd_err)"
+    exit 1
 }
+puts "block design verified; starting the build"
 
 cd $work
-open_project {base/base.xpr}
+# The structural gate above opens this same project to inspect the block design; tolerate that
+# rather than dying with "Project is already open", which silently skipped two builds.
+if {[llength [current_project -quiet]] == 0} {
+    open_project {base/base.xpr}
+} else {
+    puts "project already open; continuing with it"
+}
 
 # Out-of-context synthesis: ~200 IPs, one run each.
 #

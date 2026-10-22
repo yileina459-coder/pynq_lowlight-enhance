@@ -23,6 +23,7 @@ Why this shape
 from __future__ import annotations
 
 import argparse
+import glob
 import os
 import time
 
@@ -35,6 +36,8 @@ PRESET_FILE = "/tmp/hdmi_preset.txt"
 IMAGE_FILE = "/tmp/hdmi_image.txt"
 STATE_FILE = "/tmp/hdmi_state.txt"
 SOF_FILE = "/tmp/hdmi_sof.txt"
+PLAY_FILE = "/tmp/hdmi_play.txt"
+PLAY_FPS_FILE = "/tmp/hdmi_play_fps.txt"
 
 
 UPLOAD_DIR = "/tmp/hdmi_uploads"
@@ -51,13 +54,21 @@ def prepare_control_files() -> None:
     os.umask(0o000)
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     os.chmod(UPLOAD_DIR, 0o777)
-    for path in (ROLL_FILE, PRESET_FILE, IMAGE_FILE, SOF_FILE, STATE_FILE):
+    for path in (ROLL_FILE, PRESET_FILE, IMAGE_FILE, SOF_FILE, PLAY_FILE,
+                 PLAY_FPS_FILE, STATE_FILE):
         try:
             with open(path, "a", encoding="utf-8"):
                 pass
             os.chmod(path, 0o666)
         except OSError:
             pass
+
+
+def roll_rows(pixels: np.ndarray, shift: int) -> np.ndarray:
+    """Horizontal compensation, shared by the static and the playing paths."""
+    if not shift:
+        return pixels
+    return np.roll(pixels, shift, axis=1)
 
 
 def publish_state(state: dict, width: int, height: int) -> None:
@@ -72,6 +83,8 @@ def publish_state(state: dict, width: int, height: int) -> None:
             fh.write(f"roll={state['roll']}\n")
             fh.write(f"preset={state['preset']}\n")
             fh.write(f"sof={state['sof']}\n")
+            playing = state.get("playing", "")
+            fh.write(f"playing={playing}\n")
             fh.write(f"mode={width}x{height}\n")
             fh.write(f"updated={time.strftime('%Y-%m-%d %H:%M:%S')}\n")
     except OSError:
@@ -130,7 +143,8 @@ def main(argv=None) -> int:
     cfg = hl.find(ol, "gpio_enh_cfg")
     lat = hl.find(ol, "gpio_enh_lat")
 
-    state = {"roll": args.roll, "preset": args.preset, "image": args.image, "sof": None}
+    state = {"roll": args.roll, "preset": args.preset, "image": args.image,
+             "sof": None, "playing": ""}
     picture = load_picture(state["image"], width, height)
     frame = None
 
@@ -162,7 +176,78 @@ def main(argv=None) -> int:
           "/tmp/hdmi_sof.txt", flush=True)
 
     last_refresh = time.monotonic()
+    clip = {"dir": "", "paths": [], "fps": 0.0, "index": 0, "next": 0.0}
     while True:
+        # ---- video playback -------------------------------------------------------------
+        # Playing a frame sequence has to happen inside this process: stopping the demo to start a
+        # player interrupts the pixel stream, and this capture dongle only re-locks after a physical
+        # replug or a board reboot. So the loop below switches modes on the fly, driven by a file.
+        play_text = read_text(PLAY_FILE)
+        if play_text and os.path.isdir(play_text):
+            if play_text != clip["dir"]:
+                paths = sorted(glob.glob(os.path.join(play_text, "frame_*.png")))
+                if paths:
+                    fps_text = read_text(PLAY_FPS_FILE)
+                    try:
+                        fps = float(fps_text) if fps_text else 30.0
+                    except ValueError:
+                        fps = 30.0
+                    clip.update({"dir": play_text, "paths": paths, "index": 0,
+                                 "fps": fps, "next": time.monotonic()})
+                    state["playing"] = f"{len(paths)} frames at {fps:g} fps"
+                    publish_state(state, width, height)
+                    print(f"  play -> {play_text} ({len(paths)} frames at {fps:g} fps)", flush=True)
+                else:
+                    print(f"  play: no frame_*.png in {play_text}", flush=True)
+                    clip["dir"] = ""
+                    state["playing"] = ""
+
+            if clip["paths"]:
+                frame = clip["paths"][clip["index"] % len(clip["paths"])]
+                try:
+                    if state["playing"] and clip["index"] % 30 == 0:
+                        publish_state(state, width, height)
+                    # One buffer, allocated the first time and reused. Allocating a fresh one per
+                    # frame (out.newframe()) put the loop about two seconds behind every frame,
+                    # because the allocation costs far more than the copy.
+                    if play_buf[0] is None:
+                        play_buf[0] = out.newframe()
+                    # Decoded frames are cached: PNG decoding on the PS is ~10x the cost of the
+                    # copy into the buffer, and the whole point of playback is to keep a steady
+                    # frame rate. 24-bit 640x480 is 0.9 MB per frame, so 240 frames is ~215 MB.
+                    pixels = play_cache.get(frame)
+                    if pixels is None:
+                        if len(play_cache) >= 240:
+                            play_cache.clear()
+                        pixels = load_picture(frame, width, height)
+                        play_cache[frame] = pixels
+                    play_buf[0][:] = roll_rows(pixels, state["roll"])
+                    out.writeframe(play_buf[0])
+                except Exception as exc:                   # noqa: BLE001
+                    print(f"  play write failed: {exc}", flush=True)
+                    clip["dir"] = ""
+                clip["index"] += 1
+                interval = 1.0 / max(clip["fps"], 1.0)
+                clip["next"] += interval
+                sleep = clip["next"] - time.monotonic()
+                if sleep > 0:
+                    time.sleep(sleep)
+                else:
+                    # Only complain when the loop is properly late, not on every frame.
+                    if -sleep > 0.25:
+                        print(f"  play: behind by {-sleep * 1000:.0f} ms, resynchronising",
+                              flush=True)
+                    clip["next"] = time.monotonic()
+                # Control files still matter while playing, but polling them per frame costs time;
+                # every 15 frames is often enough to feel instant.
+                if clip["index"] % 15 != 0:
+                    continue
+        elif clip["dir"]:
+            print("  play -> stopped", flush=True)
+            clip["dir"] = ""
+            state["playing"] = ""
+            publish_state(state, width, height)
+
         time.sleep(args.tick)
         changed = False
 

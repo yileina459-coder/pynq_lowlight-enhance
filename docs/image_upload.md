@@ -187,3 +187,38 @@ $sc.Save()
 
 实测同一张暗书页：亮度 **49 → 171**，屏幕上均匀无条纹。
 
+## 提亮的默认方案：自适应（`page`）
+
+固定增益曲线在纸面上会"按亮度分配亮度"：暗角被放大到纯白，形成眩光块。自适应曲线改为
+**量出这张图的墨水位与纸面位**，把它们拉伸到 18..240，纸面因此被钉在固定亮度、整页均匀。
+
+窗口里勾选“在本机提亮（推荐）”即用这条曲线，板上再做局部对比（`clarity`）把笔画边缘拉清。
+
+```powershell
+# 默认（自适应）
+... -Image page.jpg -Fit crop
+# 指定其他曲线
+... -Image page.jpg -Tone bright
+# 完全不提亮，只上板锐化
+... -Image page.jpg -Tone '' -Preset clarity
+```
+
+对比（同一张暗书页照片，板上实测）：`reading` 文字最锐但左上角有白斑；`bright` 均匀但偏软；
+**`page` 兼顾：文字锐度与 `reading` 相同（强边缘 21.0% vs 21.1%），纸面均匀无眩光**。
+
+## 播放视频
+
+```powershell
+# 播放（自动抽帧、上传、切换），默认 30 fps、取前 6 秒
+tools\board\play_video.ps1 -Video clip.mp4 -Fps 30 -Seconds 6
+
+# 停止，回到静态图片
+tools\board\play_video.ps1 -Video x -Stop
+```
+
+- 帧在 PC 上解码后上传；板上按帧率推流，**不重启进程**（重启会打断像素流，需要拔插线）。
+- 帧率上限由 PS 送帧成本决定（实测约 15.6 ms/帧，≈63 fps），所以 30 fps 很稳、60 fps 余量很小。
+- 每帧占 DDR 约 0.9 MB：6 秒 @30 fps ≈ 166 MB。
+- 控制文件在播放时仍然生效：`echo night > /tmp/hdmi_preset.txt` 会实时换曲线。
+- **MP4 需要 ffmpeg**（`winget install Gyan.FFmpeg`）；没有 ffmpeg 时支持 GIF / 动态 WebP。
+

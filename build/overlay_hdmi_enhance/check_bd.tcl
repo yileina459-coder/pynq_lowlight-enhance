@@ -62,13 +62,39 @@ if {$vid_rst ne ""} {
 }
 
 # Report, and fail if anything is wrong.
+#
+# This file is both a standalone check and a guard sourced by build_bitstream.tcl. Two traps when
+# it is sourced, both of which silently cost a build:
+#   * `exit` ends the whole Vivado session, so the caller gets no chance to abort cleanly - hence
+#     the verdict is reported through ::bd_check_result;
+#   * opening the project here leaves it open, and the caller's own open_project then fails with
+#     "Project is already open" - hence the close below.
+# When this file is sourced by the build script it must leave no project open, otherwise the
+# caller's own open_project fails with "Project is already open" - which silently cost a build.
+proc ::bd_check_tidy {} {
+    if {[info exists ::bd_check_standalone] && !$::bd_check_standalone} {
+        catch {close_project}
+    }
+}
+
+set ::bd_check_result "OK"
 if {[llength $problems] > 0} {
     puts "BD CHECK FAIL"
     foreach p $problems { puts "  - $p" }
     puts "RESULT: BD BROKEN"
-    exit 1
+    set ::bd_check_result "BROKEN"
+    ::bd_check_tidy
+    if {[info exists ::bd_check_standalone] && $::bd_check_standalone} {
+        catch {close_project}
+        exit 1
+    }
+    return
 }
 
 puts "BD CHECK PASS: stream interfaces intact, configuration memory connected, video reset driven"
 puts "RESULT: BD OK"
-exit 0
+::bd_check_tidy
+if {[info exists ::bd_check_standalone] && $::bd_check_standalone} {
+    catch {close_project}
+    exit 0
+}

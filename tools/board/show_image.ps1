@@ -37,7 +37,7 @@ param(
     # Apply the brightness curve here, on the PC, instead of on the board. The hardware gain path
     # produces column striping in the current bitstream (see docs/hdmi_status.md), so this is the
     # route that gives a clean bright picture today; the board then only adds local contrast.
-    [ValidateSet('', 'bright', 'night', 'document', 'reading')][string]$Tone = '',
+    [ValidateSet('', 'page', 'auto', 'bright', 'night', 'document', 'reading')][string]$Tone = 'page',
     [switch]$KeepLocal
 )
 
