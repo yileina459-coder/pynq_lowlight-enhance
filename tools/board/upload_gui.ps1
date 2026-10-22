@@ -22,7 +22,8 @@
 [CmdletBinding()]
 param(
     [string]$Image = '',
-    [ValidateSet('letterbox', 'crop', 'stretch')][string]$Fit = 'letterbox'
+    [ValidateSet('letterbox', 'crop', 'stretch')][string]$Fit = 'letterbox',
+    [string]$Preset = 'auto'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -31,13 +32,14 @@ Add-Type -AssemblyName System.Drawing
 
 $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $showScript = Join-Path $repo 'tools\board\show_image.ps1'
+$python = 'C:\Users\79171\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe'
 
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $form = New-Object System.Windows.Forms.Form
 $form.Text = '图片上传到开发板'
 $form.StartPosition = 'CenterScreen'
-$form.ClientSize = New-Object System.Drawing.Size(560, 250)
+$form.ClientSize = New-Object System.Drawing.Size(560, 320)
 $form.FormBorderStyle = 'FixedDialog'
 $form.MaximizeBox = $false
 $form.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 9)
@@ -90,25 +92,63 @@ switch ($Fit) {
     default   { $radioLetter.Checked = $true }
 }
 
+$labelPreset = New-Object System.Windows.Forms.Label
+$labelPreset.Text = '增强：'
+$labelPreset.Location = New-Object System.Drawing.Point(16, 136)
+$labelPreset.AutoSize = $true
+$form.Controls.Add($labelPreset)
+
+# The kernel already brightens (local contrast plus a two-segment tone curve); what was missing was
+# any way to *choose* that from the window - the upload path always sent 'pass', which is identity,
+# so a dark photo came back unchanged. "自动" asks tools/preview_enhance.py to pick the curve whose
+# result is most usable for this particular picture.
+$comboPreset = New-Object System.Windows.Forms.ComboBox
+$comboPreset.Location = New-Object System.Drawing.Point(58, 132)
+$comboPreset.Size = New-Object System.Drawing.Size(240, 24)
+$comboPreset.DropDownStyle = 'DropDownList'
+$script:presetItems = @(
+    @{ Name = '自动（推荐）';        Value = 'auto' },
+    @{ Name = '提亮 bright';         Value = 'bright' },
+    @{ Name = '很暗 night';          Value = 'night' },
+    @{ Name = '文档 document';       Value = 'document' },
+    @{ Name = '阅读 reading';        Value = 'reading' },
+    @{ Name = '只加对比 clarity';    Value = 'clarity' },
+    @{ Name = '原图 pass';           Value = 'pass' },
+    @{ Name = '反色 invert';         Value = 'invert' },
+    @{ Name = '二值化 binarize';     Value = 'binarize' },
+    @{ Name = '左右对比 split';      Value = 'split' }
+)
+foreach ($item in $script:presetItems) { [void]$comboPreset.Items.Add($item.Name) }
+$initial = $script:presetItems | Where-Object { $_.Value -eq $Preset } | Select-Object -First 1
+$comboPreset.SelectedItem = if ($initial) { $initial.Name } else { $script:presetItems[0].Name }
+$form.Controls.Add($comboPreset)
+
+$btnPreview = New-Object System.Windows.Forms.Button
+$btnPreview.Text = '预览效果'
+$btnPreview.Location = New-Object System.Drawing.Point(310, 131)
+$btnPreview.Size = New-Object System.Drawing.Size(100, 26)
+$form.Controls.Add($btnPreview)
+
 $btnUpload = New-Object System.Windows.Forms.Button
 $btnUpload.Text = '上传到开发板'
-$btnUpload.Location = New-Object System.Drawing.Point(16, 132)
+$btnUpload.Location = New-Object System.Drawing.Point(16, 192)
 $btnUpload.Size = New-Object System.Drawing.Size(160, 34)
 $form.Controls.Add($btnUpload)
 
 $status = New-Object System.Windows.Forms.Label
-$status.Location = New-Object System.Drawing.Point(190, 132)
+$status.Location = New-Object System.Drawing.Point(190, 192)
 $status.Size = New-Object System.Drawing.Size(350, 34)
 $status.Text = '等待选择图片'
 $status.ForeColor = [System.Drawing.Color]::DimGray
 $form.Controls.Add($status)
 
 $hint = New-Object System.Windows.Forms.Label
-$hint.Location = New-Object System.Drawing.Point(16, 180)
-$hint.Size = New-Object System.Drawing.Size(524, 56)
+$hint.Location = New-Object System.Drawing.Point(16, 240)
+$hint.Size = New-Object System.Drawing.Size(524, 72)
 $hint.ForeColor = [System.Drawing.Color]::Gray
-$hint.Text = ("小提示：也可以把图片直接拖到 上传图片.bat 图标上，跳过选择这一步。`r`n" +
-              "屏幕上如果出现彩条，是采集卡丢了锁定，拔插一次 HDMI 线就好。")
+$hint.Text = ("暗图请用「自动」或「提亮」：内核的低端增益最高 4.5 倍。`r`n" +
+              "「预览效果」会在本地生成对比图，不占用开发板。`r`n" +
+              "屏幕出现彩条是采集卡丢了锁定，拔插一次 HDMI 线即可。")
 $form.Controls.Add($hint)
 
 $btnBrowse.Add_Click({
@@ -116,6 +156,37 @@ $btnBrowse.Add_Click({
     $dialog.Title = '选择要显示的图片'
     $dialog.Filter = '图片文件|*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.tif;*.tiff;*.webp|所有文件|*.*'
     if ($dialog.ShowDialog() -eq 'OK') { $textImage.Text = $dialog.FileName }
+})
+
+$btnPreview.Add_Click({
+    $path = $textImage.Text.Trim()
+    if ([string]::IsNullOrWhiteSpace($path) -or -not (Test-Path $path)) {
+        [System.Windows.Forms.MessageBox]::Show('请先选择一张存在的图片。', '预览',
+            'OK', 'Warning') | Out-Null
+        return
+    }
+    $fitChoice = if ($radioCrop.Checked) { 'crop' } elseif ($radioStretch.Checked) { 'stretch' } else { 'letterbox' }
+    $picked = $script:presetItems | Where-Object { $_.Name -eq $comboPreset.SelectedItem } | Select-Object -First 1
+    $presetValue = if ($picked) { $picked.Value } else { 'auto' }
+
+    $work = Join-Path $repo '.tmp\upload'
+    New-Item -ItemType Directory -Force -Path $work | Out-Null
+    $prepared = Join-Path $work 'preview_src_640x480.png'
+    & $python (Join-Path $repo 'tools\prepare_image.py') $path --out $prepared --fit $fitChoice | Out-Null
+
+    $sheet = Join-Path $work 'preview.png'
+    if ($presetValue -eq 'auto') {
+        & $python (Join-Path $repo 'tools\preview_enhance.py') $prepared --sheet --out $sheet | Out-Null
+    } else {
+        & $python (Join-Path $repo 'tools\preview_enhance.py') $prepared --preset $presetValue --out $sheet | Out-Null
+    }
+
+    if (Test-Path $sheet) {
+        Start-Process $sheet          # opens in the default picture viewer
+    } else {
+        [System.Windows.Forms.MessageBox]::Show('预览生成失败，请确认 python 环境可用。', '预览',
+            'OK', 'Error') | Out-Null
+    }
 })
 
 $btnUpload.Add_Click({
@@ -132,6 +203,8 @@ $btnUpload.Add_Click({
     }
 
     $fit = if ($radioCrop.Checked) { 'crop' } elseif ($radioStretch.Checked) { 'stretch' } else { 'letterbox' }
+    $picked = $script:presetItems | Where-Object { $_.Name -eq $comboPreset.SelectedItem } | Select-Object -First 1
+    $presetArg = if ($picked) { $picked.Value } else { 'auto' }
 
     $btnUpload.Enabled = $false
     $status.ForeColor = [System.Drawing.Color]::Black
@@ -139,7 +212,7 @@ $btnUpload.Add_Click({
     $form.Refresh()
 
     try {
-        $output = & $showScript -Image $path -Fit $fit 2>&1
+        $output = & $showScript -Image $path -Fit $fit -Preset $presetArg 2>&1
         $raw = ($output | Out-String)
         $text = $raw.Trim()
 

@@ -33,7 +33,7 @@ param(
     [Parameter(Mandatory = $true)][string]$Image,
     [ValidateSet('letterbox', 'crop', 'stretch')][string]$Fit = 'letterbox',
     [int]$Background = 0,
-    [string]$Preset,
+    [string]$Preset = '',
     [switch]$KeepLocal
 )
 
@@ -76,7 +76,27 @@ if ($LASTEXITCODE -ne 0) {
 
 # --- 3) switch the picture --------------------------------------------------------------
 $null = Invoke-Board "echo $uploadDir/$name > /tmp/hdmi_image.txt"
-if ($Preset) { $null = Invoke-Board "echo $Preset > /tmp/hdmi_preset.txt" }
+
+$chosenPreset = $Preset
+if ($Preset -eq 'auto') {
+    # Let the simulator look at the converted picture and pick the tone curve that suits it.
+    # Same code path as tools\preview_enhance.py, so the preview and the board agree.
+    $advice = & $python (Join-Path $repo 'tools\preview_enhance.py') $local --recommend 2>&1
+    $match = [regex]::Match(($advice | Out-String), 'RECOMMEND=(\w+)')
+    if ($match.Success) {
+        $chosenPreset = $match.Groups[1].Value
+        Write-Host "preset chosen automatically: $chosenPreset" -ForegroundColor Cyan
+        ($advice | Select-String -Pattern 'mean=' | Select-Object -Last 1) | ForEach-Object { Write-Host "  $_" }
+    } else {
+        $chosenPreset = 'bright'
+        Write-Host "automation unavailable (-Preset auto), falling back to 'bright'" -ForegroundColor Yellow
+    }
+}
+
+if ($chosenPreset) {
+    $null = Invoke-Board "echo $chosenPreset > /tmp/hdmi_preset.txt"
+    Write-Output "PRESET=$chosenPreset"
+}
 
 # --- 4) verify from the board's own state ------------------------------------------------
 Start-Sleep -Seconds 3

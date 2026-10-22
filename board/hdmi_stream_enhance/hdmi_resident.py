@@ -178,10 +178,17 @@ def main(argv=None) -> int:
                 print(f"  roll -> {value}", flush=True)
 
         preset_text = read_text(PRESET_FILE)
-        if preset_text and preset_text != state["preset"] and preset_text in hl.PRESETS:
-            state["preset"] = preset_text
-            hl.write_preset(cfg, preset_text)
-            print(f"  preset -> {preset_text}  (latency {hl.read_latency(lat)})", flush=True)
+        if preset_text and preset_text != state["preset"]:
+            if preset_text in hl.PRESETS:
+                state["preset"] = preset_text
+                hl.write_preset(cfg, preset_text)
+                publish_state(state, width, height)   # the preset is part of what is on screen
+                print(f"  preset -> {preset_text}  (latency {hl.read_latency(lat)})", flush=True)
+            else:
+                # Silently ignoring an unknown name looks exactly like 'the hardware does nothing',
+                # which is the confusion this whole preset round was about. Say it out loud.
+                print(f"  preset '{preset_text}' is not known here; keeping '{state['preset']}'. "
+                      f"Valid: {', '.join(sorted(hl.PRESETS))}", flush=True)
 
         sof_text = read_text(SOF_FILE)
         if sof_text in ("0", "1"):

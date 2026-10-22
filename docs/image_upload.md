@@ -45,6 +45,45 @@ OK - the board is now showing /tmp/hdmi_uploads/mine_221308_640x480.png
 支持的输入格式：Pillow 能读的都行——JPG / PNG / BMP / WEBP / TIFF / GIF。手机拍的竖图会按 EXIF
 方向自动转正。**HEIC（iPhone 默认格式）不支持**，先导出成 JPG。
 
+## 让暗图变亮：选对预设
+
+**这不是硬件限制，而是默认预设是 `pass`（恒等，什么都不做）。** 内核里有完整的
+局部对比 + 两段色调曲线（`knee` 以下按 `gain_lo` 放大、以上按 `gain_hi`），只是上传路径一直写
+`pass`，所以看起来"处理前后一样"。
+
+同一张暗图在板上实测（截取屏幕画面，取平均亮度）：
+
+| 预设 | 低端增益 | 平均亮度 | 观感 |
+|---|---|---|---|
+| `pass` | 1.0× | **29** | 原样，几乎看不清 |
+| `bright` | 3.5× | **96** | 明显变亮，高光基本保留（推荐） |
+| `document` | 4.0× | **100** | 更亮，纸面感强 |
+| `night` | 4.5× | **104** | 最亮，适合极暗场景 |
+| `reading` | 5.5×（knee 低） | 中等 | 保留原味，只提对比 |
+| `invert` / `binarize` | — | — | 反色 / 二值化，只适合文字 |
+
+窗口里的「增强」下拉框默认 **自动（推荐）**：它会用 `tools/preview_enhance.py` 把每个预设都算一遍，
+按"够亮且不过曝"打分挑一个。暗图通常被挑成 `bright`。
+
+上传前想先看看效果，点 **「预览效果」**：本地生成对比图，不占用开发板，也不会打断像素流。
+
+命令行等价写法：
+
+```powershell
+# 自动挑
+... -Image photo.jpg -Preset auto
+# 指定
+... -Image photo.jpg -Preset night
+# 只看效果不上板（生成九宫格对比图）
+python tools\preview_enhance.py photo.jpg --sheet --out sheet.png
+```
+
+**预设只是 59 个配置位，改表不需要重新综合**：`board/hdmi_stream_enhance/hdmi_live.py` 里的
+`PRESETS` 与 `tools/preview_enhance.py` 里的表要一致（`tools/check_presets.py` 会检查）。
+
+如果 4.5 倍还不够，需要动内核（例如加 gamma 段），那是一次 HLS + Vivado 重建（约 1 小时）。
+当前曲线的极限就在这里：再高的低端增益会把画面大面积推到 255。
+
 ## 不用命令行：双击图标
 
 桌面上有一个 **上传图片到开发板** 图标（`上传图片.bat` 的快捷方式），三种用法：

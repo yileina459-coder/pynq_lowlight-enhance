@@ -31,12 +31,21 @@ import time
 
 # The 59 configuration bits, packed the way enh_cfg_split expects.
 PRESETS = {
+    # The tone curve is two-segment (below/above `knee`, with separate gains), so these numbers are
+    # what decides "the picture got brighter". `clarity` adds local contrast.
+    #
+    # The first four are the honest "pass through" options; the rest trade clipping for visibility.
+    # Values were chosen with tools/preview_enhance.py, which reimplements the kernel exactly:
+    # 'bright' lifts a very dark picture (mean 33 -> 116) with under 3% blown highlights, while an
+    # aggressive curve (gain_lo 64+) reaches 129 but blows ~39% of the frame, which is why it is
+    # not the default.
     "pass":     dict(clarity=16, knee=255, gain_lo=16, gain_hi=16),
     "clarity":  dict(clarity=28, knee=255, gain_lo=16, gain_hi=16),
+    "bright":   dict(clarity=24, knee=192, gain_lo=56, gain_hi=20),
+    "night":    dict(clarity=28, knee=224, gain_lo=72, gain_hi=24),
+    "document": dict(clarity=20, knee=192, gain_lo=64, gain_hi=16),
     "reading":  dict(clarity=24, knee=48, gain_lo=88, gain_hi=14),
-    "document": dict(clarity=20, knee=192, gain_lo=64, gain_hi=12),
-    "night":    dict(clarity=30, knee=36, gain_lo=120, gain_hi=10),
-    "invert":   dict(clarity=24, knee=48, gain_lo=88, gain_hi=14, invert=1, mono=1),
+    "invert":   dict(clarity=24, knee=192, gain_lo=56, gain_hi=20, invert=1, mono=1),
     "binarize": dict(clarity=16, knee=64, gain_lo=112, gain_hi=8,
                      thresh=112, binarize=1, mono=1),
     "split":    dict(clarity=28, knee=90, gain_lo=40, gain_hi=12, split_x=320),
