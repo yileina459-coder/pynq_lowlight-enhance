@@ -1,30 +1,30 @@
 #!/bin/sh
-# Kill leftover HDMI demo processes without matching this script or the invoking shell.
+# Stop every demo process on the board and verify it.
 #
-# Three different traps have bitten here:
-#   1. `pkill -f hdmi_preset_only` also matches the shell that runs it, because that shell's
-#      command line contains the same string - the session dies and the redirect never runs,
-#      so the failure looks like "the script crashed with no log".
-#   2. `grep "python3 -u hdmi_"` matches the shell wrapping the run for the same reason.
-#   3. Even with a bracket trick in the pattern, the bracket form appears in the calling
-#      command line and can match itself.
+# Two traps made this script unreliable before:
+#   1. matching on the command line also matched the shell that ran the script, so the session
+#      died and the failure looked like "the script crashed with no output";
+#   2. `kill` as the login user silently fails against processes started through sudo, so the
+#      script printed "killing <pid>" while the demo kept running.
 #
-# So: match on the argument vector of real python processes only. The awk program compares
-# argv[1] (the interpreter) and argv[3] (the script name) instead of pattern-matching the
-# whole command line, which cannot match awk itself or the shell around it.
+# Run it as root:   echo xilinx | sudo -S sh /home/xilinx/kill_hdmi_demos.sh
+# Patterns are given to pkill -f, which only ever matches the python process itself here.
 
-ps -eo pid=,args= | awk '
-{
-    pid = $1
-    # argv[1] is the interpreter, argv[2] is "-u", argv[3] is the script
-    if ($2 ~ /python3$/ && $3 == "-u" && $4 ~ /^hdmi_/) {
-        print pid
-    }
-}' | while read -r pid; do
-    echo "killing $pid"
-    kill "$pid" 2>/dev/null || true
+if [ "$(id -u)" != "0" ]; then
+    echo "warning: not running as root - demo processes started via sudo will survive"
+fi
+
+for pattern in hdmi_show_image hdmi_tour hdmi_preset_only hdmi_ruler hdmi_stock_640 \
+               hdmi_live_check hdmi_vdma_demo hdmi_solid hdmi_static_frame hdmi_smooth_demo; do
+    pkill -9 -f "$pattern" 2>/dev/null
 done
 
 sleep 2
+
 count=$(ps -eo args= | awk '$1 ~ /python3$/ && $2 == "-u" && $3 ~ /^hdmi_/' | wc -l)
 echo "remaining hdmi demo processes: $count"
+if [ "$count" != "0" ]; then
+    ps -eo pid=,user=,args= | awk '$0 ~ /python3/ && $0 ~ /hdmi_/ && $0 !~ /awk/ {
+        print "  still running: pid", $1, "user", $2
+    }'
+fi

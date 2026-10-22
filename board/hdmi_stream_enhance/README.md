@@ -295,3 +295,19 @@ hl.raise_output_hpd(ol)   # 输出侧（关键）
 
 **延迟口径**：HLS 报告的流水线深度是 **21 拍**；片上时间戳（只测第一个像素）读数在
 **21–25 拍**之间波动，同一轮内恒定。两者都远小于一行时间。
+
+## 水平偏移与"重启后彩条"（2026-10-22 晚）
+
+**偏移 ~45 像素是设计特性，不是故障。** 纯流式流水线延迟像素但不延迟时基，
+`v_axi4s_vid_out` 按固定行时序开窗，于是整幅画面左移（行尾回卷）。实测 43–46 像素，
+正好等于"内核 21–25 拍 + 时间戳/解包/FIFO 约 20 像素"。
+
+```bash
+# 补偿（推荐值由 tools/calibrate_roll.py 从截图算出来，实测 45）
+sudo env ... python3 hdmi_tour.py --image testcard_640x480.png --roll 45 --hold 30
+```
+
+**重启后只剩彩条**的真正原因是 `VideoOut.configure()` 会重新编程像素时钟：
+TMDS 中断一次，采集棒不一定能重新锁定。现在 `hl.start_output()` 会先读回硬件模式，
+已经是 640×480 且时钟锁定就**只重启 VDMA 和时序发生器，不动时钟**，
+日志会打印 `pixel clock already correct ... left untouched`。

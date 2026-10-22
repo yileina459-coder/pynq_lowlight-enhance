@@ -74,8 +74,7 @@ def main(argv=None) -> int:
     cfg = hl.find(ol, "gpio_enh_cfg")
     lat = hl.find(ol, "gpio_enh_lat")
 
-    out.configure(VideoMode(width, height, 24, 60))
-    out.start()
+    hl.start_output(ol, out, width, height)
     print(f"hdmi_out running at {width}x{height}", flush=True)
 
     image = test_image(width, height)

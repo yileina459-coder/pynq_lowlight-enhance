@@ -84,6 +84,9 @@ def main(argv=None) -> int:
     ap.add_argument("--preset", default="pass", choices=sorted(hl.PRESETS))
     ap.add_argument("--cycle", type=float, default=0.0,
                     help="switch preset every N seconds (0 = fixed preset)")
+    ap.add_argument("--roll", type=int, default=0,
+                    help="shift the picture right by N pixels to compensate the "
+                         "pipeline latency (measured 41-46 on this design)")
     ap.add_argument("--hold", type=float, default=0.0,
                     help="keep the picture up for N seconds (0 = until Ctrl-C)")
     ap.add_argument("--reset-on-switch", action="store_true",
@@ -109,6 +112,10 @@ def main(argv=None) -> int:
         raise SystemExit("gpio_enh_cfg not found - wrong bitstream?")
 
     frame_image = load_frame(args, width, height)
+    if args.roll:
+        frame_image = hl.roll_frame(frame_image, args.roll)
+        print(f"picture rolled right by {args.roll} px to compensate the pipeline latency",
+              flush=True)
     print(f"picture {width}x{height}, mean {frame_image.mean():.1f}", flush=True)
 
     def push_frames(count: int = 4) -> None:
@@ -118,8 +125,7 @@ def main(argv=None) -> int:
             out.writeframe(buf)
 
     def start_output() -> None:
-        out.configure(VideoMode(width, height, 24, 60))
-        out.start()
+        hl.start_output(ol, out, width, height)
         push_frames()
 
     def start_output_with_retry(tries: int = 3, seconds: int = 4) -> None:
@@ -142,6 +148,9 @@ def main(argv=None) -> int:
                 signal.alarm(0)
                 print(f"  no frame consumed within {seconds}s (attempt {attempt}/{tries}), "
                       f"restarting the output path", flush=True)
+                # A sink that missed the re-lock only recovers on an HPD edge, so give it one
+                # instead of asking the operator to re-plug the cable.
+                hl.kick_output_hpd(ol)
                 try:
                     out.stop()
                 except Exception:                          # noqa: BLE001
