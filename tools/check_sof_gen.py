@@ -38,11 +38,15 @@ def main() -> int:
     if not re.search(r"line\s*==\s*LAST_LINE", src):
         problems.append("comparison does not use LAST_LINE")
 
-    # 2) TUSER must be the SOF register, not a passthrough of the upstream value.
-    if not re.search(r"assign\s+m_tuser\s*=\s*sof\s*;", src):
-        problems.append("m_tuser is not driven by the sof register")
-    if re.search(r"assign\s+m_tuser\s*=\s*s_tuser", src):
-        problems.append("m_tuser is passed through from upstream (no SOF would be generated)")
+    # 2) TUSER must be the SOF/passthrough mux, never an unconditional passthrough: with a plain
+    #    passthrough no SOF is ever generated, which is the bug this module exists to fix.
+    if not re.search(r"assign\s+m_tuser\s*=\s*sof_enable\s*\?\s*sof\s*:\s*s_tuser\s*;", src):
+        problems.append("m_tuser is not the sof_enable/sof/s_tuser mux")
+    if not re.search(r"input\s+wire\s+sof_enable", src):
+        problems.append("no sof_enable input - the SOF path could not be compared at runtime "
+                        "against the passthrough behaviour without a rebuild")
+    if not re.search(r"if\s*\(!aresetn\)[\s\S]{0,200}sof\s*<=\s*1'b1", src):
+        problems.append("reset does not assert SOF, so the first frame would be unaligned")
 
     # 3) Data path must stay combinational so latency is unchanged.
     for port in ("m_tdata", "m_tvalid", "m_tlast"):

@@ -643,3 +643,46 @@ SOF 作为独立成果保留，下一步应先用 ILA 观察 s_axis_video_tuser/
 **交付状态下的偏移处理**：偏移是每会话随机的相位（实测 0 / 45 / 89 px），
 --roll N 只能按当次测得值补偿；	ools/measure_bars.py 与 	ools/calibrate_roll.py
 用于测量。演示时建议先测一次再定值，并在同一会话内不再重启。
+
+### 2026-10-23 凌晨：SOF 集成受阻于接口结构，BD 已修复，交付位流未变
+
+**结论先行**：SOF 是偏移问题的正解（依据见上一节），但**两次集成尝试都没能进入交付位流**，
+交付版本仍是已验证的 `+0.289 ns` 位流，BD 也已修复回可综合状态（`synth_design Complete!`）。
+
+**尝试一：手写 RTL + 单引脚接线 → PYNQ 无法加载**
+
+把 `axis_sof_gen.v` 的 tdata/tvalid/tready/tlast/tuser 逐个引脚接到 `pixel_unpack` 与
+`v_axi4s_vid_out` 之间。位流本身构建成功（WNS +0.241），但上板时 PYNQ 拒绝解析：
+
+```
+MetadataObjectNotFound: s_axis_video_tdata[port]:s_axis_video_tdata[signal] cannot be found in
+base:video_hdmi_out_frontend_v_axi4s_vid_out_0[block]
+children = [... 'video_in[port]', 'vtiming_in[port]', ...]
+```
+
+原因：该核的输入在 hwh 里是**接口端口 `video_in`**。用单引脚连接后，接口不再由接口驱动，
+导出的 hwh 描述与解析器期望不一致——**overlay 连加载都做不到**（不是"画面不对"，是"加载失败"）。
+
+**尝试二：改用 HLS 内核（标准 AXIS 接口）→ 综合通过、BD 接线未完成**
+
+`src/hls/sof_gen/sof_gen.cpp`：一级流水、II=1、Fmax 228 MHz、`S_AXIS`/`M_AXIS` 真实接口。
+插入 BD 时遇到两个问题：`create_bd_cell` 会自动把输入侧接口连上，此时再显式连接会报
+"already connected"；而删除旧 RTL cell 留下的**引脚级网络**会阻止接口连接生效
+（`BD 41-1271 ... overridden by the user`），同时 `/video/aresetn` 失去驱动
+（`NET <aresetn_1> has no source`）。
+
+**当前处置**：`repair_bd.tcl` 删除全部 SOF 相关单元与残留网络，把
+`pixel_unpack → v_axi4s_vid_out` 恢复为**接口连接**，重新驱动 `/video/aresetn`，
+综合验证通过。SOF 的 RTL 与 HLS 两份实现、以及全部 BD 脚本都留在仓库里，
+下一步应在一个**干净的 BD 生成流程**里一次性加入（而不是在半迁移的 BD 上反复修补）。
+
+**测量工具（新增，可无人值守）**
+
+- `tools/measure_from_screen.py`：直接读 PC 上的 OBS 截图，量出画面在帧内的偏移。
+  需要画面背景与 OBS 画布颜色可区分；当前测试卡背景 (18,18,20) 与 OBS 画布 (19,20,26) 太接近，
+  建议测量时换用背景对比更强的图（`tools/make_testcard.py` 可指定背景色）。
+- `tools/measure_bars.py`：用标尺图的三根竖条直接定位，不受 100 像素刻度周期性影响。
+- `tools/calibrate_roll.py`：从截图给出建议的 `--roll` 值。
+
+**三次会话实测偏移**：约 0 px、45 px、89 px（同一份位流）——这是"缺 SOF 导致相位随机"的
+直接证据，也是不能用固定 `--roll` 补偿的原因。

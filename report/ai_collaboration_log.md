@@ -630,3 +630,27 @@ vid_out 之间，组合直通不改延迟。
 
 **附带**：`opt_design` 的 `[Opt 31-67] LUT4 ... missing a connection on input pin I3` 是
 参数化比较（32 位常量 vs 9 位计数器）导致的，改成同宽度 `localparam` 即过。
+
+### 46. 接口 vs 引脚：一个看起来能构建、实际加载不了的改动
+
+**时间**：2026-10-23 凌晨
+
+SOF 生成器的手写 RTL 版本构建成功了（WNS +0.241 ns），我原以为快成了。上板后 PYNQ 直接抛
+`MetadataObjectNotFound`——**overlay 根本加载不了**。
+
+根因是用**单引脚**把流接进/接出该模块，破坏了 `pixel_unpack` 与 `v_axi4s_vid_out` 之间的
+**AXI4-Stream 接口**结构。hwh 里该核的输入叫 `video_in[port]`，一旦不再由接口驱动，
+PYNQ 的元数据解析器就找不到 `s_axis_video_tdata`。
+
+**教训**：在 PYNQ 设计里改流路径，必须是**接口对接口**。单引脚连接在 Vivado 里合法、
+能综合、能出位流，但会在 PYNQ 这一层崩掉——而且是"加载失败"，不是"显示不对"，
+排查方向完全不同。
+
+**第二次尝试**改用 HLS 内核（`S_AXIS`/`M_AXIS` 真接口，II=1、228 MHz），思路正确，
+但 BD 已经在第一次尝试里被改成了半迁移状态：引脚级网络残留、复位网络失去驱动。
+`BD 41-1271 ... overridden by the user` 和 `NET <aresetn_1> has no source` 就是这个状态。
+继续在脏 BD 上修补的代价已经超过重来，于是写了 `repair_bd.tcl` 恢复接口连接与复位，
+综合验证通过，把 SOF 留作独立的、待集成成果。
+
+**另一个教训**：BD 的每次"删除 + 重建"都可能带走相邻网络（复位网上只有两个引脚，
+删掉一端就整条消失）。改 BD 之前应先把要保留的网络端点记下来。

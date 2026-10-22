@@ -250,6 +250,28 @@ def write_preset(cfg_ip, name: str) -> tuple[int, int]:
     return lo, hi
 
 
+SOF_ENABLE_BIT = 1 << 30     # spare bit in gpio_enh_cfg channel 2, wired to sof_gen_enable
+
+
+def set_sof_enable(cfg_ip, enable: bool, preset: str | None = None) -> int:
+    """Turn the generated SOF on or off without rebuilding anything.
+
+    The bit is deliberately outside the configuration the kernel consumes (thresh/binarize/
+    invert/mono/split_x occupy bits 0..26, bit 31 is the kernel reset request), so toggling it
+    never disturbs a preset. It exists so the SOF path can be compared against the passthrough
+    behaviour in one bitstream - each rebuild costs about 35 minutes.
+    """
+    # Read-modify-write so only bit 30 changes: the other bits carry the preset and the kernel
+    # reset request, and rewriting them from a freshly packed preset would be redundant at best.
+    hi = cfg_ip.mmio.read(GPIO2_DATA) & 0xFFFFFFFF
+    if enable:
+        hi |= SOF_ENABLE_BIT
+    else:
+        hi &= ~SOF_ENABLE_BIT & 0xFFFFFFFF
+    cfg_ip.mmio.write(GPIO2_DATA, hi)
+    return hi
+
+
 def read_latency(lat_ip) -> tuple[int, int] | None:
     a, b = lat_ip.mmio.read(GPIO_DATA), lat_ip.mmio.read(GPIO2_DATA)
     if a == 0 and b == 0:

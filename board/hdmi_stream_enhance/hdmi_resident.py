@@ -33,6 +33,7 @@ import hdmi_live as hl
 ROLL_FILE = "/tmp/hdmi_roll.txt"
 PRESET_FILE = "/tmp/hdmi_preset.txt"
 IMAGE_FILE = "/tmp/hdmi_image.txt"
+SOF_FILE = "/tmp/hdmi_sof.txt"
 
 
 def read_text(path: str, default: str = "") -> str:
@@ -87,7 +88,7 @@ def main(argv=None) -> int:
     cfg = hl.find(ol, "gpio_enh_cfg")
     lat = hl.find(ol, "gpio_enh_lat")
 
-    state = {"roll": args.roll, "preset": args.preset, "image": args.image}
+    state = {"roll": args.roll, "preset": args.preset, "image": args.image, "sof": None}
     picture = load_picture(state["image"], width, height)
     frame = None
 
@@ -136,6 +137,16 @@ def main(argv=None) -> int:
             state["preset"] = preset_text
             hl.write_preset(cfg, preset_text)
             print(f"  preset -> {preset_text}  (latency {hl.read_latency(lat)})", flush=True)
+
+        sof_text = read_text(SOF_FILE)
+        if sof_text in ("0", "1"):
+            want = sof_text == "1"
+            if want != state.get("sof"):
+                state["sof"] = want
+                hi = hl.set_sof_enable(cfg, want, state["preset"])
+                print(f"  SOF -> {'on' if want else 'off'} (cfg_hi=0x{hi:08x}); "
+                      f"a frame re-push follows so the change takes effect", flush=True)
+                changed = True
 
         image_text = read_text(IMAGE_FILE)
         if image_text and image_text != state["image"]:

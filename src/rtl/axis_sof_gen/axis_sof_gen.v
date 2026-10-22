@@ -38,6 +38,14 @@ module axis_sof_gen #(
     input  wire                s_tlast,
     input  wire                s_tuser,
 
+    // Runtime switch, driven from a spare configuration GPIO bit.
+    //   1 = override tuser with the generated SOF
+    //   0 = pass tuser through (behaves exactly like the design without this module)
+    // Having both behaviours in one bitstream means a comparison costs a register write instead
+    // of a 35-minute rebuild, which matters because the SOF assertion point is exactly the thing
+    // being determined.
+    input  wire                sof_enable,
+
     // master side (to v_axi4s_vid_out)
     output wire [DATA_W-1:0]   m_tdata,
     output wire                m_tvalid,
@@ -61,7 +69,7 @@ module axis_sof_gen #(
     assign m_tvalid = s_tvalid;
     assign m_tlast  = s_tlast;
     assign s_tready = m_tready;
-    assign m_tuser  = sof;              // replace the VDMA's constant 0
+    assign m_tuser  = sof_enable ? sof : s_tuser;
 
     wire beat = s_tvalid & m_tready;
 
