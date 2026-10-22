@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image, ImageFilter, ImageOps
 
 # The board's tone curve is two-segment: below the knee y*gain_lo/16, above it
 # knee + (y-knee)*gain_hi/16. These are the same numbers as the board presets, so a picture
@@ -33,6 +33,34 @@ TONE_PRESETS = {
     "document": dict(clarity=20, knee=192, gain_lo=64, gain_hi=16),
     "reading":  dict(clarity=24, knee=48,  gain_lo=88, gain_hi=14),
 }
+
+
+def flatten_illumination(rgb: np.ndarray, sigma: float = 28.0, target: float = 195.0,
+                         strength: float = 1.0) -> np.ndarray:
+    """Divide out the lighting, so the paper is the same brightness everywhere.
+
+    The page photo has a strong top-right to bottom-left gradient (a lamp on one side). A global
+    stretch cannot fix that: it has to either leave the gradient alone, or push the bright end to
+    white and lose the paper there - which is the glare patch the fixed curves produced.
+
+    Dividing the luma by a blurred copy of itself removes the low-frequency lighting while keeping
+    the high-frequency ink, which is the classic way to flatten a document scan. A partial strength
+    keeps a little of the original shading so the page does not look like flat cardboard.
+    """
+    r = rgb[..., 0].astype(np.float32)
+    g = rgb[..., 1].astype(np.float32)
+    b = rgb[..., 2].astype(np.float32)
+    y = (77 * r + 150 * g + 29 * b) / 256.0
+
+    blurred = Image.fromarray(np.clip(y, 0, 255).astype(np.uint8)).filter(
+        ImageFilter.GaussianBlur(sigma))
+    background = np.maximum(np.asarray(blurred, dtype=np.float32), 6.0)
+
+    gain = target / background
+    gain = 1.0 + (gain - 1.0) * float(strength)
+    y2 = np.clip(y * gain, 0, 255)
+    delta = (y2 - y)[..., None]
+    return np.clip(rgb.astype(np.float32) + delta, 0, 255).astype(np.uint8)
 
 
 def normalize_page(rgb: np.ndarray, low_pct: float = 10, high_pct: float = 85,
@@ -165,7 +193,7 @@ def choose_tone(rgb: np.ndarray) -> tuple[str, list[tuple[str, float]]]:
     scores: list[tuple[str, float]] = [("none", _legibility(rgb))]
     for name, preset in TONE_PRESETS.items():
         scores.append((name, _legibility(apply_tone(rgb, preset))))
-    scores.append(("page", _legibility(normalize_page(rgb))))
+    scores.append(("page", _legibility(normalize_page(flatten_illumination(rgb)))))
     if looks_like_document(rgb):
         # Documents go to the adaptive stretch regardless of the raw score: it is the only candidate
         # that pins the paper level, so the page cannot develop a glare patch where the light fell
@@ -206,7 +234,12 @@ def main(argv=None) -> int:
         if args.tone == "none":
             pass
         elif args.tone == "page":
-            fitted = Image.fromarray(normalize_page(np.asarray(fitted)))
+            # Flatten the lighting first. A global stretch alone cannot fix a page lit from one
+            # side: it can only trade a pale corner against dim text at the other end, which is
+            # exactly what the pure-stretch version did. Dividing by a blurred copy of the luma
+            # removes the gradient and leaves the ink, then the stretch pins the paper level.
+            prepared = np.asarray(fitted)
+            fitted = Image.fromarray(normalize_page(flatten_illumination(prepared)))
         else:
             fitted = Image.fromarray(apply_tone(np.asarray(fitted), TONE_PRESETS[args.tone]))
         print(f"tone {args.tone}: brightness {before:.0f} -> {np.asarray(fitted).mean():.0f}")
