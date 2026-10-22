@@ -16,6 +16,16 @@
 上已做到与 numpy 黄金模型**逐位一致**，并测出 PS 3108 ms/帧 vs PL 15.8 ms/帧（196.7×）。
 色彩空间转换复用 PYNQ 官方 IP。
 
+## 上传自己的图片
+
+一条命令把任意图片显示到板子的 HDMI 输出上：
+
+`powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\board\show_image.ps1 -Image 你的照片.jpg
+`
+
+详细用法（比例选项、预设切换、排查）见 [docs/image_upload.md](docs/image_upload.md)。
+
 ## 当前状态
 
 **下次从哪接着干**：见 [docs/session_handoff.md](docs/session_handoff.md)（能跑什么 / 关键数字 / 剩余工作 / 踩过的坑）。

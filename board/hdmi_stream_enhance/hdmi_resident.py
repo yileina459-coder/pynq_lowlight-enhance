@@ -33,7 +33,49 @@ import hdmi_live as hl
 ROLL_FILE = "/tmp/hdmi_roll.txt"
 PRESET_FILE = "/tmp/hdmi_preset.txt"
 IMAGE_FILE = "/tmp/hdmi_image.txt"
+STATE_FILE = "/tmp/hdmi_state.txt"
 SOF_FILE = "/tmp/hdmi_sof.txt"
+
+
+UPLOAD_DIR = "/tmp/hdmi_uploads"
+
+
+def prepare_control_files() -> None:
+    """Make the file-based interface usable by the desktop user, not just by root.
+
+    This process runs as root, so the control files it touches would otherwise end up 0644 and
+    root-owned - meaning the PC-side upload command cannot write them, and the whole file-driven
+    workflow only works until the next reboot wipes /tmp. Setting a zero umask and chmod-ing the
+    interface to world-writable keeps 'upload a picture from your laptop' possible without sudo.
+    """
+    os.umask(0o000)
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    os.chmod(UPLOAD_DIR, 0o777)
+    for path in (ROLL_FILE, PRESET_FILE, IMAGE_FILE, SOF_FILE, STATE_FILE):
+        try:
+            with open(path, "a", encoding="utf-8"):
+                pass
+            os.chmod(path, 0o666)
+        except OSError:
+            pass
+
+
+def publish_state(state: dict, width: int, height: int) -> None:
+    """Write what is on screen, so a tool on the PC can confirm an update instead of guessing.
+
+    The resident process owns the VDMA, so it also owns the truth about the picture. A file in
+    /tmp is the cheapest way to hand that truth to whoever just uploaded an image.
+    """
+    try:
+        with open(STATE_FILE, "w", encoding="utf-8") as fh:
+            fh.write(f"image={state['image']}\n")
+            fh.write(f"roll={state['roll']}\n")
+            fh.write(f"preset={state['preset']}\n")
+            fh.write(f"sof={state['sof']}\n")
+            fh.write(f"mode={width}x{height}\n")
+            fh.write(f"updated={time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+    except OSError:
+        pass
 
 
 def read_text(path: str, default: str = "") -> str:
@@ -109,12 +151,15 @@ def main(argv=None) -> int:
             buf[:] = pixels
             out.writeframe(buf)
 
+    prepare_control_files()
     hl.start_output(ol, out, width, height, force=args.force_clock)
     fill_all_buffers(render())
     hl.write_preset(cfg, state["preset"])
     print(f"resident demo up: roll {state['roll']}, preset {state['preset']}, "
           f"latency {hl.read_latency(lat)}", flush=True)
-    print("watching /tmp/hdmi_roll.txt, /tmp/hdmi_preset.txt, /tmp/hdmi_image.txt", flush=True)
+    publish_state(state, width, height)
+    print("watching /tmp/hdmi_roll.txt, /tmp/hdmi_preset.txt, /tmp/hdmi_image.txt, "
+          "/tmp/hdmi_sof.txt", flush=True)
 
     last_refresh = time.monotonic()
     while True:
@@ -160,6 +205,7 @@ def main(argv=None) -> int:
 
         if changed:
             fill_all_buffers(render())
+            publish_state(state, width, height)
             print(f"  frame re-pushed to all buffers (roll {state['roll']})", flush=True)
             last_refresh = time.monotonic()
         elif time.monotonic() - last_refresh >= args.refresh:
