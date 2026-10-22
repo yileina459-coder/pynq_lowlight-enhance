@@ -18,6 +18,8 @@
 
 ## 当前状态
 
+**下次从哪接着干**：见 [docs/session_handoff.md](docs/session_handoff.md)（能跑什么 / 关键数字 / 剩余工作 / 踩过的坑）。
+
 进度主表见 [`docs/roadmap.md`](docs/roadmap.md)，环境事实见 [`docs/env.md`](docs/env.md)，
 设计报告见 [`report/design_report.md`](report/design_report.md)。
 

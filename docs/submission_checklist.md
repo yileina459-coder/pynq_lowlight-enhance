@@ -83,3 +83,7 @@ sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=
 sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=/root \
   /usr/local/share/pynq-venv/bin/python3 hdmi_preset_only.py --cycle 15
 ```
+
+---
+
+**状态快照**：[docs/session_handoff.md](session_handoff.md) （能跑什么、关键数字、剩余工作、踩过的坑）
