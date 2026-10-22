@@ -109,3 +109,34 @@ git checkout dcfc364 -- board/hdmi_stream_enhance/enhance_hdmi.bit \
 ```
 
 旧版需要 `PULSE_RESET = True`（`hdmi_live.py`）和 `--rebuild-output`（`hdmi_preset_only.py`）。
+
+## 2026-10-23 凌晨：当前状态与下一步
+
+### 交付物状态
+
+- **位流**：`board/hdmi_stream_enhance/enhance_hdmi.bit`（WNS **+0.289 ns**，0 失败端点），
+  已在板上验证（overlay 加载、延迟 21、常驻演示正常）。
+- **工程树**（`build/overlay_hdmi_enhance/.work/`，未纳入版本控制）：已修复并通过
+  `check_bd.tcl` 与综合，可直接重建。
+- **仓库与 Gitee 同步**，工作区干净。
+
+### 两个已知问题
+
+| 问题 | 状态 |
+|---|---|
+| 画面水平偏移 | **根因已确认**：缺 SOF（帧起始），相位每次开机随机（实测 0 / 45 / 89 px）。修复件已就绪（HLS 内核 II=1、228 MHz、接口正确），但**未集成进交付位流** |
+| 偶发彩条 | **机制已确认**：像素流中断后采集棒不会自行重新锁定，只有拔插线或重启板子能恢复。运行策略：**启动一次不重启**，参数走 `/tmp/hdmi_{roll,preset,image}.txt` |
+
+### 接着做的话，从这里开始
+
+1. 按 `docs/hdmi_status.md` 里"正确的插入方式"把 `sof_gen` 建在 `/video/hdmi_out` 层级内；
+2. 跑 `check_bd.tcl` 确认接口完整，再 `build_bitstream.tcl`（它已内置该检查）；
+3. 上板后先 `--roll 0` 观察，再用 `tools/measure_from_screen.py` 从 OBS 截图量偏移；
+4. 若偏移在多次重启后稳定在 0±3 px，即证明 SOF 生效，可去掉 `--roll` 补偿路径。
+
+### 注意事项（踩过的坑）
+
+- 改 BD 前先记录要保留的网络端点：删除 cell 会连带删除只连着两个引脚的网络（例如视频复位网）。
+- 层级内部网络从顶层 `get_bd_intf_nets` 看不到，必须 `current_bd_instance` 进去操作。
+- 引脚级连接会让 PYNQ 的 `.hwh` 解析失败（`MetadataObjectNotFound`），而**位流照样能构建**。
+- 每次重启进程都会中断像素流 → 采集棒需要拔插/重启板子；演示时只启动一次。

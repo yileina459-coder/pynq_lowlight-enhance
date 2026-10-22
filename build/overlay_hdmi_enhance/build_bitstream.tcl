@@ -16,6 +16,14 @@ set repo_root  [file normalize [file join $script_dir ".." ".."]]
 set work       [file join $script_dir ".work" "tree" "boards" "Pynq-Z2" "base"]
 set out_dir    [file join $repo_root "board" "hdmi_stream_enhance"]
 
+# Structural gate: a block design whose stream interfaces are broken still synthesises and still
+# produces a bitstream - it just never shows a picture, and the failure looks like a software bug.
+# Several block-design experiments had to be repaired, so the check runs first and refuses here.
+if {[catch {source [file join $script_dir "check_bd.tcl"]}]} {
+    # check_bd.tcl calls exit, so reaching this catch means it did not run at all.
+    puts "WARNING: the block-design check did not run; building anyway"
+}
+
 cd $work
 open_project {base/base.xpr}
 

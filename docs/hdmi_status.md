@@ -686,3 +686,43 @@ children = [... 'video_in[port]', 'vtiming_in[port]', ...]
 
 **三次会话实测偏移**：约 0 px、45 px、89 px（同一份位流）——这是"缺 SOF 导致相位随机"的
 直接证据，也是不能用固定 `--roll` 补偿的原因。
+
+### 2026-10-23 凌晨（续）：BD 修复完成，并查清了 SOF 插入失败的真正原因
+
+**BD 已修复**：`BD CHECK PASS: stream interfaces intact, configuration memory connected, video
+reset driven`，随后 `synth_design Complete!`。修复链是三个脚本，按顺序跑：
+
+| 脚本 | 作用 |
+|---|---|
+| `clear_and_relay.tcl` | 清掉流引脚上的"用户覆盖"（RTL 尝试的遗留），按接口重连五段链路 |
+| `fix_hop_in_hierarchy.tcl` | 进入 `/video/hdmi_out` 层级删除幽灵网络，补上最后一跳 |
+| `undo_sof_hierarchy.tcl` | 删掉半接的 SOF cell，恢复直连接口 |
+
+**为什么之前的插入必然失败（关键结论）**
+
+`v_axi4s_vid_out` 位于 `/video/hdmi_out/frontend`，它与 `pixel_unpack` 之间的接口网络是
+**层级内部网络**（名字没有前导斜杠，例如 `pixel_unpack_stream_out_24` 在
+`/video/hdmi_out` 里、`Conn3` 在 `frontend` 里）。从**顶层**把新 cell 连到这些引脚时，
+Vivado 不会建接口网络，而是退化成**引脚级连接**并打上 "overridden by the user" 标记
+（`BD 41-1271`）。这正是 PYNQ 拒绝解析的原因，也是后续所有
+`connect_bd_intf_net ... failed due to earlier errors` 的根源。
+
+**因此正确的插入方式**（下次照做）：
+
+```tcl
+current_bd_instance /video/hdmi_out          ;# 进入流的所在层级
+create_bd_cell -type ip -vlnv xilinx.com:hls:sof_gen:1.0 sof_gen_0
+connect_bd_intf_net [get_bd_intf_pins pixel_unpack/stream_out_24] \
+                    [get_bd_intf_pins sof_gen_0/s_in]
+connect_bd_intf_net [get_bd_intf_pins sof_gen_0/s_out] \
+                    [get_bd_intf_pins frontend/v_axi4s_vid_out_0/video_in]
+current_bd_instance /
+```
+
+即 HLS 内核（`S_AXIS`/`M_AXIS` 是真接口）必须建在**同一层级内**。上一轮在顶层创建的尝试
+虽然 `s_out` 连上了，`s_in` 依然失败，就是层级没对齐。
+
+**防呆**：`build_bitstream.tcl` 现在**先跑 `check_bd.tcl`**。一个流接口断开的 BD 照样能综合、
+照样出位流，只是永远没画面——这类失败看起来像软件 bug，代价很高，所以必须在构建前拦住。
+检查项：`vid_out/video_in`、内核 `s_in`/`s_out` 是否为接口网络，配置存储是否接到 `cfg_Dout_A`，
+`/video/aresetn` 是否有驱动。
