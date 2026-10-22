@@ -140,3 +140,50 @@ git checkout dcfc364 -- board/hdmi_stream_enhance/enhance_hdmi.bit \
 - 层级内部网络从顶层 `get_bd_intf_nets` 看不到，必须 `current_bd_instance` 进去操作。
 - 引脚级连接会让 PYNQ 的 `.hwh` 解析失败（`MetadataObjectNotFound`），而**位流照样能构建**。
 - 每次重启进程都会中断像素流 → 采集棒需要拔插/重启板子；演示时只启动一次。
+
+## 2026-10-23 清晨：交付状态与遗留问题
+
+### 板上现在跑的（已验证 LIVE）
+
+- 位流：`board/hdmi_stream_enhance/enhance_hdmi.bit`（**WNS +0.289 ns**，不含 SOF，
+  `git checkout 68372f6` 那一版），实测流是活的（换两张图，屏幕 172,788 像素变化）。
+- 常驻演示：`hdmi_resident.py --image testcard_640x480.png --roll 0 --preset clarity`，
+  状态文件 `/tmp/hdmi_state.txt`。
+- 提亮默认在 **PC 侧**：`page` 曲线（光照平坦化 + 分位拉伸），板上只跑 `clarity`。
+  窗口/命令行默认即此路径。
+
+### 三个已知缺陷（按严重程度）
+
+| 缺陷 | 现状 | 下一步 |
+|---|---|---|
+| **SOF 位流会间歇停流** | 已实现、时序收敛（+0.206/+0.354），但跑一会儿 `writeframe` 阻塞，画面凝固；**未交付** | 上 ILA 抓 `s_axis_video_{tuser,tvalid,tready,tlast}` 与 `vtg_vsync` |
+| **增益条纹** | 三次修复均失败（锁存 / II=2 / 移位加法），仿真与时序都过，条纹仍在。提亮因此留在 PC 侧 | 同上，波形可能同时解释停顿与条纹 |
+| **偏移随会话变化** | 用 `tools/measure_offset_screen.py` 量后写 `/tmp/hdmi_roll.txt` 补偿 | 修好 SOF 后应可消除 |
+
+### 昨天夜里的方法论收获（写下来避免重犯）
+
+1. **"有画面"≠"流是活的"**。判断存活必须换两张截然不同的图看屏幕是否跟着变；
+   日志、单帧画面都会骗人。这个检查当场抓到过一次冻结的 OBS 预览。
+2. **脚本说 "connected" 不代表真的连上**。SOF 的 `ap_rst_n` 就是因为取网络失败被静默跳过，
+   内核一直复位，表现成"VDMA 不消费"。修法是**回读引脚网络**再确认。
+3. **元数据缓存与层级内部网络**：`/video/hdmi_out/frontend` 下的网络从顶层看不到，
+   必须 `current_bd_instance` 进去操作；`create_bd_cell` 会留下"半条网络"，
+   连接前要把两端都清空。
+4. **测量工具的几何假设会过期**。OBS 窗口一动，硬编码的裁剪区就量错东西。
+   现在用 `tools/find_video_rect.py`（由红框推导）或差分定位。
+
+### 交接时可以直接用的命令
+
+```powershell
+# 看板上状态（谁在显示、什么预设、是否在播放）
+ssh xilinx@192.168.2.99 cat /tmp/hdmi_state.txt
+
+# 上传自己的图（默认 PC 侧提亮 + 板上锐化）
+tools\board\show_image.ps1 -Image 你的图.jpg
+
+# 播一段动画（GIF/动态 WebP；MP4 需先装 ffmpeg）
+tools\board\play_video.ps1 -Video clip.gif -Fps 12
+
+# 量偏移（拍一张桌面截图后）
+python tools\measure_offset_screen.py shot.png
+```
