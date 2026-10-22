@@ -113,19 +113,16 @@ void enhance_stream_cfg(enh_stream_t& s_in,
     static ap_uint<12> col = 0;
     static ap_uint<2> phase = 0;
 
-    // Configuration is latched into plain registers at the start of every line and then used from
-    // those registers for the rest of the line.
+
+    // Configuration is latched into plain registers at the start of every line and used from those
+    // registers for the rest of the line.
     //
-    // The previous version used the value straight from the memory read on every pixel. That made
-    // any per-cycle wobble in the read path show up as a fixed pattern on screen, and it did: with
-    // a *uniform* input, any preset whose gain differed from 1.0x produced vertical stripes whose
-    // amplitude grew with the gain (measured std 0.23 at gain 1.0x, 2.97 at 1.06x, 21.98 at 1.5x),
-    // identical on every row. Presets that do not exercise the gain (pass, clarity) were clean, which
-    // is what localised the fault to this path.
-    //
-    // Latching costs one line of latency for a preset change (about 32 microseconds) and removes
-    // the dependency entirely: the memory is still read every cycle to keep II = 1, but only the
-    // value sampled on the first pixel of a line is used.
+    // Reading the word straight out of memory on every pixel made any per-cycle wobble in that read
+    // path visible as a fixed pattern: with a *uniform* input, every preset whose gain differed from
+    // 1.0x produced vertical stripes whose amplitude grew with the gain (std 0.23 at 1.0x, 2.97 at
+    // 1.06x, 21.98 at 1.5x), identical on every row. Presets that do not exercise the gain (pass,
+    // clarity) were clean, which localised the fault to this path. Binarising a smooth gradient
+    // showed the same thing as a ragged edge instead of a clean step.
     static ap_uint<8> clarity_q = 16;
     static ap_uint<8> knee_q = 255;
     static ap_uint<8> gain_lo_q = 16;
@@ -141,9 +138,16 @@ void enhance_stream_cfg(enh_stream_t& s_in,
 #else
     for (int _emu = 0; _emu < ENH_EMU_PIXELS; _emu++) {
 #endif
-#pragma HLS PIPELINE II = 1
+#pragma HLS PIPELINE II = 2
 
-        // Unconditional read so the pipeline stays at II = 1; the value only matters on a boundary.
+        // Live configuration: re-read from memory for every pixel.
+        //
+        // The address is data-dependent on purpose. With a constant index HLS folds the
+        // one-element array into a plain input port and then registers the one-bit flags in
+        // the prologue - the exact latch this variant exists to avoid. A runtime address
+        // forces a real memory port, so the word is re-read every cycle and cannot be held
+        // in a register. Word 1 is never selected in practice.
+        // Unconditional read keeps the memory port (and II) intact; only the boundary sample is used.
         ap_uint<64> word = cfg[0];
 
         if (col == 0) {
@@ -158,7 +162,7 @@ void enhance_stream_cfg(enh_stream_t& s_in,
             split_x_q  = word.range(58, 43);
         }
 
-        // The pipeline below uses the latched copies; the names match what enhance_body.inc expects.
+        // The pipeline uses the latched copies; the names match what enhance_body.inc expects.
         ap_uint<8> clarity  = clarity_q;
         ap_uint<8> knee     = knee_q;
         ap_uint<8> gain_lo  = gain_lo_q;

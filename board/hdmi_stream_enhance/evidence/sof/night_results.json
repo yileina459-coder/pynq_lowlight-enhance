@@ -1,0 +1,41 @@
+{
+  "sof_bitstream": {
+    "wns_ns": 0.206,
+    "failing_endpoints": 0,
+    "latency": 21,
+    "note": "SOF kernel inserted inside /video/hdmi_out"
+  },
+  "gain_fix_attempts": [
+    {
+      "attempt": "per-line latch",
+      "csim": "passed",
+      "timing": "FAILED -2.117 ns",
+      "board": "n/a"
+    },
+    {
+      "attempt": "latch + II=2",
+      "csim": "passed",
+      "timing": "+0.297 ns",
+      "board": "stripes persist"
+    },
+    {
+      "attempt": "shift-add gain (no DSP)",
+      "csim": "passed",
+      "timing": "+0.354 ns",
+      "board": "inconclusive - display frozen between frame pushes"
+    }
+  ],
+  "offset_measurements": [
+    {
+      "sof": "off",
+      "after_reboot": true,
+      "offset_source_px": 2
+    },
+    {
+      "sof": "on",
+      "after_reboot": true,
+      "offset_source_px": 2
+    }
+  ],
+  "caveat": "the +2 is measurement bias (bar centre vs left edge); true offset ~0 in both cases"
+}

@@ -68,12 +68,13 @@
 
         // ---- stage 3: two-segment tone curve ---------------------------------
         // below the knee: y * gain_lo / 16 ; above: knee + (y - knee) * gain_hi / 16
+        // Gains go through shift/add, not a multiplier - see enh_apply_gain for why.
         ap_int<16> y2;
         if (y1c <= knee) {
-            y2 = ((ap_int<16>)y1c * (ap_int<16>)gain_lo) >> 4;
+            y2 = enh_apply_gain((ap_int<16>)y1c, gain_lo);
         } else {
             ap_int<16> above = (ap_int<16>)y1c - (ap_int<16>)knee;
-            y2 = (ap_int<16>)knee + (((ap_int<16>)above * (ap_int<16>)gain_hi) >> 4);
+            y2 = (ap_int<16>)knee + enh_apply_gain(above, gain_hi);
         }
         ap_uint<8> y2c = enh_clip8(y2);
 

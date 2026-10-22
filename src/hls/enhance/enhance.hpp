@@ -65,6 +65,40 @@
 #define ENH_EMU_PIXELS (64 * 48 * 3)
 #endif
 
+// -----------------------------------------------------------------------------
+// enh_apply_gain - the tone curve's gain, without a multiplier.
+//
+// Why not just multiply
+//   y * gain_lo >> 4 is the obvious form and it is what the C model uses, but on the board every
+//   preset with gain != 1.0 produced vertical stripes with a period of about three pixels, identical
+//   on every row, amplitude proportional to the gain (measured std 0.23 at 1.0x, 2.97 at 1.06x,
+//   21.98 at 1.5x). The C simulation of the same code is uniform, latching the configuration once
+//   per line did not help, and neither did giving the pipeline two clocks - so the suspicion falls on
+//   how the multiply itself ended up in hardware.
+//
+//   This version uses shifts and adds only, which cannot involve a DSP block and cannot depend on
+//   the multiplier's internal pipelining. The supported gains are the ones the presets use; anything
+//   else passes through unchanged, which is a visible, honest fallback rather than a silent one.
+// -----------------------------------------------------------------------------
+inline ap_int<16> enh_apply_gain(ap_int<16> v, ap_uint<8> gain) {
+#pragma HLS INLINE
+    switch ((int)gain) {
+        case 16: return v;                                   // 1.00x
+        case 20: return v + (v >> 2);                        // 1.25x
+        case 24: return v + (v >> 1);                        // 1.50x
+        case 28: return v + (v >> 1) + (v >> 2);             // 1.75x
+        case 32: return v << 1;                              // 2.00x
+        case 40: return (v << 1) + (v >> 1);                 // 2.50x
+        case 48: return (v << 1) + v;                        // 3.00x
+        case 56: return (v << 1) + v + (v >> 1);             // 3.50x
+        case 64: return v << 2;                              // 4.00x
+        case 72: return (v << 2) + (v >> 1);                 // 4.50x
+        case 80: return (v << 2) + v;                        // 5.00x
+        case 88: return (v << 2) + v + (v >> 1);             // 5.50x
+        default: return v;                                   // unsupported gain: identity
+    }
+}
+
 typedef ap_axiu<ENH_PIX_W, 1, 1, 1> enh_pixel_t;
 typedef hls::stream<enh_pixel_t> enh_stream_t;
 

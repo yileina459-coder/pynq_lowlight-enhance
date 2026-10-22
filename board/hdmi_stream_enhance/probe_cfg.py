@@ -48,6 +48,9 @@ def main(argv=None) -> int:
     ap.add_argument("--gain-lo", type=int, default=16, help="16 = identity, 56 = 3.5x")
     ap.add_argument("--gain-hi", type=int, default=16)
     ap.add_argument("--read", action="store_true", help="just print the current registers")
+    ap.add_argument("--thresh", type=int, default=None)
+    ap.add_argument("--binarize", type=int, choices=(0, 1), default=None)
+    ap.add_argument("--mono", type=int, choices=(0, 1), default=None)
     args = ap.parse_args(argv)
 
     dev = MMIO(CFG_BASE, 0x1000)
@@ -59,7 +62,12 @@ def main(argv=None) -> int:
     lo, hi_extra = pack(args.clarity, args.knee, args.gain_lo, args.gain_hi)
     # keep the flag bits (binarize/invert/mono/split_x) and the SOF enable from the live word
     hi = dev.read(GPIO2_DATA) & 0xFFFFFFFF
-    hi = (hi & 0xFFFFFF00) | (hi & 0xFF)     # flags untouched
+    if args.thresh is not None:
+        hi = (hi & ~0xFF) | (args.thresh & 0xFF)
+    if args.binarize is not None:
+        hi = (hi & ~(1 << 8)) | ((args.binarize & 1) << 8)
+    if args.mono is not None:
+        hi = (hi & ~(1 << 10)) | ((args.mono & 1) << 10)
     dev.write(GPIO_DATA, lo)
     dev.write(GPIO2_DATA, hi | hi_extra)
 

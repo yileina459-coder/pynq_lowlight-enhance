@@ -41,3 +41,20 @@ set_false_path -to [get_pins -hier -filter {NAME =~ "*enh_rst_bridge*/sync_reg*/
 
 set_false_path -from [get_cells -hier -filter {NAME =~ "*stamp_in_0*"}]  -to [get_cells -hier -filter {NAME =~ "*gpio_enh_lat*"}]
 set_false_path -from [get_cells -hier -filter {NAME =~ "*stamp_out_0*"}] -to [get_cells -hier -filter {NAME =~ "*gpio_enh_lat*"}]
+
+# -----------------------------------------------------------------------------
+# Reset distribution into the pixel-clock domain.
+#
+# The proc_sys_reset outputs in the 100 MHz domain reset IP that lives on the 142.86 MHz pixel
+# clock, including the async FIFO inside v_axi4s_vid_out. Vivado times those as ordinary setup
+# checks between two related PS clocks and failed them once the SOF generator changed placement:
+#
+#   Slack (VIOLATED) -1.352ns  from rst_clk_wiz_1_100M/.../ACTIVE_LOW_PR_OUT_DFF[0].FDRE_PER_N
+#                              to   v_axi4s_vid_out_0/inst/COUPLER_INST/.../XPM_FIFO_ASYNC_INST
+#   Requirement 1.000ns (clk_fpga_1 rise - clk_fpga_0 rise)
+#
+# A reset crossing like this is asynchronous by construction - the receiving IP synchronises the
+# de-assertion itself - so it is not a path that placement can or should close.
+# -----------------------------------------------------------------------------
+set_false_path -from [get_pins -hier -filter {NAME =~ "*rst_clk_wiz_1_100M*ACTIVE_LOW_PR_OUT_DFF*"}]
+set_false_path -from [get_pins -hier -filter {NAME =~ "*rst_ps7_0_fclk0*ACTIVE_LOW_PR_OUT_DFF*"}]

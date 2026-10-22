@@ -169,6 +169,19 @@ def main(argv=None) -> int:
     hl.start_output(ol, out, width, height, force=args.force_clock)
     fill_all_buffers(render())
     hl.write_preset(cfg, state["preset"])
+    # SOF is enabled by default: it is the frame-alignment marker the output core needs, and without
+    # it the picture lands at whatever phase start-up happened to produce. The file stays as a
+    # diagnostic switch - writing 0 disables it to demonstrate the difference.
+    if read_text(SOF_FILE) not in ("0", "1"):
+        try:
+            with open(SOF_FILE, "w", encoding="utf-8") as fh:
+                fh.write("1")
+        except OSError:
+            pass
+    if read_text(SOF_FILE) == "1":
+        hl.set_sof_enable(cfg, True, state["preset"])
+        state["sof"] = True
+
     print(f"resident demo up: roll {state['roll']}, preset {state['preset']}, "
           f"latency {hl.read_latency(lat)}", flush=True)
     publish_state(state, width, height)
