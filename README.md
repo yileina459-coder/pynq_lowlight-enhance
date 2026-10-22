@@ -24,6 +24,8 @@
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\board\show_image.ps1 -Image 你的照片.jpg
 `
 
+不想用命令行：双击桌面的 **上传图片到开发板** 图标，或把图片直接拖到 上传图片.bat 上。
+
 详细用法（比例选项、预设切换、排查）见 [docs/image_upload.md](docs/image_upload.md)。
 
 ## 当前状态

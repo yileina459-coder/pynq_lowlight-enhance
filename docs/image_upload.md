@@ -45,6 +45,45 @@ OK - the board is now showing /tmp/hdmi_uploads/mine_221308_640x480.png
 支持的输入格式：Pillow 能读的都行——JPG / PNG / BMP / WEBP / TIFF / GIF。手机拍的竖图会按 EXIF
 方向自动转正。**HEIC（iPhone 默认格式）不支持**，先导出成 JPG。
 
+## 不用命令行：双击图标
+
+桌面上有一个 **上传图片到开发板** 图标（`上传图片.bat` 的快捷方式），三种用法：
+
+| 操作 | 效果 |
+|---|---|
+| **双击图标** | 弹出小窗口：选图 -> 选比例 -> 点“上传到开发板” |
+| **把图片拖到图标上** | 立刻上传，用“保持比例” |
+| **把图片拖进小窗口** | 填入路径，再点上传 |
+
+窗口里会显示结果：
+
+```
+上传成功，板子现在显示的是：
+photo.jpg
+...
+UPLOADED=/tmp/hdmi_uploads/mine_221726_640x480.png
+STATE_IMAGE=/tmp/hdmi_uploads/mine_221726_640x480.png
+```
+
+`UPLOADED` 与 `STATE_IMAGE` 相同，才代表**板上真的换了图**（脚本会回读 `/tmp/hdmi_state.txt`）。
+如果两个值不同，说明板子还没拾取新图，窗口会提示“未确认”，稍等再看一次即可。
+
+图标没了？在仓库根目录执行一次即可重建：
+
+```powershell
+$ws = New-Object -ComObject WScript.Shell
+$lnk = Join-Path ([Environment]::GetFolderPath('Desktop')) '上传图片到开发板.lnk'
+$sc = $ws.CreateShortcut($lnk)
+$sc.TargetPath = "$PWD\上传图片.bat"
+$sc.WorkingDirectory = "$PWD"
+$sc.IconLocation = "$env:SystemRoot\System32\imageres.dll,68"
+$sc.Save()
+```
+
+图形界面的源码在 `tools/board/upload_gui.ps1`，它调用的是同一个 `show_image.ps1`，
+所以两条路径的转换、校验、错误提示完全一致。
+
+
 ## 为什么不用重启
 
 板上的常驻演示 `hdmi_resident.py` **独占 VDMA**，而且这个 USB 采集棒有个特性：**像素流一旦中断

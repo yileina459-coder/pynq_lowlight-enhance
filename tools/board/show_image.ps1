@@ -94,14 +94,24 @@ if (-not $running -or $running.Trim() -eq '0') {
 }
 
 $expected = "$uploadDir/$name"
-if ($state -match [regex]::Escape($expected)) {
+$stateImage = ($state | Select-String -Pattern '^image=(.*)$' | Select-Object -First 1)
+$stateValue = if ($stateImage) { $stateImage.Matches[0].Groups[1].Value } else { '' }
+
+# Machine-readable results for callers such as upload_gui.ps1: Write-Host output goes to the
+# console only, so a GUI that pipes this script's output would otherwise see nothing.
+Write-Output "UPLOADED=$expected"
+Write-Output "STATE_IMAGE=$stateValue"
+
+if ($stateValue -eq $expected) {
     Write-Host "OK - the board is now showing $expected" -ForegroundColor Green
     $state | ForEach-Object { Write-Host "  $_" }
-} else {
-    Write-Warning "the board has not picked the new picture up yet. Its state is:"
-    $state | ForEach-Object { Write-Host "  $_" }
-    Write-Host ""
-    Write-Host "Wait a moment and check:  ssh xilinx@192.168.2.99 cat /tmp/hdmi_state.txt"
+    if (-not $KeepLocal) { Remove-Item $local -ErrorAction SilentlyContinue }
+    exit 0
 }
 
+Write-Warning "the board has not picked the new picture up yet. Its state is:"
+$state | ForEach-Object { Write-Host "  $_" }
+Write-Host ""
+Write-Host "Wait a moment and check:  ssh xilinx@192.168.2.99 cat /tmp/hdmi_state.txt"
 if (-not $KeepLocal) { Remove-Item $local -ErrorAction SilentlyContinue }
+exit 2
