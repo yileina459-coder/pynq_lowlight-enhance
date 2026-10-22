@@ -263,3 +263,21 @@ sudo env ... python3 hdmi_show_image.py --raw frame.bin --cycle 8   # 自己的�
 
 新增文件：`hdmi_show_image.py`（显示自己的图片）、`hdmi_live_check.py`（量化验证切换
 不中断流）、`diagnostics/hdmi_image_debug.py` / `hdmi_order_test.py`（排查用的分步计时）。
+
+## 输出 HPD 必须显式驱动（2026-10-22 下午）
+
+AXI GPIO 上电时方向寄存器是 `0xFFFFFFFF`（全输入），**只写数据寄存器不会改变引脚**。
+输出侧 HPD 悬空时，USB 采集棒看不到"源就绪"就会关掉 HDMI 接收器，显示它自己的彩条——
+现象和"板子没出图"完全一样，很容易查错方向。
+
+现在所有脚本开头都调用：
+
+```python
+hl.raise_input_hpd(ol)    # 输入侧
+hl.raise_output_hpd(ol)   # 输出侧（关键）
+```
+
+排查时先看方向：`tri` 字段为 `0xFFFFFFFF` 就说明引脚还没被驱动。
+
+**延迟口径**：HLS 报告的流水线深度是 **21 拍**；片上时间戳（只测第一个像素）读数在
+**21–25 拍**之间波动，同一轮内恒定。两者都远小于一行时间。

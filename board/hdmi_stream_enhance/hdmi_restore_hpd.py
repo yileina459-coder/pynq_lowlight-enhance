@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""Restore HPD so Windows shows the board as display 2 again.
+"""Assert both hot-plug lines so the PC sees the board again.
 
-Every bitstream load resets the HDMI-input HPD GPIO to 0, and while it is 0 Windows
-behaves as if no monitor is attached - the second display disappears and the laptop
-stops sending video at all. This script loads an overlay, raises HPD, and exits; the
-register keeps its value after the process ends, so the display comes back and stays.
+Every bitstream load resets the HPD GPIOs, and they also power up with both channels
+tri-stated - writing the data register alone therefore does nothing electrically, because the
+pin is still an input. Windows then behaves as if no monitor is attached: display 2 disappears
+and the laptop stops sending video, and a USB capture dongle keeps its receiver disabled and
+shows its own test pattern instead of the board's picture.
+
+This script loads the overlay, switches both HPD pins to outputs and drives them high. The
+registers keep their value after the process exits, so the display and the capture card come
+back and stay back.
 
     sudo python3 hdmi_restore_hpd.py
 """
@@ -14,6 +19,15 @@ from __future__ import annotations
 import argparse
 
 import hdmi_live as hl
+
+
+def describe(ol, fragment: str) -> str:
+    dev = hl.find(ol, fragment)
+    if dev is None:
+        return f"{fragment}: not present"
+    data, direction = dev.mmio.read(0x00), dev.mmio.read(0x04)
+    mode = "driven" if (direction & 0x1) == 0 else "tri-stated (input)"
+    return f"{fragment}: data=0x{data:08x} dir=0x{direction:08x} -> {mode}"
 
 
 def main(argv=None) -> int:
@@ -26,14 +40,24 @@ def main(argv=None) -> int:
 
     print(f"loading {args.bitstream}", flush=True)
     ol = Overlay(args.bitstream)
-    hpd = hl.find(ol, "gpio_hdmiin")
-    if hpd is None:
-        print("this overlay has no gpio_hdmiin; nothing to restore")
+
+    print("before:", flush=True)
+    print("  " + describe(ol, "gpio_hdmiin"), flush=True)
+    print("  " + describe(ol, "hpd_video"), flush=True)
+
+    did_in = hl.raise_input_hpd(ol)
+    did_out = hl.raise_output_hpd(ol)
+
+    print("after:", flush=True)
+    print("  " + describe(ol, "gpio_hdmiin"), flush=True)
+    print("  " + describe(ol, "hpd_video"), flush=True)
+
+    if not (did_in or did_out):
+        print("this overlay has no HPD GPIOs; nothing to restore")
         return 2
-    before = hpd.mmio.read(0x00)
-    hpd.mmio.write(0x00, 0x1)
-    print(f"hdmi_in HPD: 0x{before:08x} -> 0x{hpd.mmio.read(0x00):08x}")
-    print("display 2 should reappear in Windows within a few seconds")
+
+    print("both hot-plug lines asserted: display 2 and the capture card should come back "
+          "within a few seconds")
     return 0
 
 

@@ -86,11 +86,12 @@ def main(argv=None) -> int:
     video = ol.video
     out = video.hdmi_out
 
-    # Raise HDMI-input HPD as well, so Windows does not think the board vanished.
-    hpd = hl.find(ol, "gpio_hdmiin")
-    if hpd is not None and hpd.mmio.read(0x00) & 0x1 == 0:
-        hpd.mmio.write(0x00, 0x1)
-        print("hdmi_in HPD raised", flush=True)
+    # Both HPD GPIOs come up tri-stated (dir = 0xFFFFFFFF), so writing the data register alone
+    # does not drive the pin. A sink that never sees HPD asserted keeps its receiver disabled -
+    # a capture dongle then shows its own test pattern while the board happily streams.
+    hl.raise_input_hpd(ol)
+    hl.raise_output_hpd(ol)
+    print("hdmi_in + hdmi_out HPD asserted", flush=True)
 
     cfg = hl.find(ol, "gpio_enh_cfg")
     lat = hl.find(ol, "gpio_enh_lat")

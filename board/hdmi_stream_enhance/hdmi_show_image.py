@@ -90,9 +90,10 @@ def main(argv=None) -> int:
     video = ol.video
     out = video.hdmi_out
 
-    hpd = hl.find(ol, "gpio_hdmiin")
-    if hpd is not None:
-        hpd.mmio.write(0x00, 0x1)
+    # Both HPD GPIOs come up tri-stated; the sink has to see HPD asserted or a capture
+    # dongle keeps its receiver off and shows its own test pattern.
+    hl.raise_input_hpd(ol)
+    hl.raise_output_hpd(ol)
 
     cfg = hl.find(ol, "gpio_enh_cfg")
     lat = hl.find(ol, "gpio_enh_lat")

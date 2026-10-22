@@ -67,6 +67,47 @@ def find(ol, fragment: str):
     return None
 
 
+# -----------------------------------------------------------------------------
+# Hot-plug lines
+#
+# Both HPD GPIOs power up with *both* channels tri-stated (the direction register reads
+# 0xFFFFFFFF), so the board never actually drives those pins. Writing the data register alone
+# does nothing electrically - the direction register has to be cleared first.
+#
+# This matters on the output side: with HPD floating, a USB capture dongle cannot see that a
+# source is present, keeps its HDMI receiver disabled, and shows its own internal test pattern.
+# The symptom is indistinguishable from "the board is not producing video" even though the
+# pipeline is running and the pixel clock is locked - it cost an hour of looking at the wrong
+# end of a cable.
+# -----------------------------------------------------------------------------
+
+GPIO_DIR = 0x04          # channel 1 tri-state register: 0 = drive the pin
+
+
+def _drive_hpd(dev, value: int = 1) -> None:
+    """Turn channel 1 of an AXI GPIO into an output and drive it to ``value``."""
+    dev.mmio.write(GPIO_DIR, 0x00000000)     # 0 = output
+    dev.mmio.write(GPIO_DATA, value)
+
+
+def raise_output_hpd(ol) -> bool:
+    """Assert HPD towards the sink (the monitor or capture dongle)."""
+    dev = find(ol, "hpd_video")
+    if dev is None:
+        return False
+    _drive_hpd(dev, 1)
+    return True
+
+
+def raise_input_hpd(ol) -> bool:
+    """Assert HPD towards the video source on the input side."""
+    dev = find(ol, "gpio_hdmiin")
+    if dev is None:
+        return False
+    _drive_hpd(dev, 1)
+    return True
+
+
 RST_BIT = 1 << 31          # bit 31 of word 1 asks the kernel to reset
 
 # Set this to True only for the old port-configured bitstream.

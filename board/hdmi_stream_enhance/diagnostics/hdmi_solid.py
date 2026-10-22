@@ -37,10 +37,11 @@ def main(argv=None) -> int:
     video = ol.video
     out = video.hdmi_out
 
-    hpd = hl.find(ol, "gpio_hdmiin")
-    if hpd is not None:
-        hpd.mmio.write(0x00, 0x1)
-        print(f"hdmi_in HPD = 0x{hpd.mmio.read(0x00):08x}", flush=True)
+    # Both HPD GPIOs come up tri-stated; the sink has to see HPD asserted or a capture
+    # dongle keeps its receiver off and shows its own test pattern.
+    hl.raise_input_hpd(ol)
+    hl.raise_output_hpd(ol)
+    print(f"hdmi_in + hdmi_out HPD asserted", flush=True)
 
     out.configure(VideoMode(width, height, 24, 60))
     out.start()
