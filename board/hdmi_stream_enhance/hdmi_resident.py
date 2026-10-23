@@ -381,6 +381,12 @@ def main(argv=None) -> int:
                               f"holding the last frame", flush=True)
                     clip["index"] = frames_n
                 else:
+                    if clip.get("finished"):
+                        # Resuming because the repeat flag was switched back on: say so, otherwise the
+                        # state file keeps reporting "finished" while frames are visibly moving.
+                        clip["finished"] = False
+                        state["playing"] = f"{frames_n} frames at {clip['fps']:g} fps"
+                        print("  play -> resumed (loop switched back on)", flush=True)
                     frame = clip["paths"][clip["index"] % frames_n]
                     try:
                         if state["playing"] and clip["index"] % 30 == 0:
