@@ -36,6 +36,8 @@ $board = 'xilinx@192.168.2.99'
 $askpass = Join-Path $repo '.tmp\askpass\askpass.bat'
 $showScript = Join-Path $repo 'tools\board\show_image.ps1'
 $playScript = Join-Path $repo 'tools\board\play_video.ps1'
+$ensureScript = Join-Path $repo 'tools\board\ensure_demo.ps1'
+$demoStatusFile = Join-Path $repo '.tmp\demo_status.txt'
 
 $env:SSH_ASKPASS = $askpass
 $env:SSH_ASKPASS_REQUIRE = 'force'
@@ -494,5 +496,44 @@ $btnGo.Add_Click({
 })
 
 if ($File -ne '') { Select-File $File }
-$form.Add_Shown({ $form.Activate() })
+
+# --- 演示进程：打开窗口时自动检查 / 启动 ------------------------------------------------
+# 面板假设演示进程在跑（它独占 VDMA）。没有它，任何上传都只会得到"板子没有开始播放"，
+# 而用户无从知道要去 ssh 里起一个进程。这里交给 ensure_demo.ps1，用定时器读它的状态文件，
+# 这样加载 overlay 的 40 秒里窗口不会卡住。
+$script:lastDemoState = ''
+$script:demoTimer = New-Object System.Windows.Forms.Timer
+$script:demoTimer.Interval = 2000
+$script:demoTimer.Add_Tick({
+    if (-not (Test-Path $demoStatusFile)) { return }
+    $raw = Get-Content $demoStatusFile -Raw -Encoding UTF8
+    $state = [regex]::Match($raw, 'state=(\w+)').Groups[1].Value
+    $message = [regex]::Match($raw, 'message=([^\r\n]*)').Groups[1].Value.Trim()
+    if ($state -eq '' -or $state -eq $script:lastDemoState) { return }
+    $script:lastDemoState = $state
+    if ($message -ne '') { Add-Log ('[演示] ' + $message) }
+    if ($state -eq 'running') {
+        $script:demoTimer.Stop()
+        if ($status.Text -eq '等待选择文件' -or $status.Text -like '*演示*') {
+            $status.ForeColor = [System.Drawing.Color]::DarkGreen
+            $status.Text = '演示就绪'
+        }
+    } elseif ($state -eq 'failed') {
+        $script:demoTimer.Stop()
+        $status.ForeColor = [System.Drawing.Color]::DarkRed
+        $status.Text = '演示没起来，看下面日志'
+    }
+})
+
+$form.Add_Shown({
+    $form.Activate()
+    if (Test-Path $ensureScript) {
+        Add-Log '检查板子上的演示进程...'
+        Start-Process -FilePath 'powershell' -WindowStyle Hidden -ArgumentList @(
+            '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $ensureScript)
+        $script:demoTimer.Start()
+    }
+})
+
 [void]$form.ShowDialog()
+$script:demoTimer.Stop()
