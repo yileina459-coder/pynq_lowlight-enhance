@@ -35,10 +35,24 @@ def frame_size_mb() -> float:
     return WIDTH * HEIGHT * 3 / (1024 * 1024)
 
 
+def find_ffmpeg() -> str | None:
+    """An ffmpeg binary to run, or None."""
+    on_path = shutil.which("ffmpeg")
+    if on_path:
+        return on_path
+    here = Path(__file__).resolve().parent.parent
+    for candidate in (here / ".tmp" / "tools" / "ffmpeg.exe",
+                      here / "tools" / "bin" / "ffmpeg.exe"):
+        if candidate.is_file():
+            return str(candidate)
+    return None
+
+
 def extract_with_ffmpeg(video: Path, out: Path, fps: float, seconds: float | None) -> int:
-    if shutil.which("ffmpeg") is None:
-        return 0            # not installed: the caller falls back to Pillow
-    command = ["ffmpeg", "-y", "-i", str(video), "-vf",
+    ffmpeg = find_ffmpeg()
+    if ffmpeg is None:
+        return 0            # not available: the caller falls back to Pillow
+    command = [ffmpeg, "-y", "-i", str(video), "-vf",
                f"fps={fps},scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=decrease,"
                f"pad={WIDTH}:{HEIGHT}:(ow-iw)/2:(oh-ih)/2:black",
                "-pix_fmt", "rgb24", str(out / "frame_%05d.png")]
@@ -107,7 +121,17 @@ def main(argv=None) -> int:
         count = extract_with_pillow(video, out, args.fps, seconds)
 
     if count == 0:
-        print("FRAMES FAIL: no frames produced - is ffmpeg installed?")
+        # Name the diagnosis *and* the remedy: "is ffmpeg installed?" leaves the operator to work out
+        # both, and MP4 is the format most people will try first.
+        print(f"FRAMES FAIL: nothing could be decoded from {video.name}")
+        if find_ffmpeg() is None:
+            print("  ffmpeg was not found, so video containers (mp4 / mov / mkv) cannot be read.")
+            print("  Fix it in either way, then run this again:")
+            print("    winget install Gyan.FFmpeg")
+            print(r"    copy ffmpeg.exe to .tmp\tools\ffmpeg.exe    (repo-local, no PATH change)")
+            print("  GIF and animated WebP do not need ffmpeg.")
+        else:
+            print("  ffmpeg is present but produced no frames - the file may be corrupt or unusual.")
         return 1
 
     if count > args.max_frames:

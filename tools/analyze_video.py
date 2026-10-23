@@ -121,46 +121,40 @@ def snap_boundaries(chosen: list[str], means: list[float], half: int) -> list[st
 
 
 def smooth(scores: list[dict[str, float]], candidates: list[str],
-           means: list[float] | None = None, window: int = 5) -> list[str]:
+           means: list[float] | None = None, min_frames: int = MIN_SEGMENT) -> list[str]:
     """Turn per-frame scores into a small number of segments.
 
-    Because the whole clip is available before playback, the choice can be made with a *centred*
-    window rather than causal hysteresis - which removes the lag a hysteresis rule pays for at every
-    scene change. Each frame takes the preset with the best mean score over the surrounding frames, so
-    an isolated spike cannot win, and two presets that alternate frame by frame just average out.
+    Per-frame winners are taken as-is and stabilised by merging, not by averaging. Averaging over a
+    centred window blurred a short scene out of existence: a bright insert eight frames long lost its
+    advantage to the dark frames around it and the whole clip collapsed to one preset.
 
-    Segments shorter than MIN_SEGMENT that are enclosed by a single different preset on both sides are
-    then merged into that neighbour: those are the runs that read as a flicker. A short run at the
-    start or end of the clip is a real partial scene and is kept.
+    Merging does the job instead. Any run shorter than min_frames is absorbed into a neighbour - a run
+    that short is a scoring accident, not a decision, and alternating A/B noise is exactly that shape.
+    The threshold is derived from a *duration* rather than a frame count, because ten frames means a
+    flicker guard at 4 fps and a lost scene at 30 fps.
+
+    Boundaries are then snapped to the frame where the picture actually changes.
     """
-    half = max(0, window // 2)
-    smoothed: list[dict[str, float]] = []
-    for index in range(len(scores)):
-        low = max(0, index - half)
-        high = min(len(scores), index + half + 1)
-        smoothed.append({name: float(np.mean([scores[j][name] for j in range(low, high)]))
-                         for name in candidates})
-
-    chosen = [max(candidates, key=lambda name: row[name]) for row in smoothed]
+    chosen = [max(candidates, key=lambda name: row[name]) for row in scores]
 
     changed = True
     while changed:
         changed = False
         runs = runs_of(chosen)
-        if len(runs) < 3:
+        if len(runs) < 2:
             break
-        for position in range(1, len(runs) - 1):
-            start, end, _name = runs[position]
-            if end - start >= MIN_SEGMENT:
+        for position, (start, end, _name) in enumerate(runs):
+            if end - start >= min_frames:
                 continue
-            neighbour = runs[position - 1][2]
+            # Absorb into the previous run when there is one, otherwise into the next.
+            neighbour = runs[position - 1][2] if position > 0 else runs[position + 1][2]
             for i in range(start, end):
                 chosen[i] = neighbour
             changed = True
             break
 
     if means is not None:
-        chosen = snap_boundaries(chosen, means, half)
+        chosen = snap_boundaries(chosen, means, 4)
     return chosen
 
 
@@ -172,6 +166,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--mode", choices=("clip", "adaptive"), default="clip")
     ap.add_argument("--presets", default=",".join(CANDIDATES))
     ap.add_argument("--limit", type=int, default=0, help="analyse at most N frames (0 = all)")
+    ap.add_argument("--fps", type=float, default=30.0,
+                    help="playback rate, used to turn --min-seconds into a frame count")
+    ap.add_argument("--min-seconds", type=float, default=0.25,
+                    help="shortest segment worth switching for (default 0.25 s)")
     args = ap.parse_args(argv)
 
     candidates = [name.strip() for name in args.presets.split(",") if name.strip()]
@@ -206,7 +204,8 @@ def main(argv: list[str] | None = None) -> int:
     # Mean brightness per frame, used to snap segment boundaries onto real scene cuts.
     frame_means = [float(np.asarray(frame.convert("L")).mean()) for frame in frames]
     schedule = (([ranked[0][0]] * len(frames)) if args.mode == "clip"
-                else smooth(scores, candidates, frame_means))
+                else smooth(scores, candidates, frame_means,
+                            max(3, round(args.fps * args.min_seconds))))
     runs = runs_of(schedule)
     print(f"\nschedule: {len(runs)} segment(s)")
     for start, end, name in runs:

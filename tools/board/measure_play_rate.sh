@@ -6,10 +6,12 @@
 # only honest measure of the rate the viewer actually sees.
 
 LOG=/tmp/res_fps.log
+# grep -a: the resident log carries a few control bytes from the bitstream banner,
+# so grep would otherwise treat the whole file as binary and print nothing.
 WINDOW=${1:-10}
 
 last_index() {
-    grep -o 'frame *[0-9]*:' "$LOG" | tail -1 | tr -dc '0-9'
+    grep -a -o 'frame *[0-9]*:' "$LOG" | tail -1 | tr -dc '0-9'
 }
 
 a=$(last_index)
@@ -24,7 +26,7 @@ fi
 delta=$((b - a))
 echo "frames advanced: $delta over ${WINDOW}s -> $(awk "BEGIN{printf \"%.1f\", $delta/$WINDOW}") fps"
 echo "requested: $(cat /tmp/hdmi_play_fps.txt 2>/dev/null)"
-echo "hitches (behind by): $(grep -c 'behind by' "$LOG")"
+echo "hitches (behind by): $(grep -a -c 'behind by' "$LOG")"
 echo "schedule switches: $(grep -c 'preset ->' "$LOG")"
 echo "last switches:"
-grep 'preset ->' "$LOG" | tail -3
+grep -a 'preset ->' "$LOG" | tail -3

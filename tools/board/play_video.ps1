@@ -99,7 +99,7 @@ $scheduleFile = Join-Path $repo '.tmp\clip_analysis\schedule.txt'
 if ($Auto) {
     $analysisDir = Join-Path $repo '.tmp\clip_analysis'
     Write-Host "analysing the clip (-Auto $Auto) - this evaluates every candidate on every frame" -ForegroundColor Cyan
-    & $python (Join-Path $repo 'tools\analyze_video.py') $localFrames --outdir $analysisDir --mode $Auto
+    & $python (Join-Path $repo 'tools\analyze_video.py') $localFrames --outdir $analysisDir --mode $Auto --fps $Fps
     if ($LASTEXITCODE -ne 0) { throw "clip analysis failed" }
     $Preset = (& $python -c "import json,sys; d=json.load(open(r'$analysisDir\analysis.json',encoding='utf-8')); print(d['segments'][0]['preset'] if d['mode']=='clip' else d['clip_best'])").Trim()
     Write-Host "preset chosen by the analysis: $Preset" -ForegroundColor Green
