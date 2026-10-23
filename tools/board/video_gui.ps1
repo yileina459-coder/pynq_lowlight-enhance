@@ -236,7 +236,13 @@ $btnStart.Add_Click({
     $form.Refresh()
 
     try {
-        $output = & $playScript @args 2>&1
+        # Splat the hashtable we built. It must be @playArgs, not @args: inside a Click handler the
+        # automatic $args holds the event arguments (sender, MouseEventArgs), and splatting that array
+        # passes them positionally - which is exactly how "-Fps" once received a MouseEventArgs.
+        # *>&1 captures every stream. 2>&1 alone misses Write-Host, which goes to the information
+        # stream in PowerShell 5.1 - that is why the report box looked empty and why the status said
+        # "没能开始播放" while the board was already playing.
+        $output = & $playScript @playArgs *>&1
         $text = ($output | Out-String)
 
         # Show the analyser's own summary, if it ran. Reading the JSON it wrote is more reliable than
@@ -253,12 +259,54 @@ $btnStart.Add_Click({
             $report.AppendText("`r`n")
         }
 
-        if ($text -match 'playing') {
+        # Ask the board. Grepping the console output was wrong twice over: Write-Host is not
+        # capturable with 2>&1, and the process printing "playing" is not proof that pixels flow.
+        $boardState = ''
+        try {
+            $env:SSH_ASKPASS = Join-Path $repo '.tmp\askpass\askpass.bat'
+            $env:SSH_ASKPASS_REQUIRE = 'force'
+            $env:DISPLAY = ':0'
+            $boardState = (& ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR `
+                              -o ConnectTimeout=10 'xilinx@192.168.2.99' `
+                              'cat /tmp/hdmi_state.txt' 2>$null | Out-String)
+        } catch {
+            $boardState = ''
+        }
+        $playing = [regex]::Match($boardState, 'playing=\d+').Success
+        if ($playing) {
             $status.ForeColor = [System.Drawing.Color]::DarkGreen
             $status.Text = '正在播放'
+        } elseif ($boardState -ne '') {
+            $status.ForeColor = [System.Drawing.Color]::DarkRed
+            $status.Text = '板子没有开始播放'
         } else {
             $status.ForeColor = [System.Drawing.Color]::DarkRed
-            $status.Text = '没能开始播放'
+            $status.Text = '连不上板子'
+        }
+        # Record the verdict. A file is testable without screenshotting the window, and when an
+        # operator reports "it says it failed" this says exactly what the window believed and why.
+        try {
+            $statusPath = Join-Path $repo '.tmp\video_gui_status.txt'
+            $lines = @(
+                "status=" + $status.Text,
+                "playing=" + $playing,
+                "video=" + $path,
+                "mode=" + $(if ($playArgs.ContainsKey('Auto')) { $playArgs['Auto'] } else { 'fixed:' + $playArgs['Preset'] }),
+                "board_state_begin",
+                $boardState.Trim(),
+                "board_state_end"
+            )
+            [System.IO.File]::WriteAllLines($statusPath, $lines, (New-Object System.Text.UTF8Encoding($false)))
+        } catch {
+            # Never let bookkeeping break the window.
+        }
+
+        if ($boardState -ne '') {
+            $report.AppendText("板子报告：`r`n")
+            foreach ($line in ($boardState -split "`n")) {
+                if ($line.Trim()) { $report.AppendText("  " + $line.Trim() + "`r`n") }
+            }
+            $report.AppendText("`r`n")
         }
         $report.AppendText($text.Trim())
         $report.SelectionStart = $report.Text.Length

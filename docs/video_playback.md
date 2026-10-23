@@ -104,3 +104,21 @@ tools\board\play_video.ps1 -Video x -Stop
 | 切换 | `preset -> clarity (frame 12)` / `preset -> reading (frame 0)`，每循环一次 |
 
 三场景片段（暗 8 / 亮 8 / 暗 8）给出**三段**，边界在帧 8 和 16，与场景切点一致。
+
+## 画面看起来杂乱时怎么办
+
+测试会在板子上留下痕迹：循环播放的视频、为某段视频生成的挡位排程、之前排队播放的测试图。
+屏幕可能同时显示这些内容的残留，看起来像所有加载过的东西混在一起。
+
+一条命令恢复干净状态（默认显示测试卡 + clarity）：
+
+`powershell
+tools\\board\\reset_board.ps1
+tools\\board\\reset_board.ps1 -Image mine_120000_640x480.png -Preset bright
+`
+
+它做的事：停止播放（截断 /tmp/hdmi_play.txt，不删除——/tmp 有 sticky 位）、
+清掉 /tmp/hdmi_uploads/clip 里的视频帧和挡位排程、设定图片与挡位、**回读板上状态确认生效**。
+
+只想看自己的一张图，用 	ools\\board\\show_image.ps1 -Image 你的图.jpg；
+想放自己的视频，用上面的 play_video.ps1 -Auto clip。
