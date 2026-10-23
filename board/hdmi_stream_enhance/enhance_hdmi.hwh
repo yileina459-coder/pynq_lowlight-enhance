@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Fri Oct 23 03:55:03 2026" VIVADOVERSION="2026.1">
+<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Fri Oct 23 10:58:07 2026" VIVADOVERSION="2026.1">
 
   <SYSTEMINFO ARCH="zynq" DEVICE="7z020" NAME="base" PACKAGE="clg400" SPEEDGRADE="-1"/>
 
@@ -5480,7 +5480,7 @@
       </PORTS>
       <BUSINTERFACES/>
     </MODULE>
-    <MODULE COREREVISION="2114841230" FULLNAME="/enhance_cfg_0" HWVERSION="1.0" INSTANCE="enhance_cfg_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="enhance_stream_cfg" VLNV="xilinx.com:hls:enhance_stream_cfg:1.0">
+    <MODULE COREREVISION="2114841652" FULLNAME="/enhance_cfg_0" HWVERSION="1.0" INSTANCE="enhance_cfg_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="enhance_stream_cfg" VLNV="xilinx.com:hls:enhance_stream_cfg:1.0">
       <DOCUMENTS>
         <DOCUMENT SOURCE="https://support.amd.com/documentation/ipcores/enhance_stream_cfg/1_0"/>
       </DOCUMENTS>
