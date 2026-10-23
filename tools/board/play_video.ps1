@@ -60,7 +60,11 @@ $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $python = 'C:\Users\79171\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe'
 $board = 'xilinx@192.168.2.99'
 $askpass = Join-Path $repo '.tmp\askpass\askpass.bat'
-$remoteDir = '/tmp/hdmi_uploads/clip'
+# A fresh directory per upload. The resident reloads a clip only when the path it is told to play
+# changes, and its decode cache is keyed by file path - reusing one directory meant a new video with the
+# same frame names was never reloaded and, when it was, served the old decoded frames from cache.
+$stamp = Get-Date -Format 'HHmmss'
+$remoteDir = "/tmp/hdmi_uploads/clip_$stamp"
 
 $env:SSH_ASKPASS = $askpass
 $env:SSH_ASKPASS_REQUIRE = 'force'
@@ -122,7 +126,9 @@ if ($Auto -and (Test-Path $scheduleFile)) {
     if ($LASTEXITCODE -ne 0) { throw "could not copy the preset schedule to the board" }
     Write-Host "preset schedule copied ($((Get-Content $scheduleFile).Count) entries)" -ForegroundColor Cyan
 }
-$null = Invoke-Board "rm -rf $remoteDir && mkdir -p $remoteDir && tar -xf /tmp/frames.tar -C $remoteDir && rm -f /tmp/frames.tar && ls $remoteDir | wc -l"
+# Keep the two newest clip directories; frames are large and /tmp is in RAM.
+$null = Invoke-Board "mkdir -p $remoteDir && tar -xf /tmp/frames.tar -C $remoteDir && rm -f /tmp/frames.tar && ls $remoteDir | wc -l"
+$null = Invoke-Board "ls -dt /tmp/hdmi_uploads/clip_* 2>/dev/null | tail -n +3 | xargs -r rm -rf"
 $count = (Invoke-Board "ls $remoteDir | wc -l").Trim()
 Write-Host "board now holds $count frame(s) in $remoteDir" -ForegroundColor Cyan
 

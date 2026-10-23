@@ -321,6 +321,11 @@ def main(argv=None) -> int:
                         fps = float(fps_text) if fps_text else 30.0
                     except ValueError:
                         fps = 30.0
+                    # A new clip means the decoded-frame cache is meaningless: the file names are the
+                    # same (frame_00001.png ...) but the pictures are different, so a cache hit would
+                    # serve the previous video. That is exactly how a freshly uploaded video kept showing
+                    # the old one.
+                    play_cache.clear()
                     clip.update({"dir": play_text, "paths": paths, "index": 0,
                                  "fps": fps, "next": time.monotonic(),
                                  "schedule": [], "applied": None,

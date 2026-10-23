@@ -183,3 +183,19 @@ python tools\tune_clarity.py                                   # 各 clarity 的
 python tools\diag\compare_presets.py --presets clarity,crisp   # 板上实测对比
 python tools\analyze_video.py 帧目录 --mode clip                # 抽样后的分析与耗时
 ```
+
+## 换一个视频却还在播旧的（已修）
+
+2026-10-23 修掉的一个真 bug，两处原因叠在一起：
+
+1. 每次上传都写进同一个目录 /tmp/hdmi_uploads/clip，而常驻演示**只在播放路径变化时**才重新加载
+   —— 路径没变，它就不重读文件列表；
+2. 即便重读了，解码缓存 play_cache 是按**文件路径**做键的，而新视频的帧文件名完全相同
+   （rame_00001.png …），于是每次查缓存都命中，返回的是**上一个视频的画面**。
+
+外面看不出来：状态文件照样写 playing=144 frames at 24 fps，这句是真的。
+
+**修法**：每次上传用独立目录 clip_<HHMMSS>（路径必然变 → 触发重新加载，旧的目录自动清理），
+并在加载时**清空解码缓存**。
+
+**验证**：A→B→A 来回切换，画面分别变化 87,920 / 91,051 像素，两次都换了。
