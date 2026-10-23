@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     上传到开发板 - 图片和视频合并在同一个窗口里。
 
@@ -226,9 +226,16 @@ $textSeconds.Size = New-Object System.Drawing.Size(46, 24)
 $textSeconds.Text = '6'
 $groupVideo.Controls.Add($textSeconds)
 
+$chkLoop = New-Object System.Windows.Forms.CheckBox
+$chkLoop.Text = '循环播放（默认只播一次，播完停在最后一帧）'
+$chkLoop.Location = New-Object System.Drawing.Point(306, 136)
+$chkLoop.AutoSize = $true
+$chkLoop.Checked = $false
+$groupVideo.Controls.Add($chkLoop)
+
 $hintVideo = New-Object System.Windows.Forms.Label
 $hintVideo.Location = New-Object System.Drawing.Point(306, 58)
-$hintVideo.Size = New-Object System.Drawing.Size(306, 80)
+$hintVideo.Size = New-Object System.Drawing.Size(306, 74)
 $hintVideo.ForeColor = [System.Drawing.Color]::Gray
 $hintVideo.Text = ("每帧占板上内存 0.9 MB，默认只取 6 秒。`r`n" +
                    "整段播放请把时长改 0（上限约 240 帧）。`r`n" +
@@ -256,10 +263,18 @@ $status.Text = '等待选择文件'
 $status.ForeColor = [System.Drawing.Color]::DimGray
 $form.Controls.Add($status)
 
+# Restart whatever clip is already on the board. Pairs with the default play-once behaviour: a video
+# that played through stays on its last frame, and this plays it again without re-uploading anything.
+$btnReplay = New-Object System.Windows.Forms.Button
+$btnReplay.Text = '重新播放'
+$btnReplay.Location = New-Object System.Drawing.Point(16, 292)
+$btnReplay.Size = New-Object System.Drawing.Size(110, 30)
+$form.Controls.Add($btnReplay)
+
 # --- 日志 -----------------------------------------------------------------------------------
 $log = New-Object System.Windows.Forms.TextBox
-$log.Location = New-Object System.Drawing.Point(16, 292)
-$log.Size = New-Object System.Drawing.Size(628, 210)
+$log.Location = New-Object System.Drawing.Point(16, 330)
+$log.Size = New-Object System.Drawing.Size(628, 172)
 $log.Multiline = $true
 $log.ReadOnly = $true
 $log.ScrollBars = 'Vertical'
@@ -370,6 +385,31 @@ $btnPreview.Add_Click({
     }
 })
 
+$btnReplay.Add_Click({
+    $status.ForeColor = [System.Drawing.Color]::Black
+    $status.Text = '正在重新播放...'
+    $form.Refresh()
+    try {
+        & $playScript -Video 'x' -Replay 2>&1 | Out-Null
+        Start-Sleep -Seconds 2
+        $state = (& ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR -o ConnectTimeout=10 `
+                    $board 'cat /tmp/hdmi_state.txt' 2>$null | Out-String)
+        if ($state -match 'playing=\d+') {
+            $status.ForeColor = [System.Drawing.Color]::DarkGreen
+            $status.Text = '重新播放中'
+            Add-Log '[重新播放] ' + (($state -split "`n") | Where-Object { $_ -match 'playing=' })
+        } else {
+            $status.ForeColor = [System.Drawing.Color]::DarkRed
+            $status.Text = '板子上没有可重播的片段'
+            Add-Log '[重新播放] 板子上没有正在使用的片段，先上传一个视频。'
+        }
+    } catch {
+        $status.ForeColor = [System.Drawing.Color]::DarkRed
+        $status.Text = '重新播放失败'
+        Add-Log ('[重新播放] 失败：' + $_.Exception.Message)
+    }
+})
+
 $btnStop.Add_Click({
     $status.ForeColor = [System.Drawing.Color]::Black
     $status.Text = '正在停止...'
@@ -439,6 +479,7 @@ $btnGo.Add_Click({
                 return
             }
             $playArgs = @{ Video = $path; Fps = $fps; Seconds = $seconds }
+            if ($chkLoop.Checked) { $playArgs['Loop'] = $true }
             if ($radioFixed.Checked) {
                 $playArgs['Preset'] = [string]$comboVideoPreset.SelectedItem
                 Add-Log ("视频：固定挡位 " + $playArgs['Preset'] + "，帧率 $fps")
@@ -469,7 +510,11 @@ $btnGo.Add_Click({
             Start-Sleep -Seconds 4
             $state = (& ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR -o ConnectTimeout=10 `
                         $board 'cat /tmp/hdmi_state.txt' 2>$null | Out-String)
-            if ($state -match 'playing=\d+') {
+            if ($state -match 'playing=\d+ frames, finished') {
+                # Played through once and holding the last frame: success, not a fault.
+                $status.ForeColor = [System.Drawing.Color]::DarkGreen
+                $status.Text = '已播完（停在最后一帧，可点重新播放）'
+            } elseif ($state -match 'playing=\d+') {
                 $status.ForeColor = [System.Drawing.Color]::DarkGreen
                 $status.Text = '正在播放'
             } elseif ($state.Trim() -ne '') {

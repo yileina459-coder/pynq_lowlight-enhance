@@ -33,6 +33,7 @@ REPO = Path(__file__).resolve().parents[2]
 ASKPASS = str(REPO / ".tmp" / "askpass" / "askpass.bat")
 SHOW = REPO / "tools" / "board" / "show_image.ps1"
 RECT_FILE = REPO / ".tmp" / "video_rect.txt"
+BOARD = "xilinx@192.168.2.99"
 
 SHOT_PS = r"""
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
@@ -64,6 +65,73 @@ $g.Dispose()
 $bmp.Dispose()
 Write-Output ("CAPTURED {0}x{1}" -f $w, $h)
 """
+
+
+def board_preset() -> str:
+    """The board's current manual preset, or '' if it cannot be read."""
+    command = ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "LogLevel=ERROR",
+               "-o", "ConnectTimeout=10", BOARD, "cat /tmp/hdmi_preset.txt"]
+    env = os.environ.copy()
+    env.update({"SSH_ASKPASS": ASKPASS, "SSH_ASKPASS_REQUIRE": "force", "DISPLAY": ":0"})
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, encoding="utf-8",
+                                errors="replace", env=env, timeout=40)
+        return (result.stdout or "").strip()
+    except subprocess.TimeoutExpired:
+        return ""
+
+
+def set_board_preset(name: str) -> bool:
+    if not name:
+        return False
+    command = ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "LogLevel=ERROR",
+               "-o", "ConnectTimeout=10", BOARD, f"echo {name} > /tmp/hdmi_preset.txt"]
+    env = os.environ.copy()
+    env.update({"SSH_ASKPASS": ASKPASS, "SSH_ASKPASS_REQUIRE": "force", "DISPLAY": ":0"})
+    try:
+        subprocess.run(command, capture_output=True, text=True, encoding="utf-8",
+                       errors="replace", env=env, timeout=40)
+        return True
+    except subprocess.TimeoutExpired:
+        return False
+
+
+def play_file() -> str:
+    """What /tmp/hdmi_play.txt currently asks for ('' when nothing is playing)."""
+    return _board_cmd("cat /tmp/hdmi_play.txt 2>/dev/null | tr -d '\\000' | head -c 200")
+
+
+def _board_cmd(command: str) -> str:
+    env = os.environ.copy()
+    env.update({"SSH_ASKPASS": ASKPASS, "SSH_ASKPASS_REQUIRE": "force", "DISPLAY": ":0"})
+    try:
+        result = subprocess.run(["ssh", "-o", "StrictHostKeyChecking=no", "-o", "LogLevel=ERROR",
+                                 "-o", "ConnectTimeout=10", BOARD, command],
+                                capture_output=True, text=True, encoding="utf-8",
+                                errors="replace", env=env, timeout=45)
+        return (result.stdout or "").strip()
+    except subprocess.TimeoutExpired:
+        return ""
+
+
+def pause_playback() -> str:
+    """Stop playback so a still picture can actually reach the screen.
+
+    While a clip is playing, the resident pushes a video frame every 40 ms and ignores changes to the
+    still image - so uploading white and then black changes /tmp/hdmi_image.txt and nothing on screen,
+    which reads as "the board did not change" and sent this tool's calibration down the wrong path.
+    Returns the previous play target so it can be resumed.
+    """
+    previous = play_file()
+    if previous:
+        _board_cmd(": > /tmp/hdmi_play.txt")
+        time.sleep(2.5)
+    return previous
+
+
+def resume_playback(previous: str) -> None:
+    if previous:
+        _board_cmd(f"echo {previous} > /tmp/hdmi_play.txt")
 
 
 def shot(path: Path) -> str:
@@ -156,6 +224,16 @@ def main(argv: list[str] | None = None) -> int:
     print(f"video area {rect[0]},{rect[1]}..{rect[2]},{rect[3]}  "
           f"({rect[2] - rect[0] + 1}x{rect[3] - rect[1] + 1})")
 
+    # Remember what was on screen before touching anything: this tool changes both the preset and what is
+    # being displayed, and leaving a dark clip running with a preset that applies no gain looks exactly
+    # like a black screen.
+    restore = board_preset()
+    was_playing = pause_playback()
+    if restore:
+        print(f"(will restore preset '{restore}' when done)")
+    if was_playing:
+        print(f"(playback paused; will resume {was_playing})")
+
     results: dict[str, dict[str, float]] = {}
     for preset in presets:
         if not show(image, preset):
@@ -177,6 +255,12 @@ def main(argv: list[str] | None = None) -> int:
                   f"边缘 {100 * (other['edge'] / base['edge'] - 1):+5.1f}%  "
                   f"纯黑 {other['black'] - base['black']:+5.1f}pt  "
                   f"过曝 {other['blown'] - base['blown']:+5.1f}pt")
+
+    if restore and set_board_preset(restore):
+        print(f"preset restored to '{restore}'")
+    resume_playback(was_playing)
+    if was_playing:
+        print(f"playback resumed: {was_playing}")
     return 0
 
 

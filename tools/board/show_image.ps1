@@ -66,6 +66,13 @@ function Invoke-Board {
     return $out
 }
 
+# --- 0) stop any playback ---------------------------------------------------------------
+# While a clip is playing, the resident pushes a video frame every 40 ms and ignores the still image, so
+# uploading a picture mid-playback did nothing at all - and looked like the board ignoring the upload.
+# Stop playback first, then give the resident a moment to notice before the new picture is announced.
+$null = Invoke-Board ": > /tmp/hdmi_play.txt"
+Start-Sleep -Milliseconds 900
+
 # --- 1) convert -------------------------------------------------------------------------
 $stamp = Get-Date -Format 'HHmmss'
 $name = "mine_${stamp}_640x480.png"

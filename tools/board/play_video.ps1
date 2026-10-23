@@ -50,6 +50,12 @@ param(
     # whole sequence (perfectly steady); 'adaptive' allows a handful of switches, placed on the actual
     # scene cuts and subject to a minimum segment length, so the picture never flutters.
     [ValidateSet('', 'clip', 'adaptive')][string]$Auto = '',
+    # Repeat the clip instead of playing it through once. Once is the default because a looping clip
+    # pushes a frame every 40 ms and competes with everything else - a still image does not appear and a
+    # preset change is overwritten by the schedule, which looked like the board ignoring commands.
+    [switch]$Loop,
+    # Restart the clip that is already on the board, without uploading anything again.
+    [switch]$Replay,
     [switch]$Stop
 )
 
@@ -80,10 +86,21 @@ function Invoke-Board {
 
 if ($Stop) {
     # Truncate rather than delete: /tmp is sticky, so a non-root user cannot remove a file root
-# created, and "rm -f" failing silently is why stopping playback never worked.
-$null = Invoke-Board ": > /tmp/hdmi_play.txt; : > /tmp/hdmi_play_presets.txt"
+    # created, and "rm -f" failing silently is why stopping playback never worked.
+    $null = Invoke-Board ": > /tmp/hdmi_play.txt; : > /tmp/hdmi_play_presets.txt"
     Start-Sleep -Seconds 2
     Write-Host "playback stopped; the demo is back to the still picture" -ForegroundColor Green
+    Invoke-Board "cat /tmp/hdmi_state.txt" | ForEach-Object { Write-Host "  $_" }
+    exit 0
+}
+
+if ($Replay) {
+    # Bumping the marker makes the resident start the current clip over from frame 0. Nothing is
+    # re-uploaded, which matters because a clip that played through once is still on the board.
+    $stamp = Get-Date -Format 'HHmmssfff'
+    $null = Invoke-Board "echo $stamp > /tmp/hdmi_play_restart.txt"
+    Start-Sleep -Seconds 2
+    Write-Host "replaying the clip already on the board" -ForegroundColor Green
     Invoke-Board "cat /tmp/hdmi_state.txt" | ForEach-Object { Write-Host "  $_" }
     exit 0
 }
@@ -129,12 +146,16 @@ if ($Auto -and (Test-Path $scheduleFile)) {
 # Keep the two newest clip directories; frames are large and /tmp is in RAM.
 $null = Invoke-Board "mkdir -p $remoteDir && tar -xf /tmp/frames.tar -C $remoteDir && rm -f /tmp/frames.tar && ls $remoteDir | wc -l"
 $null = Invoke-Board "ls -dt /tmp/hdmi_uploads/clip_* 2>/dev/null | tail -n +3 | xargs -r rm -rf"
+# The pre-unique-directory folder is named plain "clip" and does not match clip_*, so it would sit in
+# tmpfs forever. Remove it once the new upload is in place.
+$null = Invoke-Board "rm -rf /tmp/hdmi_uploads/clip"
 $count = (Invoke-Board "ls $remoteDir | wc -l").Trim()
 Write-Host "board now holds $count frame(s) in $remoteDir" -ForegroundColor Cyan
 
 # --- 3) ask the running demo to play them -------------------------------------------------
 $scheduleArg = if ($Auto) { 'cp /tmp/hdmi_uploads/play_presets.txt /tmp/hdmi_play_presets.txt' } else { ': > /tmp/hdmi_play_presets.txt' }
-$null = Invoke-Board "echo $Fps > /tmp/hdmi_play_fps.txt; echo $Preset > /tmp/hdmi_preset.txt; echo $Roll > /tmp/hdmi_roll.txt; $scheduleArg; echo $remoteDir > /tmp/hdmi_play.txt"
+$loopValue = if ($Loop) { '1' } else { '0' }
+$null = Invoke-Board "echo $Fps > /tmp/hdmi_play_fps.txt; echo $Preset > /tmp/hdmi_preset.txt; echo $Roll > /tmp/hdmi_roll.txt; echo $loopValue > /tmp/hdmi_play_loop.txt; $scheduleArg; echo $remoteDir > /tmp/hdmi_play.txt"
 Start-Sleep -Seconds 3
 
 $state = Invoke-Board "cat /tmp/hdmi_state.txt"

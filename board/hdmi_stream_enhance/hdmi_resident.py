@@ -39,6 +39,10 @@ SOF_FILE = "/tmp/hdmi_sof.txt"
 PLAY_FILE = "/tmp/hdmi_play.txt"
 PLAY_FPS_FILE = "/tmp/hdmi_play_fps.txt"
 PLAY_PRESET_FILE = "/tmp/hdmi_play_presets.txt"
+# Repeat the clip ("1") or play it through once and hold the last frame (anything else, the default).
+PLAY_LOOP_FILE = "/tmp/hdmi_play_loop.txt"
+# Bump the contents of this file to restart the current clip from the beginning.
+PLAY_RESTART_FILE = "/tmp/hdmi_play_restart.txt"
 
 
 UPLOAD_DIR = "/tmp/hdmi_uploads"
@@ -329,6 +333,9 @@ def main(argv=None) -> int:
                     clip.update({"dir": play_text, "paths": paths, "index": 0,
                                  "fps": fps, "next": time.monotonic(),
                                  "schedule": [], "applied": None,
+                                 "finished": False,
+                                 "loop": read_text(PLAY_LOOP_FILE).strip() == "1",
+                                 "restart_mark": read_text(PLAY_RESTART_FILE).strip(),
                                  # Prime the whole frame pool on the first frame, so no buffer can
                                  # still be showing an older picture during playback.
                                  "prime": True})
@@ -341,86 +348,110 @@ def main(argv=None) -> int:
                     state["playing"] = ""
 
             if clip["paths"]:
-                frame = clip["paths"][clip["index"] % len(clip["paths"])]
-                try:
-                    if state["playing"] and clip["index"] % 30 == 0:
-                        publish_state(state, width, height)
-                    # One buffer, allocated the first time and reused. Allocating a fresh one per
-                    # frame (out.newframe()) put the loop about two seconds behind every frame,
-                    # because the allocation costs far more than the copy.
+                # Replay: a changed marker in /tmp/hdmi_play_restart.txt means start this clip over.
+                restart_mark = read_text(PLAY_RESTART_FILE).strip()
+                if restart_mark != clip.get("restart_mark"):
+                    clip["restart_mark"] = restart_mark
+                    clip["index"] = 0
+                    clip["finished"] = False
+                    clip["prime"] = True
+                    print("  play -> restarting from the first frame", flush=True)
 
-                    # Decoded frames are cached: PNG decoding on the PS is ~10x the cost of the
-                    # copy into the buffer, and the whole point of playback is to keep a steady
-                    # frame rate. 24-bit 640x480 is 0.9 MB per frame, so 240 frames is ~215 MB.
-                    t_start = time.monotonic()
-                    pixels = play_cache.get(frame)
-                    if pixels is None:
-                        if len(play_cache) >= 240:
-                            play_cache.clear()
-                        pixels = load_picture(frame, width, height)
-                        play_cache[frame] = pixels
-                    t_decoded = time.monotonic()
-                    frame_pixels = roll_rows(pixels, state["roll"])
-                    t_copied = time.monotonic()
-                    # The schedule may be rewritten while the clip plays (re-running the analysis, or
-                    # it simply appearing a moment after the clip was pointed at). Re-reading a
-                    # 200-byte file per frame is free, so the board always follows the latest decision.
-                    schedule_text = read_text(PLAY_PRESET_FILE)
-                    if schedule_text != clip.get("schedule_text"):
-                        clip["schedule_text"] = schedule_text
-                        clip["schedule"] = [name for name in schedule_text.split()
-                                            if name in KNOWN_PRESETS]
-                        clip["applied"] = None      # force the new decision to be written
-                        if clip["schedule"]:
-                            print(f"  schedule: {len(clip['schedule'])} entries, "
-                                  f"first {clip['schedule'][0]}", flush=True)
-                        else:
-                            print("  schedule: none - playing with the manual preset", flush=True)
-                    if clip.get("schedule"):
-                        wanted = clip["schedule"][clip["index"] % len(clip["schedule"])]
-                        if wanted != clip.get("applied"):
-                            hl.write_preset(cfg, wanted)
-                            clip["applied"] = wanted
-                            state["play_preset"] = wanted
-                            print(f"  preset -> {wanted} (scheduled, frame "
-                                  f"{clip['index'] % len(clip['schedule'])})", flush=True)
-                    if clip.get("prime"):
-                        # Once per clip: put the first frame into every buffer the pool holds, so no
-                        # stale picture (a previous clip, or a leftover white calibration frame) can
-                        # be cycled onto the screen.
-                        primed = fill_pool(frame_pixels)
-                        print(f"  primed {primed} frame buffer(s) with the clip", flush=True)
-                        clip["prime"] = False
-                    # One push per displayed frame: successive pushes walk the whole pool, so every
-                    # buffer holds video within a few frames. Pushing into several buffers per frame
-                    # would cost a copy each and cap the frame rate for no benefit.
-                    target = out.newframe()
-                    target[:] = frame_pixels
-                    safe_writeframe(out, target, state, mode)
-                    t_written = time.monotonic()
-                    if clip["index"] % 10 == 0:
-                        print(f"  frame {clip['index']:4d}: decode {1000*(t_decoded-t_start):5.1f} ms  "
-                              f"copy {1000*(t_copied-t_decoded):5.1f} ms  "
-                              f"write {1000*(t_written-t_copied):5.1f} ms", flush=True)
-                except Exception as exc:                   # noqa: BLE001
-                    print(f"  play write failed: {exc}", flush=True)
-                    clip["dir"] = ""
-                clip["index"] += 1
-                interval = 1.0 / max(clip["fps"], 1.0)
-                clip["next"] += interval
-                sleep = clip["next"] - time.monotonic()
-                if sleep > 0:
-                    time.sleep(sleep)
+                frames_n = len(clip["paths"])
+                if not clip.get("loop") and clip["index"] >= frames_n:
+                    # Played through. Hold the final frame and stop pushing: while frames are being
+                    # pushed every 40 ms, a still image or a preset change fights with the playback loop
+                    # and appears to be ignored. Filling the whole pool matters because the VDMA cycles
+                    # every buffer - a partial fill would hold a mix of the last few frames.
+                    if not clip.get("finished"):
+                        last = clip["paths"][-1]
+                        pixels = play_cache.get(last)
+                        if pixels is None:
+                            pixels = load_picture(last, width, height)
+                            play_cache[last] = pixels
+                        fill_pool(roll_rows(pixels, state["roll"]))
+                        clip["finished"] = True
+                        state["playing"] = f"{frames_n} frames, finished"
+                        publish_state(state, width, height)
+                        print(f"  play -> finished after {frames_n} frames; "
+                              f"holding the last frame", flush=True)
+                    clip["index"] = frames_n
                 else:
-                    # Only complain when the loop is properly late, not on every frame.
-                    if -sleep > 0.25:
-                        print(f"  play: behind by {-sleep * 1000:.0f} ms, resynchronising",
-                              flush=True)
-                    clip["next"] = time.monotonic()
-                # Control files still matter while playing, but polling them per frame costs time;
-                # every 15 frames is often enough to feel instant.
-                if clip["index"] % 15 != 0:
-                    continue
+                    frame = clip["paths"][clip["index"] % frames_n]
+                    try:
+                        if state["playing"] and clip["index"] % 30 == 0:
+                            publish_state(state, width, height)
+                        # Decoded frames are cached: PNG decoding on the PS is ~10x the cost of the
+                        # copy into the buffer, and the whole point of playback is a steady frame rate.
+                        t_start = time.monotonic()
+                        pixels = play_cache.get(frame)
+                        if pixels is None:
+                            if len(play_cache) >= 240:
+                                play_cache.clear()
+                            pixels = load_picture(frame, width, height)
+                            play_cache[frame] = pixels
+                        t_decoded = time.monotonic()
+                        frame_pixels = roll_rows(pixels, state["roll"])
+                        t_copied = time.monotonic()
+                        # The schedule may be rewritten while the clip plays (re-running the analysis, or
+                        # it simply appearing a moment after the clip was pointed at). Re-reading a
+                        # 200-byte file per frame is free, so the board follows the latest decision.
+                        schedule_text = read_text(PLAY_PRESET_FILE)
+                        if schedule_text != clip.get("schedule_text"):
+                            clip["schedule_text"] = schedule_text
+                            clip["schedule"] = [name for name in schedule_text.split()
+                                                if name in KNOWN_PRESETS]
+                            clip["applied"] = None      # force the new decision to be written
+                            if clip["schedule"]:
+                                print(f"  schedule: {len(clip['schedule'])} entries, "
+                                      f"first {clip['schedule'][0]}", flush=True)
+                            else:
+                                print("  schedule: none - playing with the manual preset",
+                                      flush=True)
+                        if clip.get("schedule"):
+                            wanted = clip["schedule"][clip["index"] % len(clip["schedule"])]
+                            if wanted != clip.get("applied"):
+                                hl.write_preset(cfg, wanted)
+                                clip["applied"] = wanted
+                                state["play_preset"] = wanted
+                                print(f"  preset -> {wanted} (scheduled, frame "
+                                      f"{clip['index'] % len(clip['schedule'])})", flush=True)
+                        if clip.get("prime"):
+                            # Once per clip: put the first frame into every buffer of the pool, so no
+                            # stale picture can be cycled onto the screen.
+                            primed = fill_pool(frame_pixels)
+                            print(f"  primed {primed} frame buffer(s) with the clip", flush=True)
+                            clip["prime"] = False
+                        # One push per displayed frame: successive pushes walk the whole pool, so every
+                        # buffer holds video within a few frames.
+                        target = out.newframe()
+                        target[:] = frame_pixels
+                        safe_writeframe(out, target, state, mode)
+                        t_written = time.monotonic()
+                        if clip["index"] % 10 == 0:
+                            print(f"  frame {clip['index']:4d}: decode "
+                                  f"{1000*(t_decoded-t_start):5.1f} ms  "
+                                  f"copy {1000*(t_copied-t_decoded):5.1f} ms  "
+                                  f"write {1000*(t_written-t_copied):5.1f} ms", flush=True)
+                    except Exception as exc:                   # noqa: BLE001
+                        print(f"  play write failed: {exc}", flush=True)
+                        clip["dir"] = ""
+                    clip["index"] += 1
+                    interval = 1.0 / max(clip["fps"], 1.0)
+                    clip["next"] += interval
+                    sleep = clip["next"] - time.monotonic()
+                    if sleep > 0:
+                        time.sleep(sleep)
+                    else:
+                        # Only complain when the loop is properly late, not on every frame.
+                        if -sleep > 0.25:
+                            print(f"  play: behind by {-sleep * 1000:.0f} ms, resynchronising",
+                                  flush=True)
+                        clip["next"] = time.monotonic()
+                    # Control files still matter while playing, but polling them per frame costs time;
+                    # every 15 frames is often enough to feel instant.
+                    if clip["index"] % 15 != 0:
+                        continue
         elif clip["dir"]:
             print("  play -> stopped", flush=True)
             # Back to the operator's preset: the schedule only owns the preset while a clip plays.
