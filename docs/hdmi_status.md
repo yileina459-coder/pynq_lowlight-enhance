@@ -875,3 +875,29 @@ SOF 的 RTL/HLS 与全部集成脚本保留在仓库里，状态记为"已实现
 
 **下一轮的第一步**：上 ILA 抓 `s_axis_video_{tuser,tvalid,tready,tlast}` 与 `vtg_vsync`，
 确认 SOF 断言时机与流是否连续——停顿、条纹、配置不可见这三个现象可能是同一个根因。
+
+### 2026-10-23 11:10：停流的**确切原因**找到了——VDMA 通道被停机
+
+之前把"画面凝固"归因为"流路径问题"是模糊的。真正的异常是演示日志里的这一行：
+
+```
+File ".../pynq/lib/video/dma.py", line 427, in writeframe
+RuntimeError: DMA channel not started
+```
+
+即 **AXI VDMA 的 MM2S 通道已经停机**（halt/欠载）。之后每一次 `writeframe` 都抛这个异常，
+异常逃出循环 → 演示进程退出 → 屏幕冻结在最后成功推上去的那一帧。
+
+**这解释了全部现象**：
+- 画面看着是好的（最后那帧还在屏上）；
+- 换图会刷新（`fill_all_buffers` 推 4 帧，部分成功）；
+- 改配置完全没有反应（配置只影响新处理的像素，而流已经停了）；
+- 我之前所有"配置不生效"的结论**都是这个假象**。
+
+**已加的防护**：`safe_writeframe()` 捕获这个异常并**重启 VDMA 通道**（`out.stop()` → `out.start()`），
+而不是让进程退出；失败次数记进 `write_failures`，并打印到日志。
+
+**仍未解决**：通道为什么会停机。SOF 位流更容易触发（视频核可能在等帧对齐的 SOF 而不接收数据，
+导致 MM2S 欠载）。下一步仍建议 ILA 抓 `tuser/tvalid/tready` 与 `vtg_vsync`。
+
+**当前交付位流**：pre-SOF（WNS +0.289），实测 LIVE（换图 547,719 像素变化）。

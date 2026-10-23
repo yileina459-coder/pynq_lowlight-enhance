@@ -71,6 +71,40 @@ def roll_rows(pixels: np.ndarray, shift: int) -> np.ndarray:
     return np.roll(pixels, shift, axis=1)
 
 
+def safe_writeframe(out, buf, state: dict) -> bool:
+    """Push a frame, recovering if the VDMA channel has halted.
+
+    A halted MM2S channel shows up as
+
+        RuntimeError: DMA channel not started
+
+    and that is what used to kill the demo: the exception escaped the loop, the process exited, and
+    the screen froze on the last frame it had managed to push. From the outside that is
+    indistinguishable from "the pipeline is fine but ignores my commands", which cost a lot of time
+    tonight. The channel can be restarted from software, so this tries that before giving up.
+    """
+    try:
+        safe_writeframe(out, buf, state)
+        state["write_failures"] = 0
+        return True
+    except RuntimeError as exc:
+        failures = state.get("write_failures", 0) + 1
+        state["write_failures"] = failures
+        print(f"  writeframe failed ({exc}); restarting the VDMA channel "
+              f"[failure {failures}]", flush=True)
+        try:
+            out.stop()
+        except Exception:                       # noqa: BLE001 - already down is fine
+            pass
+        try:
+            time.sleep(0.2)
+            out.start()
+            print("  VDMA channel restarted", flush=True)
+        except Exception as exc2:               # noqa: BLE001
+            print(f"  VDMA restart failed: {exc2}", flush=True)
+        return False
+
+
 def publish_state(state: dict, width: int, height: int) -> None:
     """Write what is on screen, so a tool on the PC can confirm an update instead of guessing.
 
@@ -144,7 +178,7 @@ def main(argv=None) -> int:
     lat = hl.find(ol, "gpio_enh_lat")
 
     state = {"roll": args.roll, "preset": args.preset, "image": args.image,
-             "sof": None, "playing": ""}
+             "sof": None, "playing": "", "write_failures": 0}
     picture = load_picture(state["image"], width, height)
     frame = None
 
@@ -163,7 +197,7 @@ def main(argv=None) -> int:
         for _ in range(4):
             buf = out.newframe()
             buf[:] = pixels
-            out.writeframe(buf)
+            safe_writeframe(out, buf, state)
 
     prepare_control_files()
     hl.start_output(ol, out, width, height, force=args.force_clock)
@@ -235,7 +269,7 @@ def main(argv=None) -> int:
                         pixels = load_picture(frame, width, height)
                         play_cache[frame] = pixels
                     play_buf[0][:] = roll_rows(pixels, state["roll"])
-                    out.writeframe(play_buf[0])
+                    safe_writeframe(out, play_buf[0], state)
                 except Exception as exc:                   # noqa: BLE001
                     print(f"  play write failed: {exc}", flush=True)
                     clip["dir"] = ""
@@ -317,7 +351,7 @@ def main(argv=None) -> int:
             # Keep the VDMA fed; one buffer is enough while nothing has changed.
             buf = out.newframe()
             buf[:] = render()
-            out.writeframe(buf)
+            safe_writeframe(out, buf, state)
             last_refresh = time.monotonic()
 
 
