@@ -71,7 +71,7 @@ def roll_rows(pixels: np.ndarray, shift: int) -> np.ndarray:
     return np.roll(pixels, shift, axis=1)
 
 
-def safe_writeframe(out, buf, state: dict) -> bool:
+def safe_writeframe(out, buf, state: dict, mode=None) -> bool:
     """Push a frame, recovering if the VDMA channel has halted.
 
     A halted MM2S channel shows up as
@@ -79,29 +79,36 @@ def safe_writeframe(out, buf, state: dict) -> bool:
         RuntimeError: DMA channel not started
 
     and that is what used to kill the demo: the exception escaped the loop, the process exited, and
-    the screen froze on the last frame it had managed to push. From the outside that is
-    indistinguishable from "the pipeline is fine but ignores my commands", which cost a lot of time
-    tonight. The channel can be restarted from software, so this tries that before giving up.
+    the screen froze on the last frame it had managed to push - indistinguishable, from the outside,
+    from "the pipeline is fine but ignores my commands".
+
+    Recovery re-configures the mode and starts again, which is exactly what a fresh process does.
+    out.stop() is deliberately not used: on an already-halted channel it recurses until Python's
+    recursion limit, so the first version of this function made things worse.
+
+    After max_failures consecutive failures it gives up by raising, so a broken design fails loudly
+    instead of spinning quietly with a dead screen.
     """
+    max_failures = 5
     try:
-        safe_writeframe(out, buf, state)
+        out.writeframe(buf)
         state["write_failures"] = 0
         return True
     except RuntimeError as exc:
         failures = state.get("write_failures", 0) + 1
         state["write_failures"] = failures
-        print(f"  writeframe failed ({exc}); restarting the VDMA channel "
-              f"[failure {failures}]", flush=True)
-        try:
-            out.stop()
-        except Exception:                       # noqa: BLE001 - already down is fine
-            pass
-        try:
-            time.sleep(0.2)
-            out.start()
-            print("  VDMA channel restarted", flush=True)
-        except Exception as exc2:               # noqa: BLE001
-            print(f"  VDMA restart failed: {exc2}", flush=True)
+        print(f"  writeframe failed ({exc}) [failure {failures}/{max_failures}]", flush=True)
+        if failures >= max_failures:
+            print("  giving up on recovery - the design needs attention", flush=True)
+            raise
+        if mode is not None:
+            try:
+                out.configure(mode)
+                time.sleep(0.1)
+                out.start()
+                print("  output reconfigured and restarted", flush=True)
+            except Exception as exc2:              # noqa: BLE001
+                print(f"  reconfigure failed: {exc2}", flush=True)
         return False
 
 
@@ -197,9 +204,11 @@ def main(argv=None) -> int:
         for _ in range(4):
             buf = out.newframe()
             buf[:] = pixels
-            safe_writeframe(out, buf, state)
+            safe_writeframe(out, buf, state, mode)
 
     prepare_control_files()
+    from pynq.lib.video import VideoMode
+    mode = VideoMode(width, height, 24, 60)
     hl.start_output(ol, out, width, height, force=args.force_clock)
     fill_all_buffers(render())
     hl.write_preset(cfg, state["preset"])
@@ -269,7 +278,7 @@ def main(argv=None) -> int:
                         pixels = load_picture(frame, width, height)
                         play_cache[frame] = pixels
                     play_buf[0][:] = roll_rows(pixels, state["roll"])
-                    safe_writeframe(out, play_buf[0], state)
+                    safe_writeframe(out, play_buf[0], state, mode)
                 except Exception as exc:                   # noqa: BLE001
                     print(f"  play write failed: {exc}", flush=True)
                     clip["dir"] = ""
@@ -351,7 +360,7 @@ def main(argv=None) -> int:
             # Keep the VDMA fed; one buffer is enough while nothing has changed.
             buf = out.newframe()
             buf[:] = render()
-            safe_writeframe(out, buf, state)
+            safe_writeframe(out, buf, state, mode)
             last_refresh = time.monotonic()
 
 
