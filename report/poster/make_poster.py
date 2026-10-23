@@ -106,7 +106,7 @@ def main() -> int:
              "A One-Line-Latency Vision Enhancement Terminal",
              size=18, bold=True, color=WHITE)
     add_text(slide, MARGIN, 1.5, BODY_W,
-             "PYNQ-Z2  |  reading aid for the low-vision  |  2026 Embedded Chip & System Design Competition, "
+             "PYNQ-Z2  |  real-time enhancement for low-light imaging  |  2026 Embedded Chip & System Design Competition, "
              "AMD track, self-selected topic (junior group)  |  Zynq-7000 XC7Z020  |  Vivado / Vitis HLS 2026.1",
              size=9, color=RGBColor(0xC8, 0xD8, 0xEA))
 
@@ -115,7 +115,7 @@ def main() -> int:
 
     sections = [
         ("Motivation",
-         "Around 17 million people in China live with low vision, and shop-bought electronic magnifiers are expensive while phone/PC pipelines take 100-300 ms from capture to display - enough latency to cause dizziness. For this class of device the key metric is not frame rate but end-to-end latency. This project therefore puts the whole enhancement chain inside the pixel stream, with no frame buffer at all."),
+         "Night and dim-light imaging - surveillance, inspection, forensics, automotive night vision, industrial and microscopy work - operates on frames that are dark and low in contrast. Phone/PC pipelines take 100-300 ms from capture to display, which shows as lag and smear once the scene moves. Here the key metric is end-to-end latency, not frame rate, so the whole enhancement chain sits inside the pixel stream with no frame buffer."),
         ("Architecture",
          "Main path:  PS frame -> VDMA -> enhance -> pixel_unpack -> HDMI OUT, with the kernel sitting in "
          "the live pixel stream; measured 21 pixel clocks on the board, seven presets switched while "
@@ -164,10 +164,10 @@ def main() -> int:
     y += add_heading(slide, y, "Operator Family on the DMA Path (same board, same 1280x720 image)")
 
     rows = [
-        ("Measured on the board", "PS (Cortex-A9, numpy)", "PL (Zynq + DMA)"),
-        ("enhance, 8 presets", "-", "15.6 ms/frame, 0/2764800 wrong"),
-        ("Pipeline latency", "-", "16 pixel clocks = 160 ns"),
-        ("Sobel family, frame time", "3108.4 ms", "15.8 ms (196.7x)"),
+        ("Measured", "PS (Cortex-A9, numpy)", "PL (Zynq + DMA)"),
+        ("enhance, 8 presets", "-", "15.6 ms, 0/2.76M wrong"),
+        ("Pipeline latency", "-", "16 clocks = 160 ns"),
+        ("Sobel frame time", "3108.4 ms", "15.8 ms (196.7x)"),
     ]
     table_w, table_h = 12.0, 3.0
     shape = slide.shapes.add_table(len(rows), 3, Cm(MARGIN), Cm(y), Cm(table_w), Cm(table_h))
@@ -192,17 +192,17 @@ def main() -> int:
         slide.shapes.add_picture(FIGURE, Cm(MARGIN + table_w + 0.7), Cm(y),
                                  width=Cm(fig_w), height=Cm(fig_h))
         add_text(slide, MARGIN + table_w + 0.7, y + fig_h + 0.1, fig_w,
-                 "Four states captured from the board's HDMI output; top right shows the split", size=8,
+                 "Captures (right: split)", size=8,
                  color=RGBColor(0x77, 0x77, 0x77), align=PP_ALIGN.CENTER)
 
-    y += max(table_h, fig_w * 576 / 766 + 0.45) + 0.15
+    y += max(table_h, fig_w * 576 / 766 + 0.10 + 0.34) + 0.15
 
     add_text(slide, MARGIN, y, BODY_W,
              "Tool versions: Vivado / Vitis HLS 2026.1, PYNQ 3.1.1 image, device "
              "xc7z020clg400-1.  Repository: README.md, docs/ (docs/hdmi_status.md records the HDMI "
              "measurements and the two hardware limits), report/design_report.md, report/comparison.md.",
              size=8, color=RGBColor(0x88, 0x88, 0x88))
-    used = y + 0.5
+    used = y + 0.8
 
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     prs.save(OUT)

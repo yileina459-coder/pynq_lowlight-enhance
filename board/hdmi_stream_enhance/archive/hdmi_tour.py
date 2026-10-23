@@ -35,7 +35,7 @@ TOUR = [
     ("night",
      "maximum lift - the whole frame brightens, highlights may start to clip"),
     ("invert",
-     "polarity flipped - the light page goes dark, which is what a low-vision user may prefer"),
+     "polarity flipped - the light page goes dark, which some viewers prefer for text"),
     ("binarize",
      "hard threshold - only black and white remain; strokes either survive or vanish"),
     ("split",

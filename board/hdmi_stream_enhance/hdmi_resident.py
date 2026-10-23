@@ -358,7 +358,11 @@ def main(argv=None) -> int:
                     print("  play -> restarting from the first frame", flush=True)
 
                 frames_n = len(clip["paths"])
-                if not clip.get("loop") and clip["index"] >= frames_n:
+                # Read the repeat flag every frame rather than once per clip: toggling it while a clip
+                # sits finished should resume it, and a 5-byte file read costs nothing at 24 fps.
+                loop_now = read_text(PLAY_LOOP_FILE).strip() == "1"
+                clip["loop"] = loop_now
+                if not loop_now and clip["index"] >= frames_n:
                     # Played through. Hold the final frame and stop pushing: while frames are being
                     # pushed every 40 ms, a still image or a preset change fights with the playback loop
                     # and appears to be ignored. Filling the whole pool matters because the VDMA cycles

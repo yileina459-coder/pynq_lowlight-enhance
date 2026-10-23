@@ -58,7 +58,7 @@ PRESETS = {
     "reading":  dict(clarity=24, knee=48,  gain_lo=88, gain_hi=14),
     # night: stronger shadow lift, softer highlights, more local contrast
     "night":    dict(clarity=30, knee=36,  gain_lo=120, gain_hi=10),
-    # inverted monochrome: the mode low-vision users most often prefer for text
+    # inverted monochrome: the mode that keeps text legible on a bright background
     "invert":   dict(clarity=24, knee=48,  gain_lo=88, gain_hi=14,
                      invert=True, mono=True),
     # binarised: strong shadow lift first, then a hard threshold. Without the

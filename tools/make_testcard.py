@@ -65,7 +65,7 @@ def build(width: int, height: int) -> Image.Image:
     body_s = load_font(MONO_CANDIDATES, s(11))
 
     # --- title -----------------------------------------------------------------
-    d.text((s(14), s(8)), "LOW VISION READING AID", font=title, fill=(250, 250, 250))
+    d.text((s(14), s(8)), "LOW-LIGHT OBSERVATION TEST", font=title, fill=(250, 250, 250))
     d.line([(s(14), s(50)), (width - s(14), s(50))], fill=(120, 120, 130), width=s(2))
 
     # --- light page with three font sizes -------------------------------------

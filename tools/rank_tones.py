@@ -26,7 +26,7 @@ from prepare_image import (TONE_PRESETS, apply_tone, choose_tone, fit,  # noqa: 
                            flatten_illumination, load, normalize_page)
 from score_capture import legibility, score  # noqa: E402
 
-# What the board runs for a reading aid: local contrast only, no hardware gain.
+# What the board runs for low-light observation: local contrast only, no hardware gain.
 BOARD_PRESET = {"clarity": 28, "knee": 255, "gain_lo": 16, "gain_hi": 16}
 
 

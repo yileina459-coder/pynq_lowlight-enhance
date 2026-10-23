@@ -1,8 +1,8 @@
 // -----------------------------------------------------------------------------
-// enhance.hpp - streaming low-light / low-vision image enhancer (3x3, II=1)
+// enhance.hpp - streaming low-light image enhancer (3x3, II=1)
 //
 // Why this kernel exists
-//   A low-vision aid is not judged by frame rate but by end-to-end latency and
+//   A low-light observation aid is not judged by frame rate but by end-to-end latency and
 //   by whether the picture is legible. This kernel does the whole enhancement
 //   chain while a pixel flows through, with no frame buffer at all:
 //

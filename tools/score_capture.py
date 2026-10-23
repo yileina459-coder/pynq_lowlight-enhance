@@ -4,7 +4,7 @@
 Why
     "Does it look clearer?" is the question the whole enhancement exists to answer, and eyeballing
     screenshots does not scale across presets and tone curves. This turns the capture into a few
-    numbers that track what a low-vision reader needs:
+    numbers that track what a low-light observer needs:
 
       contrast   p95 - p5 of luma. Too small and text stops separating from the paper.
       clip       share of pixels at 0 or 255. High means detail was thrown away.

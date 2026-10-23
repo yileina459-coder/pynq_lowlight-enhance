@@ -1,7 +1,7 @@
 """Autonomous tuning loop: try combinations on the board, capture, score, keep the best.
 
 Why this exists
-    Tuning a reading aid by eye across a dozen parameter sets is slow and unreliable - and the two
+    Tuning a low-light pipeline by eye across a dozen parameter sets is slow and unreliable - and the two
     stages involved are hard to reason about together: the PC applies a tone curve, the board adds
     local contrast with a gain of its own. This script drives the whole chain by itself:
 
