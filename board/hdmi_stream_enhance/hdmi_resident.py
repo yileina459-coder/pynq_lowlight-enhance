@@ -256,6 +256,25 @@ def main(argv=None) -> int:
             buf[:] = pixels
             safe_writeframe(out, buf, state, mode)
 
+    def fill_pool(pixels) -> int:
+        """Write one frame into every buffer of PYNQ's frame pool, and report how many there were.
+
+        The hardware cycles all of a pool that is larger than the four buffers the static path fills.
+        A buffer that is never written keeps an old picture, and the display keeps cycling through it -
+        which is how a leftover white calibration frame became a rapid black-and-white flicker over a
+        video. The pool size is not exposed, so it is discovered by asking for buffers until one comes
+        back that is already in hand.
+        """
+        filled = []
+        for _ in range(16):
+            buf = out.newframe()
+            if any(buf is seen for seen in filled):
+                break
+            filled.append(buf)
+            buf[:] = pixels
+            safe_writeframe(out, buf, state, mode)
+        return len(filled)
+
     lock_handle = acquire_single_instance()   # noqa: F841 - held until exit
     prepare_control_files()
     from pynq.lib.video import VideoMode
@@ -283,10 +302,8 @@ def main(argv=None) -> int:
           "/tmp/hdmi_sof.txt", flush=True)
 
     last_refresh = time.monotonic()
-    # One reusable frame buffer and a decoded-frame cache. Both are used by the playback loop below;
-    # neither had ever been defined, so every frame raised NameError and playback silently showed
-    # nothing (see the module docstring in .tmp notes / commit message).
-    play_buf = [None]
+    # play_cache keeps decoded frames, because PNG decoding costs about ten times the copy into a
+    # buffer. Frame buffers themselves come from PYNQ's pool via out.newframe().
     play_cache: dict[str, "np.ndarray"] = {}
     clip = {"dir": "", "paths": [], "fps": 0.0, "index": 0, "next": 0.0}
     while True:
@@ -306,7 +323,10 @@ def main(argv=None) -> int:
                         fps = 30.0
                     clip.update({"dir": play_text, "paths": paths, "index": 0,
                                  "fps": fps, "next": time.monotonic(),
-                                 "schedule": [], "applied": None})
+                                 "schedule": [], "applied": None,
+                                 # Prime the whole frame pool on the first frame, so no buffer can
+                                 # still be showing an older picture during playback.
+                                 "prime": True})
                     state["playing"] = f"{len(paths)} frames at {fps:g} fps"
                     publish_state(state, width, height)
                     print(f"  play -> {play_text} ({len(paths)} frames at {fps:g} fps)", flush=True)
@@ -323,8 +343,7 @@ def main(argv=None) -> int:
                     # One buffer, allocated the first time and reused. Allocating a fresh one per
                     # frame (out.newframe()) put the loop about two seconds behind every frame,
                     # because the allocation costs far more than the copy.
-                    if play_buf[0] is None:
-                        play_buf[0] = out.newframe()
+
                     # Decoded frames are cached: PNG decoding on the PS is ~10x the cost of the
                     # copy into the buffer, and the whole point of playback is to keep a steady
                     # frame rate. 24-bit 640x480 is 0.9 MB per frame, so 240 frames is ~215 MB.
@@ -336,7 +355,7 @@ def main(argv=None) -> int:
                         pixels = load_picture(frame, width, height)
                         play_cache[frame] = pixels
                     t_decoded = time.monotonic()
-                    play_buf[0][:] = roll_rows(pixels, state["roll"])
+                    frame_pixels = roll_rows(pixels, state["roll"])
                     t_copied = time.monotonic()
                     # The schedule may be rewritten while the clip plays (re-running the analysis, or
                     # it simply appearing a moment after the clip was pointed at). Re-reading a
@@ -360,7 +379,19 @@ def main(argv=None) -> int:
                             state["play_preset"] = wanted
                             print(f"  preset -> {wanted} (scheduled, frame "
                                   f"{clip['index'] % len(clip['schedule'])})", flush=True)
-                    safe_writeframe(out, play_buf[0], state, mode)
+                    if clip.get("prime"):
+                        # Once per clip: put the first frame into every buffer the pool holds, so no
+                        # stale picture (a previous clip, or a leftover white calibration frame) can
+                        # be cycled onto the screen.
+                        primed = fill_pool(frame_pixels)
+                        print(f"  primed {primed} frame buffer(s) with the clip", flush=True)
+                        clip["prime"] = False
+                    # One push per displayed frame: successive pushes walk the whole pool, so every
+                    # buffer holds video within a few frames. Pushing into several buffers per frame
+                    # would cost a copy each and cap the frame rate for no benefit.
+                    target = out.newframe()
+                    target[:] = frame_pixels
+                    safe_writeframe(out, target, state, mode)
                     t_written = time.monotonic()
                     if clip["index"] % 10 == 0:
                         print(f"  frame {clip['index']:4d}: decode {1000*(t_decoded-t_start):5.1f} ms  "
@@ -454,8 +485,12 @@ def main(argv=None) -> int:
             publish_state(state, width, height)
             print(f"  frame re-pushed to all buffers (roll {state['roll']})", flush=True)
             last_refresh = time.monotonic()
-        elif time.monotonic() - last_refresh >= args.refresh:
-            # Keep the VDMA fed; one buffer is enough while nothing has changed.
+        elif not playing_now and time.monotonic() - last_refresh >= args.refresh:
+            # Keep the VDMA fed while the picture is static. This must not run during playback: the
+            # playback branch already pushes a frame every 40 ms, and this branch pushes the *still*
+            # image, so every fifteenth frame became the static picture again - which is exactly the
+            # flicker between the video and the test card. It also allocated a fresh buffer each time,
+            # competing with the playback ring.
             buf = out.newframe()
             buf[:] = render()
             safe_writeframe(out, buf, state, mode)
