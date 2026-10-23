@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import pathlib
 import re
 import sys
 
@@ -95,6 +96,43 @@ def check_links(path: str) -> list[str]:
     return problems
 
 
+
+def check_script_encodings() -> list[str]:
+    """Chinese in a script must be stored the way the interpreter actually reads it.
+
+    This bit twice in one evening, both times silently at the *user*: a .ps1 without a UTF-8 BOM is read
+    by PowerShell 5.1 in the OEM code page, so every Chinese string becomes mojibake and a mangled quote
+    turns the whole file into a parse error - the window simply never opens, with no visible message. A
+    .bat with Chinese in it has the same problem in cmd.exe.
+
+    So: .ps1 with non-ASCII must start with a single UTF-8 BOM; .bat must be pure ASCII.
+    """
+    findings: list[str] = []
+    for path in sorted(pathlib.Path(REPO).rglob("*")):
+        if any(part in {".git", "build", ".tmp", "node_modules"} for part in path.parts):
+            continue
+        if not path.is_file():
+            continue
+        suffix = path.suffix.lower()
+        if suffix not in {".ps1", ".bat"}:
+            continue
+        raw = path.read_bytes()
+        rel = os.path.relpath(path, REPO)
+        has_bom = raw.startswith(b"\xef\xbb\xbf")
+        try:
+            text = raw.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            findings.append(f"{rel}: not valid UTF-8")
+            continue
+        non_ascii = any(ord(ch) > 127 for ch in text)
+        if suffix == ".ps1" and non_ascii and not has_bom:
+            findings.append(f"{rel}: Chinese but no UTF-8 BOM - PowerShell 5.1 will misread it")
+        if suffix == ".ps1" and raw.startswith(b"\xef\xbb\xbf\xef\xbb\xbf"):
+            findings.append(f"{rel}: two BOMs")
+        if suffix == ".bat" and non_ascii:
+            findings.append(f"{rel}: .bat must be pure ASCII (cmd reads the OEM code page)")
+    return findings
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -121,6 +159,8 @@ def main(argv=None) -> int:
             if re.search(pattern, text):
                 findings.append(f"{rel}: contains '{pattern}' - {why}")
         findings.extend(check_links(path))
+
+    findings.extend(check_script_encodings())
 
     if findings:
         print("findings:")
