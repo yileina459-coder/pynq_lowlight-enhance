@@ -52,7 +52,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\board\show_image.ps1 -
       （`board/enhance_dma/`，走 AXI-DMA，不需要显示器）
 - [x] 新增 `document` 预设：保住极性的暗页提亮（原 `reading` 在暗页上会把黑白翻转，
       对比度 +41 → −51；新预设 → **+158**，见 `sim/enhance/tune_document_preset.py`）
-- [x] **增强核在 HDMI 通路上实时工作**：`board/hdmi_stream_enhance/`，WNS **+0.289 ns**；采集卡实测 640×480、流水线 **21 拍**（片上单次测量 21–25 拍）；**切预设无黑屏**（配置走 BRAM，741 次写帧 0 卡顿），支持显示自己的图片
+- [x] **增强核在 HDMI 通路上实时工作**：`board/hdmi_stream_enhance/`，WNS **+0.206 ns**（含 SOF 帧对齐内核）；采集卡实测 640×480、流水线 **21 拍**（片上单次测量 21–25 拍）；**切预设无黑屏**（配置走 BRAM，741 次写帧 0 卡顿），支持显示自己的图片；**画面偏移 0.3 像素**（SOF 把相位锚定到帧起始，历史值 0/45/89 来自相位未锚定）；单实例运行 15 分钟 0 次写帧失败
 - [x] **Jupyter 交互面板**：`board/enhance_dma/panel.ipynb`（8 预设一键切换、
       实时显示帧时间/延迟/逐位比对，走 DMA 通路，不需要显示器）
 - [x] **HDMI 输出打通并定位到硬件上限**（完整推导见 `docs/hdmi_status.md`）：
