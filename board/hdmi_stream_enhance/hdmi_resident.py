@@ -162,6 +162,34 @@ def load_picture(path: str, width: int, height: int) -> np.ndarray:
         return np.asarray(img, dtype=np.uint8)
 
 
+LOCK_FILE = "/tmp/hdmi_resident.lock"
+
+
+def acquire_single_instance():
+    """Refuse to run if another instance already owns the hardware.
+
+    Two residents driving the same VDMA is not a theoretical problem: it happened, and the symptom
+    was a repeatedly halting MM2S channel ("RuntimeError: DMA channel not started") with a frozen
+    picture - which reads like a hardware defect rather than operator error. The lock makes the
+    second process say so and exit.
+    """
+    import fcntl
+    handle = open(LOCK_FILE, "w", encoding="utf-8")
+    try:
+        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        print("another hdmi_resident already holds the lock - only one process may own the VDMA. "
+              "Stop it first (tools/board/kill_hdmi_demos.sh, needs sudo).", flush=True)
+        raise SystemExit(2)
+    handle.write(str(os.getpid()))
+    handle.flush()
+    try:
+        os.chmod(LOCK_FILE, 0o666)
+    except OSError:
+        pass
+    return handle          # keep the handle alive for the lifetime of the process
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -173,7 +201,7 @@ def main(argv=None) -> int:
     ap.add_argument("--tick", type=float, default=2.0, help="seconds between file checks")
     ap.add_argument("--force-clock", action="store_true",
                     help="reprogram the pixel clock even if the mode already matches")
-    ap.add_argument("--refresh", type=float, default=10.0,
+    ap.add_argument("--refresh", type=float, default=0.2,
                     help="re-push the frame this often even when nothing changed")
     args = ap.parse_args(argv)
 
@@ -206,6 +234,7 @@ def main(argv=None) -> int:
             buf[:] = pixels
             safe_writeframe(out, buf, state, mode)
 
+    lock_handle = acquire_single_instance()   # noqa: F841 - held until exit
     prepare_control_files()
     from pynq.lib.video import VideoMode
     mode = VideoMode(width, height, 24, 60)
