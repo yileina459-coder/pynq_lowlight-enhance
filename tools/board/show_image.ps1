@@ -38,6 +38,10 @@ param(
     # produces column striping in the current bitstream (see docs/hdmi_status.md), so this is the
     # route that gives a clean bright picture today; the board then only adds local contrast.
     [ValidateSet('', 'page', 'auto', 'bright', 'night', 'document', 'reading')][string]$Tone = 'page',
+    # Send the picture through untouched, for an honest before/after. Needed as a switch because
+    # "-Tone ''" cannot be expressed from a command line - PowerShell drops the empty string and
+    # then complains that the parameter is missing.
+    [switch]$NoTone,
     [switch]$KeepLocal
 )
 
@@ -68,6 +72,7 @@ $name = "mine_${stamp}_640x480.png"
 $local = Join-Path $repo ".tmp\upload\$name"
 $prepareArgs = @((Join-Path $repo 'tools\prepare_image.py'), $Image, '--out', $local,
                  '--fit', $Fit, '--background', $Background)
+if ($NoTone) { $Tone = '' }
 if ($Tone) { $prepareArgs += @('--tone', $Tone) }
 & $python @prepareArgs
 if ($LASTEXITCODE -ne 0) { throw "conversion failed" }

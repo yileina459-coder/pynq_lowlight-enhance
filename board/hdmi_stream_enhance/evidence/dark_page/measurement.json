@@ -1,0 +1,25 @@
+{
+  "test_image": "data/images/test_dim_720p.png",
+  "method": "upload the same picture twice through tools/board/show_image.ps1, capture the OBS preview, measure inside the video rectangle",
+  "results": [
+    {
+      "variant": "raw (-NoTone, preset pass)",
+      "mean": 143.7,
+      "local_contrast_p90": 20.12,
+      "horizontal_edge": 2.16
+    },
+    {
+      "variant": "adaptive (-Tone page, preset clarity)",
+      "mean": 210.8,
+      "local_contrast_p90": 37.81,
+      "horizontal_edge": 3.46
+    }
+  ],
+  "gain": {
+    "brightness": "+47%",
+    "local_contrast_p90": "+88%",
+    "horizontal_edge": "+60%"
+  },
+  "caveat": "global edge energy is misleading here - it rises simply because the picture gets brighter. The legibility metric is the p90 of the 5x5 local standard deviation, which measures detail rather than mean level.",
+  "bitstream": "SOF + b36925a kernel, WNS +0.206 ns"
+}
