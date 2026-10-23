@@ -195,3 +195,35 @@ tools\board\play_video.ps1 -Video clip.gif -Fps 12
 # 量偏移（拍一张桌面截图后）
 python tools\measure_offset_screen.py shot.png
 ```
+
+## 2026-10-23 14:45：视频播放与自动挡位选择（已完成并实测）
+
+上传视频后，程序分析整段、自动选挡，并在板上实时处理播放。详见 `docs/video_playback.md`。
+
+```powershell
+tools\board\play_video.ps1 -Video 我的视频.mp4 -Auto clip      # 整段一个挡位（最稳）
+tools\board\play_video.ps1 -Video 我的视频.mp4 -Auto adaptive  # 按场景切换挡位
+tools\board\play_video.ps1 -Video x -Stop                      # 停止
+```
+
+实测（H.264 MP4，24 帧，暗 12 帧 / 亮 12 帧）：分析给出 `reading`(0–11) → `clarity`(12–23)，
+边界正好在真实切点；播放 **23.3 fps**（请求 24）、**0 次卡顿**；每个循环只切换 2 次。
+三场景片段（暗 8 / 亮 8 / 暗 8）给出 3 段，边界在帧 8 和 16。
+
+**视频格式**：MP4/MOV/MKV 需要 ffmpeg。本机已放在 `.tmp\tools\ffmpeg.exe`（ffmpeg 7.1，
+由 `tools/make_video_frames.py` 自动查找：PATH → `.tmp\tools` → `tools\bin`）。
+GIF / 动态 WebP 不需要 ffmpeg。
+
+**这次查出的三个真 bug**（都影响可信度，值得记住）：
+
+1. **`play_buf` / `play_cache` 从未定义**——播放每帧抛 `NameError`，被 `except` 吞掉。
+   **视频播放此前从未真正工作过**；之前看到的 `playing=24 frames` 只是横幅文字。
+   又一次"程序自己说在播"不等于"画面在动"。
+2. **每 15 帧卡 2 秒**：播放分支每 15 帧落到主循环的 `time.sleep(args.tick)`，帧率被压到 5 fps 以下；
+   改为播放时 50 ms 短休眠后立刻 24 fps。
+3. **`-Stop` 一直无效**：`/tmp` 有 sticky 位，普通用户删不掉 root 的文件，`rm -f` 静默失败；
+   改为截断。
+
+**分段规则的两次修正**也值得记：用"对称窗口平均"会把 8 帧的短场景抹平（整段塌成一个挡位），
+改为"逐帧最优 + 合并过短段"；而"最短段"必须按时长（默认 0.25 s × fps）而不是帧数——
+10 帧在 4 fps 下是 2.5 秒（挡掉真场景），在 30 fps 下只有 0.33 秒（挡不住抖动）。
