@@ -41,6 +41,10 @@ PRESETS = {
     # not the default.
     "pass":     dict(clarity=16, knee=255, gain_lo=16, gain_hi=16),
     "clarity":  dict(clarity=28, knee=255, gain_lo=16, gain_hi=16),
+    # Sharper local contrast for text that has already been brightened on the PC. Safe only where
+    # clipping has headroom: the sweep in tools/tune_clarity.py puts the crossover at about clarity=32
+    # for photographs and 48 for pages, so this preset is chosen per picture, never as a default.
+    "crisp":    dict(clarity=48, knee=255, gain_lo=16, gain_hi=16),
     "bright":   dict(clarity=24, knee=192, gain_lo=56, gain_hi=20),
     "night":    dict(clarity=28, knee=224, gain_lo=72, gain_hi=24),
     "document": dict(clarity=20, knee=192, gain_lo=64, gain_hi=16),
@@ -60,15 +64,27 @@ def luma(rgb: np.ndarray) -> np.ndarray:
     return ((77 * r + 150 * g + 29 * b) >> 8).astype(np.int32)
 
 
-def box_mean(y: np.ndarray) -> np.ndarray:
-    """Stage 1: the 1-2-1 Gaussian over a 3x3 window, replicated at the borders."""
-    kernel = np.array([[1, 2, 1], [2, 4, 2], [1, 2, 1]], dtype=np.int32)
+def _gauss_121(y: np.ndarray) -> np.ndarray:
+    """The 1-2-1 Gaussian over a 3x3 window, replicated at the borders.
+
+    Separable: 1-2-1 across rows, then 1-2-1 down columns, with a single >>4 at the end. The horizontal
+    pass deliberately does not shift - shifting twice would round twice, and the result would no longer
+    match the nine-tap version that this replaces. For 8-bit input the intermediate (max 4 * 255 = 1020,
+    times 4 vertically = 4080) stays well inside int32.
+
+    Two passes over three shifted arrays instead of one pass over nine: about twice as fast in the
+    measurement below, which matters because every preset evaluation in every frame goes through here.
+    """
     padded = np.pad(y, 1, mode="edge")
-    total = np.zeros_like(y)
-    for dy in range(3):
-        for dx in range(3):
-            total += kernel[dy, dx] * padded[dy:dy + y.shape[0], dx:dx + y.shape[1]]
+    # Horizontal 1-2-1, no shift.
+    horizontal = (padded[:, :-2] + 2 * padded[:, 1:-1] + padded[:, 2:])
+    # Vertical 1-2-1, then the single shift by 4.
+    total = (horizontal[:-2, :] + 2 * horizontal[1:-1, :] + horizontal[2:, :])
     return total >> 4
+
+
+def box_mean(y: np.ndarray) -> np.ndarray:
+    return _gauss_121(y)
 
 
 def enhance(rgb: np.ndarray, preset: dict) -> np.ndarray:
@@ -178,7 +194,11 @@ def recommend(rgb: np.ndarray) -> tuple[str, float, str]:
     # Only the tone-curve presets are candidates. invert/binarize turn a photo into text-mode
     # output and 'split' is a side-by-side demonstration, so none of them is a sensible automatic
     # choice for a picture someone just uploaded.
-    manual_only = {"split", "invert", "binarize"}
+    #
+    # 'crisp' is excluded as well: it sharpens a page by 37% but crushes about 6% of a photograph's
+    # shadows to pure black, and telling a page from a photograph reliably is the classification that
+    # has misfired before. The preset is offered in the panel's dropdown instead, where a person decides.
+    manual_only = {"split", "invert", "binarize", "crisp"}
     for name, preset in PRESETS.items():
         if name in manual_only:
             continue

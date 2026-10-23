@@ -132,6 +132,7 @@ $script:presetItems = @(
     @{ Name = '文档 document'; Value = 'document' },
     @{ Name = '阅读 reading'; Value = 'reading' },
     @{ Name = '只加对比 clarity'; Value = 'clarity' },
+    @{ Name = '更锐利 crisp（文字页，照片会压暗部）'; Value = 'crisp' },
     @{ Name = '原图 pass'; Value = 'pass' },
     @{ Name = '反色 invert'; Value = 'invert' },
     @{ Name = '二值化 binarize'; Value = 'binarize' },

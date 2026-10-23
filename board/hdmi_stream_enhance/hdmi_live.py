@@ -41,6 +41,10 @@ PRESETS = {
     # not the default.
     "pass":     dict(clarity=16, knee=255, gain_lo=16, gain_hi=16),
     "clarity":  dict(clarity=28, knee=255, gain_lo=16, gain_hi=16),
+    # Sharper local contrast for text that has already been brightened on the PC. Safe only where
+    # clipping has headroom: the sweep in tools/tune_clarity.py puts the crossover at about clarity=32
+    # for photographs and 48 for pages, so this preset is chosen per picture, never as a default.
+    "crisp":    dict(clarity=48, knee=255, gain_lo=16, gain_hi=16),
     "bright":   dict(clarity=24, knee=192, gain_lo=56, gain_hi=20),
     "night":    dict(clarity=28, knee=224, gain_lo=72, gain_hi=24),
     "document": dict(clarity=20, knee=192, gain_lo=64, gain_hi=16),

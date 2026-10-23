@@ -104,7 +104,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\board\show_image.ps1 -
 │   ├── dma_sobel/            # DMA 版：Sobel 逐位比对
 │   ├── enhance_dma/          # 增强核：8 预设板上逐位比对 + Jupyter 面板
 │   ├── hdmi_stream/          # HDMI 版（Sobel 算子族）
-│   ├── hdmi_stream_enhance/  # **HDMI 版主通路**：640×480、21 拍、7 档预设可切、视频播放
+│   ├── hdmi_stream_enhance/  # **HDMI 版主通路**：640×480、21 拍、10 档预设可切（含更锐利的 crisp）、视频播放
 │   │   ├── enhance_hdmi.bit  #   交付位流（WNS +0.206 ns，含 SOF 内核）
 │   │   ├── hdmi_resident.py  #   常驻演示进程（独占 VDMA，切图/切挡/播放都在它里面）
 │   │   ├── hdmi_live.py      #   板级封装（找 IP、写预设、开输出、HPD）
