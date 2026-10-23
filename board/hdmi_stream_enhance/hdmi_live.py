@@ -245,6 +245,11 @@ def write_preset(cfg_ip, name: str) -> tuple[int, int]:
     switch. Moving the configuration into memory removed the whole chain of consequences.
     """
     lo, hi = pack(PRESETS[name])
+    # Carry the SOF enable bit across. It shares this register but is not part of a preset, and pack()
+    # never sets it - so writing a packed word would switch the offset compensation off on every preset
+    # change. That is how the horizontal offset "came back" after continuous preset switching during
+    # video playback, with no change to the bitstream at all.
+    hi = (hi & ~SOF_ENABLE_BIT) | (cfg_ip.mmio.read(GPIO2_DATA) & SOF_ENABLE_BIT)
     cfg_ip.mmio.write(GPIO_DATA, lo)
     if not PULSE_RESET:
         # Live path: one write, effective on the next pixel, nothing is interrupted.
