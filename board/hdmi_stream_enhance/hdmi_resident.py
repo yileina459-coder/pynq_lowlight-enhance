@@ -133,13 +133,27 @@ def publish_state(state: dict, width: int, height: int) -> None:
 
 
 def read_text(path: str, default: str = "") -> str:
+    """Read one control file, tolerating whatever encoding the writer used.
+
+    These files are written by hand, by PowerShell, by Python - and PowerShell's Out-File writes
+    UTF-16LE with a BOM. Decoding strictly as UTF-8 crashed the demo with
+
+        UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0
+
+    which is an absurd way for a text file to stop the picture. Try the plausible encodings, then
+    fall back to latin-1, which cannot fail.
+    """
     try:
-        with open(path, encoding="utf-8") as fh:
-            return fh.read().strip()
+        with open(path, "rb") as fh:
+            raw = fh.read()
     except OSError:
         return default
-
-
+    for encoding in ("utf-8-sig", "utf-16", "latin-1"):
+        try:
+            return raw.decode(encoding).strip()
+        except (UnicodeDecodeError, UnicodeError):
+            continue
+    return default
 def load_picture(path: str, width: int, height: int) -> np.ndarray:
     if path.endswith(".bin"):
         data = np.fromfile(path, dtype=np.uint8)
