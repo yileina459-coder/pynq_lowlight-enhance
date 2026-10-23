@@ -38,6 +38,7 @@ STATE_FILE = "/tmp/hdmi_state.txt"
 SOF_FILE = "/tmp/hdmi_sof.txt"
 PLAY_FILE = "/tmp/hdmi_play.txt"
 PLAY_FPS_FILE = "/tmp/hdmi_play_fps.txt"
+PLAY_PRESET_FILE = "/tmp/hdmi_play_presets.txt"
 
 
 UPLOAD_DIR = "/tmp/hdmi_uploads"
@@ -112,6 +113,10 @@ def safe_writeframe(out, buf, state: dict, mode=None) -> bool:
         return False
 
 
+KNOWN_PRESETS = {"pass", "clarity", "bright", "night", "document", "reading",
+                  "invert", "binarize", "split"}
+
+
 def publish_state(state: dict, width: int, height: int) -> None:
     """Write what is on screen, so a tool on the PC can confirm an update instead of guessing.
 
@@ -126,6 +131,9 @@ def publish_state(state: dict, width: int, height: int) -> None:
             fh.write(f"sof={state['sof']}\n")
             playing = state.get("playing", "")
             fh.write(f"playing={playing}\n")
+            # Which preset the schedule is currently asking for, if a clip is playing. Kept apart from
+            # "preset" so a scheduled switch never looks like an operator change.
+            fh.write(f"play_preset={state.get('play_preset', '')}\n")
             fh.write(f"mode={width}x{height}\n")
             fh.write(f"updated={time.strftime('%Y-%m-%d %H:%M:%S')}\n")
     except OSError:
@@ -275,6 +283,11 @@ def main(argv=None) -> int:
           "/tmp/hdmi_sof.txt", flush=True)
 
     last_refresh = time.monotonic()
+    # One reusable frame buffer and a decoded-frame cache. Both are used by the playback loop below;
+    # neither had ever been defined, so every frame raised NameError and playback silently showed
+    # nothing (see the module docstring in .tmp notes / commit message).
+    play_buf = [None]
+    play_cache: dict[str, "np.ndarray"] = {}
     clip = {"dir": "", "paths": [], "fps": 0.0, "index": 0, "next": 0.0}
     while True:
         # ---- video playback -------------------------------------------------------------
@@ -292,7 +305,8 @@ def main(argv=None) -> int:
                     except ValueError:
                         fps = 30.0
                     clip.update({"dir": play_text, "paths": paths, "index": 0,
-                                 "fps": fps, "next": time.monotonic()})
+                                 "fps": fps, "next": time.monotonic(),
+                                 "schedule": [], "applied": None})
                     state["playing"] = f"{len(paths)} frames at {fps:g} fps"
                     publish_state(state, width, height)
                     print(f"  play -> {play_text} ({len(paths)} frames at {fps:g} fps)", flush=True)
@@ -314,14 +328,44 @@ def main(argv=None) -> int:
                     # Decoded frames are cached: PNG decoding on the PS is ~10x the cost of the
                     # copy into the buffer, and the whole point of playback is to keep a steady
                     # frame rate. 24-bit 640x480 is 0.9 MB per frame, so 240 frames is ~215 MB.
+                    t_start = time.monotonic()
                     pixels = play_cache.get(frame)
                     if pixels is None:
                         if len(play_cache) >= 240:
                             play_cache.clear()
                         pixels = load_picture(frame, width, height)
                         play_cache[frame] = pixels
+                    t_decoded = time.monotonic()
                     play_buf[0][:] = roll_rows(pixels, state["roll"])
+                    t_copied = time.monotonic()
+                    # The schedule may be rewritten while the clip plays (re-running the analysis, or
+                    # it simply appearing a moment after the clip was pointed at). Re-reading a
+                    # 200-byte file per frame is free, so the board always follows the latest decision.
+                    schedule_text = read_text(PLAY_PRESET_FILE)
+                    if schedule_text != clip.get("schedule_text"):
+                        clip["schedule_text"] = schedule_text
+                        clip["schedule"] = [name for name in schedule_text.split()
+                                            if name in KNOWN_PRESETS]
+                        clip["applied"] = None      # force the new decision to be written
+                        if clip["schedule"]:
+                            print(f"  schedule: {len(clip['schedule'])} entries, "
+                                  f"first {clip['schedule'][0]}", flush=True)
+                        else:
+                            print("  schedule: none - playing with the manual preset", flush=True)
+                    if clip.get("schedule"):
+                        wanted = clip["schedule"][clip["index"] % len(clip["schedule"])]
+                        if wanted != clip.get("applied"):
+                            hl.write_preset(cfg, wanted)
+                            clip["applied"] = wanted
+                            state["play_preset"] = wanted
+                            print(f"  preset -> {wanted} (scheduled, frame "
+                                  f"{clip['index'] % len(clip['schedule'])})", flush=True)
                     safe_writeframe(out, play_buf[0], state, mode)
+                    t_written = time.monotonic()
+                    if clip["index"] % 10 == 0:
+                        print(f"  frame {clip['index']:4d}: decode {1000*(t_decoded-t_start):5.1f} ms  "
+                              f"copy {1000*(t_copied-t_decoded):5.1f} ms  "
+                              f"write {1000*(t_written-t_copied):5.1f} ms", flush=True)
                 except Exception as exc:                   # noqa: BLE001
                     print(f"  play write failed: {exc}", flush=True)
                     clip["dir"] = ""
@@ -343,11 +387,22 @@ def main(argv=None) -> int:
                     continue
         elif clip["dir"]:
             print("  play -> stopped", flush=True)
+            # Back to the operator's preset: the schedule only owns the preset while a clip plays.
+            if clip.get("applied") is not None:
+                hl.write_preset(cfg, state["preset"])
+                clip["applied"] = None
+                state["play_preset"] = ""
             clip["dir"] = ""
             state["playing"] = ""
             publish_state(state, width, height)
 
-        time.sleep(args.tick)
+        # While a clip is playing, this loop runs once per frame, and the playback branch only falls
+        # through to here every fifteenth frame to re-read the control files. Sleeping the full tick
+        # (2 s) on those passes made the video hitch every fifteen frames - the log said
+        # "behind by 1920 ms" and the effective rate was under 5 fps even though a frame costs 6 ms.
+        # A short sleep is enough: the files are small and a 50 ms latency is imperceptible.
+        playing_now = bool(clip["dir"] and clip["paths"])
+        time.sleep(0.05 if playing_now else args.tick)
         changed = False
 
         roll_text = read_text(ROLL_FILE)

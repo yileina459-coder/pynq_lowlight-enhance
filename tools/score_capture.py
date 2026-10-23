@@ -33,8 +33,14 @@ def luma(rgb: np.ndarray) -> np.ndarray:
     return ((77 * r + 150 * g + 29 * b) >> 8)
 
 
-def score(path: str, crop: tuple[int, int, int, int] | None) -> dict:
-    rgb = np.asarray(Image.open(path).convert("RGB")).astype(np.int32)
+def score_array(rgb: np.ndarray, crop: tuple[int, int, int, int] | None = None) -> dict:
+    """The metrics for an RGB array.
+
+    Kept separate from score() so callers that already hold pixels - the video analyser evaluates
+    every candidate preset on every frame - do not pay for a PNG round trip per combination, and so
+    there is still exactly one definition of what "legibility" means.
+    """
+    rgb = np.asarray(rgb).astype(np.int32)
     if crop:
         x0, y0, x1, y1 = crop
         rgb = rgb[y0:y1, x0:x1]
@@ -56,6 +62,12 @@ def score(path: str, crop: tuple[int, int, int, int] | None) -> dict:
         "midtone": midtone,
         "edge": edge,
     }
+
+
+def score(path: str, crop: tuple[int, int, int, int] | None) -> dict:
+    """Metrics for an image file - same numbers as score_array, read from disk."""
+    rgb = np.asarray(Image.open(path).convert("RGB"))
+    return score_array(rgb, crop)
 
 
 def legibility(s: dict) -> float:
