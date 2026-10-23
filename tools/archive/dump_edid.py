@@ -5,7 +5,7 @@ That can only come from the other descriptors: the established timings bitmap, t
 standard timings list, or a range-limits descriptor whose maximum pixel clock leaves
 room for 1080p. Printing all of them settles it.
 
-    python tools/dump_edid.py [path]
+    python tools/archive/dump_edid.py [path]
 """
 
 from __future__ import annotations

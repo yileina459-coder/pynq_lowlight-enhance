@@ -13,7 +13,7 @@ File format (this is what bit us first)
     initialisation. Reading it as binary yields nonsense, which is how the first
     version of this script wrongly reported "EDID INVALID".
 
-    python tools/check_edid.py [path]
+    python tools/archive/check_edid.py [path]
 """
 
 from __future__ import annotations

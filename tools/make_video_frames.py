@@ -21,6 +21,7 @@ Why --seconds exists
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -36,7 +37,16 @@ def frame_size_mb() -> float:
 
 
 def find_ffmpeg() -> str | None:
-    """An ffmpeg binary to run, or None."""
+    """An ffmpeg binary to run, or None.
+
+    Search order, cheapest first:
+
+      1. ffmpeg on PATH - a normal installation;
+      2. a repo-local copy at .tmp/tools/ffmpeg.exe (or tools/bin/ffmpeg.exe);
+      3. winget's install locations, because winget updates the *machine* PATH but a process that was
+         already running - this harness, or a terminal opened before the install - keeps its old
+         environment and would otherwise report ffmpeg as missing right after installing it.
+    """
     on_path = shutil.which("ffmpeg")
     if on_path:
         return on_path
@@ -45,6 +55,17 @@ def find_ffmpeg() -> str | None:
                       here / "tools" / "bin" / "ffmpeg.exe"):
         if candidate.is_file():
             return str(candidate)
+
+    local = os.environ.get("LOCALAPPDATA")
+    if local:
+        link = Path(local) / "Microsoft" / "WinGet" / "Links" / "ffmpeg.exe"
+        if link.is_file():
+            return str(link)
+        packages = Path(local) / "Microsoft" / "WinGet" / "Packages"
+        if packages.is_dir():
+            found = sorted(packages.glob("*ffmpeg*/**/bin/ffmpeg.exe"))
+            if found:
+                return str(found[0])
     return None
 
 

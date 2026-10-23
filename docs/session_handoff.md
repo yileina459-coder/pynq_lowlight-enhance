@@ -55,7 +55,7 @@ Jupyter（`http://192.168.2.99:9090`，密码 `xilinx`）：`hdmi_panel.ipynb` �
 | DMA 通路逐位一致 | 8 预设各 **0/2764800** 通道 | `board/enhance_dma/` |
 | DMA 帧时间 | 15.6 ms（63 fps），PS 基线 3108 ms → **196.7×** | `report/comparison.md` |
 | HDMI 位流时序 | WNS **+0.289 ns**，0 失败端点 | `board/hdmi_stream_enhance/timing_impl.rpt` |
-| 水平偏移 | 43–46 px（推荐补偿 45） | `tools/measure_capture_offset.py` |
+| 水平偏移 | 43–46 px（推荐补偿 45） | `tools/diag/measure_capture_offset.py` |
 | 纠错记录 | **44 条** | `report/ai_collaboration_log.md` |
 
 ---
@@ -131,7 +131,7 @@ git checkout dcfc364 -- board/hdmi_stream_enhance/enhance_hdmi.bit \
 
 1. 按 `docs/hdmi_status.md` 里"正确的插入方式"把 `sof_gen` 建在 `/video/hdmi_out` 层级内；
 2. 跑 `check_bd.tcl` 确认接口完整，再 `build_bitstream.tcl`（它已内置该检查）；
-3. 上板后先 `--roll 0` 观察，再用 `tools/measure_from_screen.py` 从 OBS 截图量偏移；
+3. 上板后先 `--roll 0` 观察，再用 `tools/diag/measure_from_screen.py` 从 OBS 截图量偏移；
 4. 若偏移在多次重启后稳定在 0±3 px，即证明 SOF 生效，可去掉 `--roll` 补偿路径。
 
 ### 注意事项（踩过的坑）
@@ -178,7 +178,7 @@ git checkout dcfc364 -- board/hdmi_stream_enhance/enhance_hdmi.bit \
    必须 `current_bd_instance` 进去操作；`create_bd_cell` 会留下"半条网络"，
    连接前要把两端都清空。
 4. **测量工具的几何假设会过期**。OBS 窗口一动，硬编码的裁剪区就量错东西。
-   现在用 `tools/find_video_rect.py`（由红框推导）或差分定位。
+   现在用 `tools/diag/find_video_rect.py`（由红框推导）或差分定位。
 
 ### 交接时可以直接用的命令
 
@@ -193,7 +193,7 @@ tools\board\show_image.ps1 -Image 你的图.jpg
 tools\board\play_video.ps1 -Video clip.gif -Fps 12
 
 # 量偏移（拍一张桌面截图后）
-python tools\measure_offset_screen.py shot.png
+python tools\diag\measure_offset_screen.py shot.png
 ```
 
 ## 2026-10-23 14:45：视频播放与自动挡位选择（已完成并实测）

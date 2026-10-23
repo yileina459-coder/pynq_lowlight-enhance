@@ -13,7 +13,7 @@ How the frame is located
     gives both the scale (its width is 612 source pixels) and the offset (its left edge should sit
     14 source pixels inside the frame).
 
-    python tools/measure_from_screen.py shot.png
+    python tools/diag/measure_from_screen.py shot.png
 """
 
 from __future__ import annotations

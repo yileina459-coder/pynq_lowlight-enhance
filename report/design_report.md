@@ -255,7 +255,7 @@ for _ in range(4):               # 填满 4 块帧缓冲，避免任何黑帧
 | 流水线延迟 | **21 拍**（HLS `Depth = 21`）；片上单次测量 21–25 拍，含启动偏斜 |
 | 预设切换 | 15 次切换各带一次输出重建，延迟全程 21 拍；切换瞬间闪一下、之后稳定 |
 | 证据 | `board/hdmi_stream_enhance/evidence/`：原始、垂直分屏、硬阈值、过锐四态 |
-| 演示主脚本 | `board/hdmi_stream_enhance/hdmi_preset_only.py` |
+| 演示主脚本 | `board/hdmi_stream_enhance/archive/hdmi_preset_only.py` |
 
 **判读说明**：截图按"画面里能看到什么"命名（垂直分界 / 硬阈值 / 过锐 / 原始），
 而不是按 PC 时间戳去对档名——板子时钟与 PC 不同步，硬对时间会引入错误结论。
@@ -377,8 +377,8 @@ build\overlay_hdmi_enhance\build.bat
 
 # 5) 离线检查（不接板子也能跑）
 python tools\check_consistency.py --strict      # 文档一致性
-python tools\check_edid.py                      # EDID 合法性
-python tools\check_poster.py                    # 海报版面
+python tools\archive\check_edid.py                      # EDID 合法性
+python tools\archive\check_poster.py                    # 海报版面
 ```
 
 ```bash

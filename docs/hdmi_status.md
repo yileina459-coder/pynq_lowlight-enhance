@@ -151,7 +151,7 @@ PS 写帧到 DDR  ->  VDMA MM2S  ->  stamp_in -> enhance -> stamp_out
 ```
 
 内核仍在像素通路上、仍是硬件实时处理、预设与延迟测量都保留，只是帧来源变成 PS。
-板端实测（`board/hdmi_stream_enhance/hdmi_vdma_demo.py`）：
+板端实测（`board/hdmi_stream_enhance/archive/hdmi_vdma_demo.py`）：
 
 ```
 hdmi_out running at 640x480
@@ -405,7 +405,7 @@ for _ in range(4):                      # 填满 4 块帧缓冲
 **板上验证**：`hdmi_preset_only.py --cycle 15 --total 220`，15 次切换、每次都重启输出链路，
 延迟全程 21 个像素时钟。用户确认："稳了，只在切换瞬间闪一下。"
 
-**现在的演示主脚本**：`board/hdmi_stream_enhance/hdmi_preset_only.py`。
+**现在的演示主脚本**：`board/hdmi_stream_enhance/archive/hdmi_preset_only.py`。
 其余带"循环写帧"或"只复位不重启输出"的脚本只保留作排查记录，不再作为演示路径。
 
 ### 最终采集序列（2026-10-22 22:15，稳定版演示）
@@ -543,7 +543,7 @@ def _drive_hpd(dev, value=1):
 
 一开始我按"预览像素"目测，得出"偏移 30→40 在变"的结论，据此判断是采集卡的随机采样相位。
 **这是错的**——用户指出"两次偏移不是一样吗"，于是写了
-`tools/measure_capture_offset.py`：把截图内部缩放到 640×480，与参考卡片做**互相关**，
+`tools/diag/measure_capture_offset.py`：把截图内部缩放到 640×480，与参考卡片做**互相关**，
 取误差最小的位移。结果：
 
 | 截图 | 偏移 | 匹配误差 |
@@ -566,7 +566,7 @@ def _drive_hpd(dev, value=1):
 
 **处置**：`hdmi_live.roll_frame(picture, N)` 把画面右移 N 像素（尾部回卷），
 `hdmi_show_image.py` / `hdmi_tour.py` 支持 `--roll N`，实测推荐 **45**。
-标定工具 `tools/calibrate_roll.py`：给一张截图即可算出该用多少。
+标定工具 `tools/diag/calibrate_roll.py`：给一张截图即可算出该用多少。
 
 **正解（未实施，时间原因）**：用 `v_axi4s_vid_out` 的 SOF 对齐功能——由行计数器在每帧
 第一行产生 TUSER，把该核的 `C_SOF` 设为 `tuser`，让每帧对齐到真实帧边界而不是自己的时基。
@@ -678,11 +678,11 @@ children = [... 'video_in[port]', 'vtiming_in[port]', ...]
 
 **测量工具（新增，可无人值守）**
 
-- `tools/measure_from_screen.py`：直接读 PC 上的 OBS 截图，量出画面在帧内的偏移。
+- `tools/diag/measure_from_screen.py`：直接读 PC 上的 OBS 截图，量出画面在帧内的偏移。
   需要画面背景与 OBS 画布颜色可区分；当前测试卡背景 (18,18,20) 与 OBS 画布 (19,20,26) 太接近，
   建议测量时换用背景对比更强的图（`tools/make_testcard.py` 可指定背景色）。
-- `tools/measure_bars.py`：用标尺图的三根竖条直接定位，不受 100 像素刻度周期性影响。
-- `tools/calibrate_roll.py`：从截图给出建议的 `--roll` 值。
+- `tools/diag/measure_bars.py`：用标尺图的三根竖条直接定位，不受 100 像素刻度周期性影响。
+- `tools/diag/calibrate_roll.py`：从截图给出建议的 `--roll` 值。
 
 **三次会话实测偏移**：约 0 px、45 px、89 px（同一份位流）——这是"缺 SOF 导致相位随机"的
 直接证据，也是不能用固定 `--roll` 补偿的原因。
@@ -790,7 +790,7 @@ current_bd_instance /
 因为 `reading` 与 `page` 在数值上接近，但前者有明显眩光块，**默认改为 `page`**：
 窗口里“在本机提亮（推荐）”现在用 `page`，命令行 `-Tone page` 为默认值。
 
-**打分工具**：`tools/score_capture.py` 给出 mean/对比度/过曝/中间调/边缘锐度；`tools/tune_dark.py`
+**打分工具**：`tools/score_capture.py` 给出 mean/对比度/过曝/中间调/边缘锐度；`tools/diag/tune_dark.py`
 自动跑完一整轮（上传→截图→打分→排序），无需人工看图。记录了一条重要教训：**全局对比度会把
 "炸白"误判为"清晰"**，所以最终选择还要看"纸面是否均匀"。
 
@@ -870,7 +870,7 @@ Pillow（GIF / 动态 WebP）。装 ffmpeg（`winget install Gyan.FFmpeg`）后�
 因此**交付位流回退到不带 SOF 的版本**（`git checkout 68372f6 -- ...enhance_hdmi.bit`），
 SOF 的 RTL/HLS 与全部集成脚本保留在仓库里，状态记为"已实现、时序收敛、但会停流，未交付"。
 
-**对偏移的处理回到原来的结论**：相位每次会话都可能不同，用 `tools/measure_offset_screen.py`
+**对偏移的处理回到原来的结论**：相位每次会话都可能不同，用 `tools/diag/measure_offset_screen.py`
 量出来后写 `--roll` 补偿（`/tmp/hdmi_roll.txt` 可实时生效）。
 
 **下一轮的第一步**：上 ILA 抓 `s_axis_video_{tuser,tvalid,tready,tlast}` 与 `vtg_vsync`，

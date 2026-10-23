@@ -17,12 +17,28 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from find_video_rect import locate  # noqa: E402
 
-REPO = Path(__file__).resolve().parent.parent
+def _repo_root() -> Path:
+    """The repository root: walk up until the directory that holds .git.
+
+    tools/ used to be flat, so Path(__file__).parent.parent was the root. Scripts now live at different
+    depths (tools/, tools/diag/, tools/archive/), and hard-coding the depth is exactly what broke when
+    they moved - so the layout is discovered instead.
+    """
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        if (parent / ".git").exists():
+            return parent
+    return here.parents[2] if len(here.parents) > 2 else here.parent
+
+
+REPO = _repo_root()
+sys.path.insert(0, str(REPO / "tools"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
 def main(argv: list[str]) -> int:
     if not argv:
-        print("usage: python tools/report_burst.py seq_1.png seq_2.png ...")
+        print("usage: python tools/archive/report_burst.py seq_1.png seq_2.png ...")
         return 2
 
     rect = locate(argv[0])

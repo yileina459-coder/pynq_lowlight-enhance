@@ -11,7 +11,7 @@ Why not a rendered image
     So the layout is checked arithmetically instead: every shape must sit inside the
     page, and the text must fit the box the generator sized for it.
 
-    python tools/check_poster.py report/poster/poster.pptx
+    python tools/archive/check_poster.py report/poster/poster.pptx
 """
 
 from __future__ import annotations

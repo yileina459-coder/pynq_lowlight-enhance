@@ -190,7 +190,7 @@ def roll_frame(picture, offset: int):
     roughly 20 pixels of timestamp/unpack/FIFO delay. Because the shift is in the picture the
     sink receives, compensating here fixes both a capture card and a real monitor.
 
-    The value is measured, not guessed - tools/measure_capture_offset.py cross-correlates a
+    The value is measured, not guessed - tools/diag/measure_capture_offset.py cross-correlates a
     capture against the reference card.
     """
     import numpy as np

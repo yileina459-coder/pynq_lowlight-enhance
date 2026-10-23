@@ -11,7 +11,7 @@
 | `startup_program_clock.log`（`run1.log`） | 对照组：模式文件被清空时走 `pixel clock programmed`（会中断 TMDS） | 同上 |
 | `guided_tour_loop.log`（`tour_loop.log`） | 8 档 × 25 秒的循环引导演示，`--roll 45`、每档延迟读数 | `board/hdmi_stream_enhance/README.md` |
 | `guided_tour_30s.log`（`tour_long.log`） | 8 档 × 30 秒的完整一轮 | 同上 |
-| `ruler_pattern.log`（`ruler2.log`） | 标尺图案显示，用于从截图量水平偏移 | `tools/measure_capture_offset.py` |
+| `ruler_pattern.log`（`ruler2.log`） | 标尺图案显示，用于从截图量水平偏移 | `tools/diag/measure_capture_offset.py` |
 | `stock_overlay_control.log`（`stock640.log`） | 对照实验：**原厂 `base.bit` 在 640×480 下同样出不了画面**，说明彩条不是我们设计的问题 | `docs/hdmi_status.md` |
 | `own_image_demo.log`（`photo_demo.log`） | 显示自己的图片 + 预设轮播（`1600x900 -> 640x360 centred (letterboxed)`） | `board/.../README.md` |
 

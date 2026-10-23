@@ -4,7 +4,7 @@ The window prints the failure into its own report box, so reading that box throu
 the fastest way to see it - much faster than guessing from the board's state. It also proves what a
 user would actually be told.
 
-    python tools/probe_video_gui.py .tmp/userpic/scene.mp4
+    python tools/archive/probe_video_gui.py .tmp/userpic/scene.mp4
 """
 
 from __future__ import annotations
@@ -14,7 +14,24 @@ import sys
 import time
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+def _repo_root() -> Path:
+    """The repository root: walk up until the directory that holds .git.
+
+    tools/ used to be flat, so Path(__file__).parent.parent was the root. Scripts now live at different
+    depths (tools/, tools/diag/, tools/archive/), and hard-coding the depth is exactly what broke when
+    they moved - so the layout is discovered instead.
+    """
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        if (parent / ".git").exists():
+            return parent
+    return here.parents[2] if len(here.parents) > 2 else here.parent
+
+
+REPO = _repo_root()
+sys.path.insert(0, str(REPO / "tools"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 
 PROBE_PS = r'''
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8

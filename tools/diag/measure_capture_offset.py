@@ -8,7 +8,7 @@ Method
     A constant offset across captures means a fixed sampling phase; a varying one means the sink
     re-locks differently each time.
 
-    python tools/measure_capture_offset.py <capture.png> [more.png ...]
+    python tools/diag/measure_capture_offset.py <capture.png> [more.png ...]
 """
 
 from __future__ import annotations

@@ -303,7 +303,7 @@ hl.raise_output_hpd(ol)   # 输出侧（关键）
 正好等于"内核 21–25 拍 + 时间戳/解包/FIFO 约 20 像素"。
 
 ```bash
-# 补偿（推荐值由 tools/calibrate_roll.py 从截图算出来，实测 45）
+# 补偿（推荐值由 tools/diag/calibrate_roll.py 从截图算出来，实测 45）
 sudo env ... python3 hdmi_tour.py --image testcard_640x480.png --roll 45 --hold 30
 ```
 

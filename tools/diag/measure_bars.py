@@ -7,7 +7,7 @@ Why not cross-correlation here
     the bars show is about +45. Locating three individually identifiable bars removes the
     ambiguity, because their relative spacings (100 and 400) pin the phase unambiguously.
 
-    python tools/measure_bars.py capture.png
+    python tools/diag/measure_bars.py capture.png
 """
 
 from __future__ import annotations

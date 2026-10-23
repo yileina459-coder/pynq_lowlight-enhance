@@ -9,7 +9,7 @@ Why both orders
     scored 111 with a huge error for the same class of reason), so both orders are tried and the
     one with the lower error is reported.
 
-    python tools/measure_residual.py capture.png
+    python tools/diag/measure_residual.py capture.png
 """
 
 from __future__ import annotations

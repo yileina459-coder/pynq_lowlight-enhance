@@ -4,7 +4,7 @@ UI Automation can find and click the button, but it cannot tell me what the oper
 screenshot is the closest thing to standing in front of the machine, so this combines the click with a
 capture of the window itself.
 
-    python tools/test_video_gui.py .tmp/userpic/scene.mp4
+    python tools/diag/test_video_gui.py .tmp/userpic/scene.mp4
 """
 
 from __future__ import annotations
@@ -14,7 +14,24 @@ import sys
 import time
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+def _repo_root() -> Path:
+    """The repository root: walk up until the directory that holds .git.
+
+    tools/ used to be flat, so Path(__file__).parent.parent was the root. Scripts now live at different
+    depths (tools/, tools/diag/, tools/archive/), and hard-coding the depth is exactly what broke when
+    they moved - so the layout is discovered instead.
+    """
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        if (parent / ".git").exists():
+            return parent
+    return here.parents[2] if len(here.parents) > 2 else here.parent
+
+
+REPO = _repo_root()
+sys.path.insert(0, str(REPO / "tools"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 
 CLICK_PS = r'''
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8

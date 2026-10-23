@@ -7,10 +7,10 @@ Why a dedicated tool
     bar at x=100 and a red bar at x=500. Finding those three in a capture and converting back to
     source pixels gives the offset directly, and the three estimates cross-check each other.
 
-    The video rectangle comes from OBS's selection border (tools/find_video_rect.py), which works
+    The video rectangle comes from OBS's selection border (tools/diag/find_video_rect.py), which works
     even when part of the preview is covered.
 
-    python tools/measure_offset_screen.py shot.png
+    python tools/diag/measure_offset_screen.py shot.png
 """
 
 from __future__ import annotations
@@ -21,8 +21,23 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-REPO = Path(__file__).resolve().parent.parent
+def _repo_root() -> Path:
+    """The repository root: walk up until the directory that holds .git.
+
+    tools/ used to be flat, so Path(__file__).parent.parent was the root. Scripts now live at different
+    depths (tools/, tools/diag/, tools/archive/), and hard-coding the depth is exactly what broke when
+    they moved - so the layout is discovered instead.
+    """
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        if (parent / ".git").exists():
+            return parent
+    return here.parents[2] if len(here.parents) > 2 else here.parent
+
+
+REPO = _repo_root()
 sys.path.insert(0, str(REPO / "tools"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from find_video_rect import locate  # noqa: E402
 
 DESIGN = {"left_edge": 0, "blue": 100, "red": 500}

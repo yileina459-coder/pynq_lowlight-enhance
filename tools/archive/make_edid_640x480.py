@@ -16,7 +16,7 @@ Why the established timings have to go too
     picks the highest mode it can, so all of them have to be cleared - including the
     established ones, otherwise it would choose 1024x768.
 
-    python tools/make_edid_640x480.py
+    python tools/archive/make_edid_640x480.py
 """
 
 from __future__ import annotations

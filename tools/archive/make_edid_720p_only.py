@@ -12,7 +12,7 @@ Why
     So: keep the detailed timing, clear the standard timing list (which is where 1080p
     comes from), recompute the checksum. Windows then has nothing higher to choose.
 
-    python tools/make_edid_720p_only.py [--check]
+    python tools/archive/make_edid_720p_only.py [--check]
 """
 
 from __future__ import annotations

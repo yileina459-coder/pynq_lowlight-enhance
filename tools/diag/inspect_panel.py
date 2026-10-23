@@ -3,7 +3,7 @@
 Screenshots kept landing on the wrong window and the title is the same for both kinds, so the useful
 question - "did it classify this file correctly?" - is answered from the text inside the window instead.
 
-    python tools/inspect_panel.py
+    python tools/diag/inspect_panel.py
 """
 
 from __future__ import annotations

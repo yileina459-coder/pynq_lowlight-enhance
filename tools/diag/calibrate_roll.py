@@ -10,8 +10,8 @@ Why a separate tool
     Measuring rather than eyeballing matters - an earlier estimate from counting preview pixels
     was wrong by more than 10 pixels, and it was the user who caught it.
 
-    python tools/calibrate_roll.py capture.png
-    python tools/calibrate_roll.py capture1.png capture2.png capture3.png
+    python tools/diag/calibrate_roll.py capture.png
+    python tools/diag/calibrate_roll.py capture1.png capture2.png capture3.png
 """
 
 from __future__ import annotations

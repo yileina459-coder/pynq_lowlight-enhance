@@ -84,10 +84,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\board\show_image.ps1 -
 ```
 .
 ├── README.md                 # 项目简介 + 状态清单 + 复现步骤
-├── docs/                     # 架构、路线图、环境基线、HDMI 全部实测记录、提交清单
+├── 上传到开发板.bat          # 双击打开统一上传面板（图片 / 视频）
+├── 上传图片.bat / 上传视频.bat  # 同上（保留原来习惯，实际打开同一个窗口）
+├── docs/                     # 架构、路线图、环境基线、HDMI 全部实测记录、视频播放说明
 ├── src/
 │   ├── hls/                  # enhance（主算子 + 有界版）、sobel/gaussian/sharpen（算子族）
-│   └── rtl/                  # axis_cycle_stamp（延迟/拍数）、enh_cfg_split、enh_rst_bridge、
+│   └── rtl/                  # axis_cycle_stamp、enh_cfg_split、enh_rst_bridge、
 │                             # video_pattern_gen、axis_mux3、edid/
 ├── sim/                      # numpy 黄金模型、离线预演、预设调参、性能对比表
 ├── build/
@@ -96,23 +98,36 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\board\show_image.ps1 -
 │   ├── overlay_dma/          # DMA 版 overlay（Sobel）
 │   ├── overlay_enhance/      # DMA 版 overlay（enhance，8 预设验证）
 │   ├── overlay_hdmi/         # HDMI 版 overlay（Sobel）
-│   ├── overlay_hdmi_enhance/ # HDMI 版 overlay（enhance + 复位桥 + EDID 定制）
+│   ├── overlay_hdmi_enhance/ # HDMI 版 overlay（enhance + SOF + 复位桥 + EDID 定制）
 │   └── rtl/                  # 独立 RTL 的综合脚本
 ├── board/
 │   ├── dma_sobel/            # DMA 版：Sobel 逐位比对
 │   ├── enhance_dma/          # 增强核：8 预设板上逐位比对 + Jupyter 面板
 │   ├── hdmi_stream/          # HDMI 版（Sobel 算子族）
-│   ├── hdmi_stream_enhance/  # **HDMI 版主通路**：640×480、21 拍、演示循环的 7 档预设可切
+│   ├── hdmi_stream_enhance/  # **HDMI 版主通路**：640×480、21 拍、7 档预设可切、视频播放
+│   │   ├── enhance_hdmi.bit  #   交付位流（WNS +0.206 ns，含 SOF 内核）
+│   │   ├── hdmi_resident.py  #   常驻演示进程（独占 VDMA，切图/切挡/播放都在它里面）
+│   │   ├── hdmi_live.py      #   板级封装（找 IP、写预设、开输出、HPD）
 │   │   ├── evidence/         #   采集卡截图（真机证据）
 │   │   ├── diagnostics/      #   21 个排查脚本，按"回答什么问题"索引
+│   │   ├── archive/          #   被统一面板取代的旧入口（保留可追溯）
 │   │   └── notebooks/        #   Jupyter 版验证与演示
 │   ├── hdmi_pattern/         # 内部图案源（不依赖任何外部输入）
 │   └── ps_baseline/          # PS 软件基线
 ├── data/                     # 测试图与各算子黄金参考
 ├── skill/                    # 5 个可复用 Skill + 踩坑清单
-├── tools/                    # 工具链入口 + 文档/位流/海报/EDID 检查脚本
+├── tools/
+│   ├── README.md             #   **工具目录地图，先看这个**
+│   ├── board/                #   上板入口：统一面板、上传、播放、复位、状态
+│   ├── diag/                 #   测量与诊断（撕裂、闪烁、偏移、面板自检）
+│   ├── archive/              #   已完成使命的一次性脚本（EDID/720p 试验等）
+│   └── *.py                  #   核心管线（转图、解码、选挡、评分）与仓库自检
 └── report/                   # 设计报告、协作记录、校赛材料、海报
 ```
+
+`tools/` 的完整说明见 [tools/README.md](tools/README.md)；视频播放与自动选挡见
+[docs/video_playback.md](docs/video_playback.md)。
+
 
 ## 复现步骤
 

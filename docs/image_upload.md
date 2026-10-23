@@ -136,7 +136,7 @@ $sc.IconLocation = "$env:SystemRoot\System32\imageres.dll,68"
 $sc.Save()
 ```
 
-图形界面的源码在 `tools/board/upload_gui.ps1`，它调用的是同一个 `show_image.ps1`，
+图形界面的源码在 `tools/board/archive/upload_gui.ps1`，它调用的是同一个 `show_image.ps1`，
 所以两条路径的转换、校验、错误提示完全一致。
 
 
@@ -164,7 +164,7 @@ $sc.Save()
 | 状态文件里还是旧图 | 等 3 秒再看；`ssh xilinx@192.168.2.99 cat /tmp/hdmi_state.txt` |
 | 屏幕上是彩条 | 采集棒丢了锁定：**拔插 HDMI 线**或重启板子，然后重新启动演示 |
 | 图显示为全黑 | 源图太暗；`prepare_image.py` 会打印 `mean=` 提示 |
-| 画面偏左/偏右 | 这是随会话变化的相位（见 `docs/hdmi_status.md`）：用 `tools/measure_bars.py` 量，再写 `--roll` |
+| 画面偏左/偏右 | 这是随会话变化的相位（见 `docs/hdmi_status.md`）：用 `tools/diag/measure_bars.py` 量，再写 `--roll` |
 
 ## 相关文件
 

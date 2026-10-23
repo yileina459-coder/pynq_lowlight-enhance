@@ -33,7 +33,7 @@
 | 延迟实测 | `src/rtl/axis_cycle_stamp/` + `board/enhance_dma/` | **已验证：16 像素时钟 = 160 ns @100 MHz** |
 | 暗光测试页生成器 | `sim/enhance/make_dim_page.py` | 已验证（固定种子，可复现） |
 | Jupyter 交互面板 | `board/enhance_dma/panel.ipynb` + `enhance_panel.py` | **已验证**（板上构建成功，8 预设表全 0 误差） |
-| 真机演示脚本 | `board/hdmi_stream_enhance/hdmi_vdma_demo.py` | **已上板**：640×480、延迟 21 个像素时钟、7 档预设运行期切换 |
+| 真机演示脚本 | `board/hdmi_stream_enhance/archive/hdmi_vdma_demo.py` | **已上板**：640×480、延迟 21 个像素时钟、7 档预设运行期切换 |
 | HDMI overlay 位流（Sobel） | `board/hdmi_stream/sobel_hdmi.bit|.hwh` | **板上加载验证通过**（21 个 IP、`video` 层次绑定成功）；出图待显示设备 |
 | HDMI overlay 位流（enhance，含配置与延迟） | `board/hdmi_stream_enhance/enhance_hdmi.bit|.hwh` | **已上板出图**：WNS **+0.289 ns**、流水线 21 拍（HLS Depth = 21）、8 档预设无黑屏实时切换在运行期切换（4 张采集卡截图在 `evidence/`） |
 | 软件黄金模型与比对 | `sim/common/`、`sim/*/golden_*.py`、`skill/golden_compare` | 已验证 |

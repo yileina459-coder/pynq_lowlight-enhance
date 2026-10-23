@@ -11,7 +11,7 @@ Why only the left strip
     board. The leftmost ~150 px of the video are never covered, which is enough: a horizontal seam is
     just as visible in a narrow column.
 
-    python tools/check_tearing.py [count]
+    python tools/diag/check_tearing.py [count]
 """
 
 from __future__ import annotations
@@ -24,7 +24,24 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-REPO = Path(__file__).resolve().parent.parent
+def _repo_root() -> Path:
+    """The repository root: walk up until the directory that holds .git.
+
+    tools/ used to be flat, so Path(__file__).parent.parent was the root. Scripts now live at different
+    depths (tools/, tools/diag/, tools/archive/), and hard-coding the depth is exactly what broke when
+    they moved - so the layout is discovered instead.
+    """
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        if (parent / ".git").exists():
+            return parent
+    return here.parents[2] if len(here.parents) > 2 else here.parent
+
+
+REPO = _repo_root()
+sys.path.insert(0, str(REPO / "tools"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 RECT_FILE = REPO / ".tmp" / "video_rect.txt"
 STRIP = 150
 
