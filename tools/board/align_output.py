@@ -316,6 +316,16 @@ def main(argv=None) -> int:
     print(f"board now: roll={before['roll'] or '?'} preset={before['preset'] or '?'} "
           f"image={before['image'] or '?'}")
 
+    # While a clip plays, the resident pushes a video frame every 40 ms and ignores the still picture,
+    # so the test pattern would never reach the screen and the capture would show the video instead.
+    # Say so instead of failing later with "could not read the bands".
+    if state.get("playing"):
+        print(f"a clip is playing ({state['playing']}), so the test pattern would not appear. "
+              f"Stop playback first:\n"
+              f"  tools\\board\\play_video.ps1 -Video x -Stop\n"
+              f"then run this again. Nothing was changed.")
+        return 2
+
     if args.measure:
         if not capture(shot, restore=not args.keep, geometry=geometry):
             return 2

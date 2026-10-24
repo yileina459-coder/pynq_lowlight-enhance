@@ -57,7 +57,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\board\show_image.ps1 -
       实时显示帧时间/延迟/逐位比对，走 DMA 通路，不需要显示器）
 - [x] **输出画面水平偏移：已修，且是"每次演示启动自动标定"而不是一个猜出来的固定值**。实测相位在一路像素流内完全稳定
       （换图 / 换挡位 / 0.2 s 重推都不变，见 [docs/output_offset.md](docs/output_offset.md)），只有像素流重启才会变，
-      所以 `tools\board\fix_offset.ps1` 测一次写一次，`ensure_demo.ps1` 拉起演示后自动调用；对真实画面做互相关校验残差 0–1 px
+      所以 `tools\board\fix_offset.ps1` 测一次写一次，`ensure_demo.ps1` 拉起演示后自动调用；对真实画面做互相关校验残差 0–1 px。
+      补偿在常驻进程里逐帧应用，图片和视频共用同一个值；曾经"上传视频后又偏"是因为 `play_video.ps1` 的 `-Roll` 默认 0
+      把标定值写没了，现已改成默认保留板上的值
 - [x] **HDMI 输出打通并定位到硬件上限**（完整推导见 `docs/hdmi_status.md`）：
       这块 PYNQ-Z2 的 HDMI 输出只有 **640×480** 能工作（800×600/720p/1080p 一帧都不消费、
       不产生 TMDS，原厂 `base.bit` 行为相同）；HDMI 输入又无法工作在 640×480

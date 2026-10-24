@@ -45,7 +45,12 @@ param(
     [double]$Fps = 30,
     [double]$Seconds = 6,
     [string]$Preset = 'clarity',
-    [int]$Roll = 0,
+    # Horizontal compensation. -1 (the default) leaves whatever the board is already using, which is
+    # what the calibration in tools\board\fix_offset.ps1 wrote - the phase belongs to the pixel stream,
+    # not to the picture, so a video must inherit it. This parameter used to default to 0 and write it
+    # unconditionally, which silently wiped the calibrated value every time a video was uploaded and
+    # made the picture jump back to its wrapped state. Set it only to override on purpose.
+    [int]$Roll = -1,
     # Analyse the clip first and let the analysis choose the preset. 'clip' picks one preset for the
     # whole sequence (perfectly steady); 'adaptive' allows a handful of switches, placed on the actual
     # scene cuts and subject to a minimum segment length, so the picture never flutters.
@@ -155,7 +160,14 @@ Write-Host "board now holds $count frame(s) in $remoteDir" -ForegroundColor Cyan
 # --- 3) ask the running demo to play them -------------------------------------------------
 $scheduleArg = if ($Auto) { 'cp /tmp/hdmi_uploads/play_presets.txt /tmp/hdmi_play_presets.txt' } else { ': > /tmp/hdmi_play_presets.txt' }
 $loopValue = if ($Loop) { '1' } else { '0' }
-$null = Invoke-Board "echo $Fps > /tmp/hdmi_play_fps.txt; echo $Preset > /tmp/hdmi_preset.txt; echo $Roll > /tmp/hdmi_roll.txt; echo $loopValue > /tmp/hdmi_play_loop.txt; $scheduleArg; echo $remoteDir > /tmp/hdmi_play.txt"
+# Only touch the compensation when an override was asked for: the value on the board was measured for
+# this pixel stream and stays valid through a video upload.
+$rollArg = if ($Roll -ge 0) { "echo $Roll > /tmp/hdmi_roll.txt;" } else { '' }
+if (-not $rollArg) {
+    $current = (Invoke-Board "cat /tmp/hdmi_roll.txt 2>/dev/null").Trim()
+    Write-Host "keeping the calibrated compensation (roll=$current)" -ForegroundColor Cyan
+}
+$null = Invoke-Board "echo $Fps > /tmp/hdmi_play_fps.txt; echo $Preset > /tmp/hdmi_preset.txt; $rollArg echo $loopValue > /tmp/hdmi_play_loop.txt; $scheduleArg; echo $remoteDir > /tmp/hdmi_play.txt"
 Start-Sleep -Seconds 3
 
 $state = Invoke-Board "cat /tmp/hdmi_state.txt"
