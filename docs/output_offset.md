@@ -7,6 +7,14 @@
 换图、换挡位、常驻进程每 200 ms 的重推都不变；只有像素流重新启动（常驻进程重启 / 板子重启）才变。
 所以修法是"启动完演示后测一次"，已经做成一条命令并被启动流程自动调用。
 
+同一台机器、同一个画面（`roll=0` 与 `roll=218`，截图为 OBS 预览按画面区裁切）：
+
+![偏移修复前后](output_offset_before_after.png)
+
+左：画面从源图第 218 列开始，左边的内容绕到右边去了（右边能看到本该在最左边的"随着科…"）。
+右：`roll=218` 之后，行首与源图一致。
+（图存放在 `board/hdmi_stream_enhance/evidence/offset_before_after.png`。）
+
 ## 怎么产生的
 
 `v_axi4s_vid_out` 用 AXI4-Stream 的 `TUSER0`（SOF）把传入的帧对齐到它自己的时基。这条通路上
