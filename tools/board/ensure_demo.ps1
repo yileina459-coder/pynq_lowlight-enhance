@@ -93,7 +93,15 @@ while ((Get-Date) -lt $deadline) {
 }
 
 if ($seen) {
-    Write-Status 'running' '演示已启动'
+    # 像素流刚重启过，水平相位就是这一次重新掷出来的，所以标定一次（约 10 秒）。
+    # 标定失败不影响演示本身：只是画面可能还是偏的，用 tools\board\fix_offset.ps1 再跑一次即可。
+    $align = Join-Path $repo 'tools\board\fix_offset.ps1'
+    if (Test-Path $align) {
+        Write-Host '正在标定画面水平偏移（约 10 秒，期间画面会闪一下彩色条纹）...' -ForegroundColor Cyan
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $align 2>&1 |
+            ForEach-Object { Write-Host "  $_" }
+    }
+    Write-Status 'running' '演示已启动，画面偏移已标定'
     exit 0
 }
 

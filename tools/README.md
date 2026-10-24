@@ -10,13 +10,15 @@
 | `board/show_image.ps1` | 命令行上传一张图并显示 |
 | `board/play_video.ps1` | 命令行播放一段视频（`-Auto clip` / `-Auto adaptive` / `-Preset`） |
 | `board/reset_board.ps1` | 一键恢复干净状态（停播放、清排帧、设图片和挡位、回读确认） |
-| `board/ensure_demo.ps1` | 检查板上的演示进程，没运行就启动（面板打开时自动调用） |
+| `board/ensure_demo.ps1` | 检查板上的演示进程，没运行就启动（面板打开时自动调用），启动后自动标定画面偏移 |
 | `board/status.sh` | 一条命令看板上全部状态（进程、状态文件、控制文件、排程、日志、写帧失败数） |
+| `board/fix_offset.ps1` | **画面水平偏移**：自动测量 + 写补偿 + 验残差（`-Measure` 只量不改）。演示重启后跑一次 |
 
 ## 二、核心管线（会被上面的入口调用）
 
 | 文件 | 作用 |
 |---|---|
+| `board/align_output.py` | 画面偏移的测量与补偿本体（八色彩条 + OBS 预览 + 色相判读），被 `board/fix_offset.ps1` 调用 |
 | `prepare_image.py` | 图片转 640×480、比例适配、PC 侧提亮曲线 |
 | `preview_enhance.py` | 内核的精确复现，无需上板就能看到处理效果 |
 | `make_video_frames.py` | 视频解码成帧序列（MP4 走 ffmpeg，GIF/WebP 走 Pillow） |

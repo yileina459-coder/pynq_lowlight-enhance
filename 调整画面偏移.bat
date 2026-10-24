@@ -1,5 +1,5 @@
 @echo off
-rem Sweep the horizontal compensation so the picture lines up. Watch the screen and press Ctrl+C
-rem when it looks right, then note the number and fix it with set_roll.ps1 -Value <number>.
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0tools\board\set_roll.ps1" -Sweep
+rem Measure the output's horizontal phase from the OBS preview, write the compensation, verify it.
+rem Run it after the demo starts (the phase is redrawn whenever the pixel stream starts).
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0tools\board\fix_offset.ps1"
 pause
