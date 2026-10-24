@@ -87,6 +87,25 @@ def extract_with_ffmpeg(video: Path, out: Path, fps: float, seconds: float | Non
     return len(list(out.glob("frame_*.png")))
 
 
+def swap_written_frames(out: Path) -> int:
+    """Exchange red and blue in every frame just written.
+
+    The board shows red as blue (measured with a pure red frame), so the frames are swapped on the way out
+    rather than re-timing the FPGA for a packing-order bug. If a future bitstream fixes the order, remove
+    this call.
+    """
+    import numpy as _np
+    from PIL import Image as _Image
+
+    count = 0
+    for path in sorted(out.glob("frame_*.png")):
+        frame = _Image.open(path).convert("RGB")
+        array = _np.asarray(frame)
+        _Image.fromarray(array[..., [2, 1, 0]]).save(path)
+        count += 1
+    return count
+
+
 def extract_with_pillow(video: Path, out: Path, fps: float, seconds: float | None) -> int:
     """Fallback when ffmpeg is unavailable: Pillow handles GIF and animated formats only."""
     count = 0
@@ -137,6 +156,10 @@ def main(argv=None) -> int:
 
     seconds = args.seconds if args.seconds and args.seconds > 0 else None
     count = extract_with_ffmpeg(video, out, args.fps, seconds)
+    if count:
+        # Compensate the board's red/blue exchange for the ffmpeg path too; the Pillow path is handled at
+        # its call site below for symmetry, so only one of the two swaps ever runs.
+        swap_written_frames(out)
     if count == 0:
         print("falling back to Pillow (GIF / animated images only)")
         count = extract_with_pillow(video, out, args.fps, seconds)

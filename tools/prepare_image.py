@@ -114,6 +114,25 @@ def apply_tone(rgb: np.ndarray, preset: dict) -> np.ndarray:
 WIDTH, HEIGHT = 640, 480
 
 
+def swap_red_blue(img):
+    """Exchange the red and blue channels.
+
+    The board displays red as blue and blue as red - verified on hardware with a pure red frame, which came
+    back as (0, 0, 245), and with a colour-band test in which red/blue and yellow/cyan traded places while
+    green and magenta did not move. Swapping here makes every upload appear in its true colours.
+
+    If a future bitstream corrects the output packing order, delete this and its two call sites.
+    """
+    from PIL import Image as _Image
+    import numpy as _np
+    array = _np.asarray(img)
+    if array.ndim == 3 and array.shape[2] >= 3:
+        # Image.fromarray must come from the PIL module, not img.__class__: an opened file is a
+        # PngImageFile, which has no fromarray, and that is exactly how the first version of this failed.
+        return _Image.fromarray(array[..., [2, 1, 0]])
+    return img
+
+
 def load(path: str) -> Image.Image:
     """Open any picture Pillow understands, honouring EXIF orientation (phone photos)."""
     img = Image.open(path)
@@ -245,6 +264,7 @@ def main(argv=None) -> int:
         print(f"tone {args.tone}: brightness {before:.0f} -> {np.asarray(fitted).mean():.0f}")
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
+    fitted = swap_red_blue(fitted) if args.fit else fitted
     fitted.save(out, "PNG")
 
     pixels = np.asarray(fitted)
