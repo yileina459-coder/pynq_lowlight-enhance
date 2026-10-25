@@ -1,5 +1,8 @@
 # HDMI 源码研究：为什么输入锁不上（2026-10-20 夜）
 
+> **这是当时的推理记录**；后来查明输入锁不上是 HPD 未驱动等问题，修好后输入可锁 1080p。
+> 当前状态见 [`hdmi_status.md`](hdmi_status.md) 与 [`facts.md`](facts.md)。
+
 > 这份文件是逐行读 `dvi2rgb` IP 源码、PYNQ `base.tcl` 和 PYNQ 驱动源码之后的结论，
 > 目的是把"HDMI IN 不锁"从猜测变成可验证的推理链。
 

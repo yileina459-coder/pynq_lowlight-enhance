@@ -33,9 +33,9 @@ source 4032x3024 -> 640x480 (letterbox)
 wrote C:\Users\79171\Desktop\FPGA\.tmp\upload\mine_221308_640x480.png  mean=118.4  min=0  max=255
 OK - the board is now showing /tmp/hdmi_uploads/mine_221308_640x480.png
   image=/tmp/hdmi_uploads/mine_221308_640x480.png
-  roll=0
-  preset=pass
-  sof=None
+  roll=218
+  preset=clarity
+  sof=1
   mode=640x480
   updated=2025-05-05 23:51:21
 ```
@@ -54,7 +54,7 @@ OK - the board is now showing /tmp/hdmi_uploads/mine_221308_640x480.png
 # 裁切填满，白边用浅灰
 ... -Image photo.jpg -Fit crop
 # 同时切换增强预设
-... -Image scan.png -Fit letterbox -Preset threshold
+... -Image scan.png -Fit letterbox -Preset binarize
 ```
 
 `-Background 0..255` 只对 `letterbox` 有效，默认 0（黑色）。
@@ -101,43 +101,15 @@ python tools\preview_enhance.py photo.jpg --sheet --out sheet.png
 如果 4.5 倍还不够，需要动内核（例如加 gamma 段），那是一次 HLS + Vivado 重建（约 1 小时）。
 当前曲线的极限就在这里：再高的低端增益会把画面大面积推到 255。
 
-## 不用命令行：双击图标
+## 不用命令行：双击入口
 
-桌面上有一个 **上传图片到开发板** 图标（`上传图片.bat` 的快捷方式），三种用法：
+双击仓库根目录的 **上传到开发板.bat**（图片和视频同一个窗口，源码 `tools/board/upload_panel.ps1`）。
+窗口里选文件、点「上传并显示」即可；下方日志会回读板上状态。
 
-| 操作 | 效果 |
-|---|---|
-| **双击图标** | 弹出小窗口：选图 -> 选比例 -> 点“上传到开发板” |
-| **把图片拖到图标上** | 立刻上传，用“保持比例” |
-| **把图片拖进小窗口** | 填入路径，再点上传 |
+`UPLOADED` 与 `STATE_IMAGE` 相同，才代表**板上真的换了图**；两个值不同说明常驻进程还没拾取，
+窗口会提示「未确认」，等 1–3 秒再看一次。
 
-窗口里会显示结果：
-
-```
-上传成功，板子现在显示的是：
-photo.jpg
-...
-UPLOADED=/tmp/hdmi_uploads/mine_221726_640x480.png
-STATE_IMAGE=/tmp/hdmi_uploads/mine_221726_640x480.png
-```
-
-`UPLOADED` 与 `STATE_IMAGE` 相同，才代表**板上真的换了图**（脚本会回读 `/tmp/hdmi_state.txt`）。
-如果两个值不同，说明板子还没拾取新图，窗口会提示“未确认”，稍等再看一次即可。
-
-图标没了？在仓库根目录执行一次即可重建：
-
-```powershell
-$ws = New-Object -ComObject WScript.Shell
-$lnk = Join-Path ([Environment]::GetFolderPath('Desktop')) '上传图片到开发板.lnk'
-$sc = $ws.CreateShortcut($lnk)
-$sc.TargetPath = "$PWD\上传图片.bat"
-$sc.WorkingDirectory = "$PWD"
-$sc.IconLocation = "$env:SystemRoot\System32\imageres.dll,68"
-$sc.Save()
-```
-
-图形界面的源码在 `tools/board/archive/upload_gui.ps1`，它调用的是同一个 `show_image.ps1`，
-所以两条路径的转换、校验、错误提示完全一致。
+（旧的 `上传图片.bat` / `上传视频.bat` 也打开同一个窗口，只是预选了类型。）
 
 
 ## 为什么不用重启
@@ -148,8 +120,8 @@ $sc.Save()
 | 文件（板上） | 内容 |
 |---|---|
 | `/tmp/hdmi_image.txt` | 要显示的图片路径（PNG/JPEG） |
-| `/tmp/hdmi_roll.txt` | 水平补偿像素数 |
-| `/tmp/hdmi_preset.txt` | 增强预设（`pass` / `threshold` / `sobel` / …） |
+| `/tmp/hdmi_roll.txt` | 水平补偿像素数（启动后由 `fix_offset.ps1` 标定，本次 218） |
+| `/tmp/hdmi_preset.txt` | 增强预设（`pass` / `clarity` / `bright` / `night` / `document` / `binarize` / …） |
 | `/tmp/hdmi_sof.txt` | SOF 生成开关（`0`/`1`） |
 | `/tmp/hdmi_state.txt` | **演示回报的当前状态**（只读） |
 
@@ -164,7 +136,7 @@ $sc.Save()
 | 状态文件里还是旧图 | 等 3 秒再看；`ssh xilinx@192.168.2.99 cat /tmp/hdmi_state.txt` |
 | 屏幕上是彩条 | 采集棒丢了锁定：**拔插 HDMI 线**或重启板子，然后重新启动演示 |
 | 图显示为全黑 | 源图太暗；`prepare_image.py` 会打印 `mean=` 提示 |
-| 画面偏左/偏右 | 这是随会话变化的相位（见 `docs/hdmi_status.md`）：用 `tools/diag/measure_bars.py` 量，再写 `--roll` |
+| 画面偏左/偏右 | 相位属于这一路像素流：运行 `tools\board\fix_offset.ps1` 自动测量并写补偿；视频上传不会再清零标定值（`-Roll` 默认保留）。见 `docs/output_offset.md` |
 
 ## 相关文件
 
@@ -172,19 +144,23 @@ $sc.Save()
 - `tools/prepare_image.py` —— 图片转 640×480 PNG，可单独用来预览效果
 - `board/hdmi_stream_enhance/hdmi_resident.py` —— 板上常驻演示
 
-## 提亮的两种方式（重要）
+## 提亮为什么默认在 PC 侧做
 
-板上的增益乘法级**当前有缺陷**：任何 `gain_lo != 16` 的预设都会给画面打上规则竖条纹，
-幅度随增益增大（详见 `docs/hdmi_status.md`）。`pass` 与 `clarity` 不受影响。
+板上增益（`gain_lo`/`gain_hi`）是好的：单实例复核下 1.0× / 1.25× / 1.5× / 2.0× 的列 std
+为 1.11 / 3.14 / 2.47（噪声量级），连续 15 分钟 0 次写帧失败。早期看到的"竖条纹"是
+**两个演示进程同时写同一份配置字**造成的，不是硬件缺陷
+（`board/hdmi_stream_enhance/evidence/gain_defect/README.md`）。
 
-因此**提亮默认在电脑上完成**：
+默认仍把提亮放在 PC 侧，理由不是缺陷，而是控制力：PC 能按整张图统计（光照平坦化 + 分位拉伸），
+过曝可以预测；板上只有两段线性曲线，参数得事先猜。板上只跑 `clarity`，像素流负担最小；
+板端增益仍可随时用，适合演示"同一张图不同曲线"的对比。
 
-| 方式 | 谁在做 | 效果 | 状态 |
+| 方式 | 谁在做 | 效果 | 建议 |
 |---|---|---|---|
-| **本机提亮（默认）** | PC 上的同一条曲线 + 板上 `clarity` 锐化 | 干净、明亮、清晰 | ✅ 推荐 |
-| 板上增益（`bright`/`night`/…） | FPGA | 亮但有条纹 | ⚠️ 有缺陷，仅用于演示对比 |
+| **本机提亮（默认）** | PC 上的曲线 + 板上 `clarity` 锐化 | 均匀、可预测、无眩光 | ✅ 推荐 |
+| 板上增益（`bright`/`night`/…） | FPGA | 提亮更直接，参数固定 | 演示对比时用 |
 
-窗口里 **“在本机提亮（推荐）”默认勾选**；勾选时板上预设自动设为 `clarity`
+窗口里 **"在本机提亮（推荐）"默认勾选**；勾选时板上预设自动设为 `clarity`
 （只做局部对比增强，把文字边缘拉清楚）。
 
 命令行等价：
@@ -196,7 +172,7 @@ $sc.Save()
 # 只看板上锐化（不提亮）
 ... -Image page.jpg -Preset clarity
 
-# 对比缺陷：板上增益
+# 对比：板上增益
 ... -Image page.jpg -Preset night
 ```
 
@@ -234,7 +210,7 @@ tools\board\play_video.ps1 -Video x -Stop
 ```
 
 - 帧在 PC 上解码后上传；板上按帧率推流，**不重启进程**（重启会打断像素流，需要拔插线）。
-- 帧率上限由 PS 送帧成本决定（实测约 15.6 ms/帧，≈63 fps），所以 30 fps 很稳、60 fps 余量很小。
+- 单帧成本：拷贝 3.4 ms + 写帧 3.4 ms（缓存命中后）；实测 24 fps 请求下 23.3–24.0 fps、0 卡顿。
 - 每帧占 DDR 约 0.9 MB：6 秒 @30 fps ≈ 166 MB。
 - 控制文件在播放时仍然生效：`echo night > /tmp/hdmi_preset.txt` 会实时换曲线。
 - **MP4 需要 ffmpeg**（`winget install Gyan.FFmpeg`）；没有 ffmpeg 时支持 GIF / 动态 WebP。
@@ -256,5 +232,5 @@ tools\board\play_video.ps1 -Video x -Stop
 | 内容类型 | 推荐 |
 |---|---|
 | 书页、试卷、扫描件、暗处拍的文件 | **`page`**（默认，自动） |
-| 普通彩色照片 | `bright` 或 `night`（板上增益有缺陷，故用 PC 端曲线） |
+| 普通彩色照片 | `bright` 或 `night`（PC 端曲线；板端增益也可用） |
 | 纯文字、要高对比 | `binarize` / `invert` |

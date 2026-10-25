@@ -17,11 +17,21 @@
         1
       ],
       "mean": 0.3,
+      "measured_on": "2026-10-23 stream (one stream only; do not read as 'offset eliminated')",
       "history_same_bitstream_earlier": [
         0,
         45,
         89
-      ]
+      ],
+      "2026_10_24_stream": {
+        "roll0": 216.8,
+        "roll": 218,
+        "residual_px": [
+          0,
+          1
+        ],
+        "note": "phase belongs to one pixel stream; calibrate after each stream start (docs/output_offset.md)"
+      }
     },
     "stability": {
       "minutes": 15,

@@ -8,13 +8,16 @@
 
 作品名称：低延迟视觉增强终端
 
-作品简介：面向低照度图像观察的实时增强——**不经过帧缓冲**，像素边走边算，端到端延迟约一行，
-而不是一帧。核心算子 `enhance`（局部对比 → 色调曲线 → 二值/反色 → 分屏）由 Vitis HLS 实现，
-59 bit 参数在运行时由 PS 下发；参数含清晰度、拐点、双段增益、二值阈值、反色/单色、分屏位置。
+作品简介：面向低照度图像观察的低延迟增强——整条增强链都在 PL 的像素流里完成，**不经过帧缓冲**，
+像素边走边算；片上双时间戳实测流水线延迟 **16 个像素时钟 = 160 ns**（约 720p60 一行的 1%）。
+核心算子 `enhance`（局部对比 → 色调曲线 → 二值/反色 → 分屏）由 Vitis HLS 实现，59 bit 参数在运行时
+由 PS 下发；参数含清晰度、拐点、双段增益、二值阈值、反色/单色、分屏位置。
 
 算子族另含 Sobel、高斯、锐化三个卷积核，用于构成"同一算法软硬件对比"的证据：AXI-DMA 通路
-上已做到与 numpy 黄金模型**逐位一致**，并测出 PS 3108 ms/帧 vs PL 15.8 ms/帧（196.7×）。
-色彩空间转换复用 PYNQ 官方 IP。
+上已做到与 numpy 黄金模型**逐位一致**，并测出 PS 3108.4 ms/帧 vs PL 15.8 ms/帧（196.7×）。
+色彩空间转换复用 PYNQ 官方 IP。帧源是 PS 预载的图像/视频帧，经 VDMA 送进像素通路；
+本板 HDMI 输出只支持 640×480、输入不支持该模式，摄像头直通未打通——完整口径见
+[docs/facts.md](docs/facts.md)。
 
 ## 上传自己的图片
 
@@ -33,7 +36,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\board\show_image.ps1 -
 **下次从哪接着干**：见 [docs/session_handoff.md](docs/session_handoff.md)（能跑什么 / 关键数字 / 剩余工作 / 踩过的坑）。
 
 进度主表见 [`docs/roadmap.md`](docs/roadmap.md)，环境事实见 [`docs/env.md`](docs/env.md)，
-设计报告见 [`report/design_report.md`](report/design_report.md)。
+**所有指标的唯一定义见 [`docs/facts.md`](docs/facts.md)**，设计报告见
+[`report/design_report.md`](report/design_report.md)。
 
 - [x] 初始化仓库与目录结构
 - [x] 工具链打通（Vivado / Vitis HLS 2026.1，冒烟工程见 `build/smoke/`）
@@ -48,14 +52,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\board\show_image.ps1 -
 - [x] HDMI overlay 在板上加载成功、`pynq.lib.video` 绑定正常
 - [x] 增强核 `enhance`：C 仿真两种配置各 9216 拍 **0 误差**、II=1、估计 Fmax 194.59 MHz、
       BRAM 3 / DSP 2 / FF 2168 / LUT 1659（3%）
-- [x] 增强核 **已在板上逐位验证**：8 个预设各 0/2764800 通道不一致，15.6 ms/帧
+- [x] 增强核 **已在板上逐位验证**：8 档（验证参数表）各 0/2764800 通道不一致，15.6 ms/帧
       （`board/enhance_dma/`，走 AXI-DMA，不需要显示器）
 - [x] 新增 `document` 预设：保住极性的暗页提亮（原 `reading` 在暗页上会把黑白翻转，
       对比度 +41 → −51；新预设 → **+158**，见 `sim/enhance/tune_document_preset.py`）
-- [x] **增强核在 HDMI 通路上实时工作**：`board/hdmi_stream_enhance/`，WNS **+0.206 ns**（含 SOF 帧对齐内核）；采集卡实测 640×480、流水线 **21 拍**（片上单次测量 21–25 拍）；**切预设无黑屏**（配置走 BRAM，741 次写帧 0 卡顿），支持显示自己的图片；**画面偏移 0.3 像素**（SOF 把相位锚定到帧起始，历史值 0/45/89 来自相位未锚定）；单实例运行 15 分钟 0 次写帧失败
-- [x] **Jupyter 交互面板**：`board/enhance_dma/panel.ipynb`（8 预设一键切换、
+- [x] **增强核在 HDMI 通路上持续出图**：`board/hdmi_stream_enhance/`，WNS **+0.206 ns**（含 SOF 生成器）；采集卡实测 640×480、流水线 **21 拍**（片上单次测量 21–25 拍）；**切预设无黑屏**（配置走 BRAM，741 次写帧 0 卡顿），支持显示自己的图片；**画面偏移按每路像素流标定**（相位在一路流内稳定、随流启动变化；本次 216.8 px → `roll=218`，残差 0–1 px）；单实例运行 15 分钟 0 次写帧失败
+- [x] **Jupyter 交互面板**：`board/enhance_dma/panel.ipynb`（8 档一键切换、
       实时显示帧时间/延迟/逐位比对，走 DMA 通路，不需要显示器）
-- [x] **输出画面水平偏移：已修，且是"每次演示启动自动标定"而不是一个猜出来的固定值**。实测相位在一路像素流内完全稳定
+- [x] **输出画面水平偏移：已做成"每次演示启动自动标定"的流程，而不是一个猜出来的固定值**。实测相位在一路像素流内完全稳定
       （换图 / 换挡位 / 0.2 s 重推都不变，见 [docs/output_offset.md](docs/output_offset.md)），只有像素流重启才会变，
       所以 `tools\board\fix_offset.ps1` 测一次写一次，`ensure_demo.ps1` 拉起演示后自动调用；对真实画面做互相关校验残差 0–1 px。
       补偿在常驻进程里逐帧应用，图片和视频共用同一个值；曾经"上传视频后又偏"是因为 `play_video.ps1` 的 `-Roll` 默认 0
@@ -66,23 +70,28 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\board\show_image.ps1 -
       （`dvi2rgb` 的 `kClkRange` 只接受 1/2/3，25.175 MHz 需要 5 档）。
       因此帧源改为 **VDMA**：PS 写帧 → VDMA → 内核 → HDMI OUT，内核仍在真实像素通路上
 - [x] **修掉 HLS 配置锁存问题**：自由运行内核的 6 个配置参数被 HLS 在 prologue 锁存
-      （生成 RTL 里 `binarize_read_reg_*` 即证据）；用 `enh_rst_gate` 让 PS 复位内核，
-      预设切换后重新采样，代价是当帧花屏一帧
+      （生成 RTL 里 `binarize_read_reg_*` 即证据）。先用 `enh_rst_gate` 让 PS 复位内核重新采样
+      （代价是当帧花屏一帧）；后来把配置搬进 BRAM（`enhance_stream_cfg`），切预设不再复位——
+      见上面「切预设无黑屏」那条
 - [ ] HDMI **直通**（笔记本 → 板子 → 显示）受上述两个硬件限制阻塞，不再作为交付路径
 - [x] 内部图案源 overlay（`board/hdmi_pattern/`，不依赖任何外部输入）
-- [x] **流水线延迟实测：16 个像素时钟 = 160 ns @100 MHz**（`axis_cycle_stamp` 在内核前后各
-      打一次时间戳；720p60 的一行是 17.2 µs，所以延迟只有一行的 1%，原来说的「约一行」是上界）
-- [ ] 端到端延迟与功耗实测：采集卡已到，但 HDMI 直通受硬件限制（见上），只能测 PL 内部延迟（21 拍）；功耗需外部功率计
-- [x] **参数化与 UI**：8 预设运行期切换，两条通路各有一个 Jupyter 面板 —— `board/enhance_dma/panel.ipynb`（DMA，逐位比对）与 `board/hdmi_stream_enhance/notebooks/hdmi_panel.ipynb`（HDMI，点按钮切预设）
+- [x] **流水线延迟实测：16 个像素时钟 = 160 ns @100 MHz**（DMA 通路；HDMI 通路是 21 拍 = 147 ns。
+      `axis_cycle_stamp` 在内核前后各打一次时间戳；720p60 的一行是 17.2 µs，所以延迟只有一行的 1%，
+      原来说的「约一行」是上界）
+- [ ] 端到端延迟与功耗实测：HDMI 直通受硬件限制（见上），只能测 PL 内部延迟（HDMI 通路 21 拍）；功耗需外部功率计
+- [x] **参数化与 UI**：运行期切预设（常驻/上传路径 **10 档**；两个 Jupyter 面板仍是 8 档旧表）——
+      `board/enhance_dma/panel.ipynb`（DMA，逐位比对）与
+      `board/hdmi_stream_enhance/notebooks/hdmi_panel.ipynb`（HDMI，点按钮切预设）；
+      日常用 PowerShell 上传面板（图/视频同一个窗口）
 - [x] **一页英文 A4 海报**：`report/poster/poster.pptx`（由 `make_poster.py` 生成，配图为板子 HDMI 输出的 2×2 采集拼图）；拿到 AMD 官方模板后可直接套版
 
 ## 技术栈
 
 - 硬件平台：PYNQ-Z2（Zynq-7000 XC7Z020）
 - 开发工具：Vivado / Vitis 2026.1（赛规允许 2025.2；本项目全程 2026.1）
-- PL 实现：Vitis HLS（3 个自研卷积核）+ PYNQ 官方 IP（HDMI 子系统、色彩空间转换）
+- PL 实现：Vitis HLS（enhance + Sobel / Gaussian / Sharpen 四个自研核）+ PYNQ 官方 IP（HDMI 子系统、色彩空间转换）
 - PS 实现：Python、Jupyter Notebook、PYNQ Overlay
-- UI：ipywidgets（待做）
+- UI：Jupyter 面板（ipywidgets）+ PowerShell 上传面板（图片/视频同一窗口）+ 桌面 .bat 入口
 
 ## 目录结构
 
@@ -91,7 +100,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\board\show_image.ps1 -
 ├── README.md                 # 项目简介 + 状态清单 + 复现步骤
 ├── 上传到开发板.bat          # 双击打开统一上传面板（图片 / 视频）
 ├── 上传图片.bat / 上传视频.bat  # 同上（保留原来习惯，实际打开同一个窗口）
-├── docs/                     # 架构、路线图、环境基线、HDMI 全部实测记录、视频播放说明
+├── docs/                     # 事实基线（facts.md）、架构、路线图、HDMI 全部实测记录、偏移与视频说明
 ├── src/
 │   ├── hls/                  # enhance（主算子 + 有界版）、sobel/gaussian/sharpen（算子族）
 │   └── rtl/                  # axis_cycle_stamp、enh_cfg_split、enh_rst_bridge、
@@ -101,13 +110,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\board\show_image.ps1 -
 │   ├── smoke/                # 工具链冒烟
 │   ├── hls/                  # 每个算子的 HLS 工程脚本（流式 + 有界）
 │   ├── overlay_dma/          # DMA 版 overlay（Sobel）
-│   ├── overlay_enhance/      # DMA 版 overlay（enhance，8 预设验证）
+│   ├── overlay_enhance/      # DMA 版 overlay（enhance，8 档验证）
 │   ├── overlay_hdmi/         # HDMI 版 overlay（Sobel）
-│   ├── overlay_hdmi_enhance/ # HDMI 版 overlay（enhance + SOF + 复位桥 + EDID 定制）
+│   ├── overlay_hdmi_enhance/ # HDMI 版 overlay（enhance + SOF + 配置 BRAM + EDID 定制）
 │   └── rtl/                  # 独立 RTL 的综合脚本
 ├── board/
 │   ├── dma_sobel/            # DMA 版：Sobel 逐位比对
-│   ├── enhance_dma/          # 增强核：8 预设板上逐位比对 + Jupyter 面板
+│   ├── enhance_dma/          # 增强核：8 档（旧参数表）板上逐位比对 + Jupyter 面板
 │   ├── hdmi_stream/          # HDMI 版（Sobel 算子族）
 │   ├── hdmi_stream_enhance/  # **HDMI 版主通路**：640×480、21 拍、10 档预设可切（含更锐利的 crisp）、视频播放
 │   │   ├── enhance_hdmi.bit  #   交付位流（WNS +0.206 ns，含 SOF 内核）
@@ -157,10 +166,16 @@ python sim\gaussian\golden_gaussian.py --input data\images\test_720p.png --refer
 python sim\sharpen\golden_sharpen.py   --input data\images\test_720p.png --reference data\reference\sharpen_720p.png  --border wrap
 
 # 4) Overlay 位流（DMA 版约 12 分钟；HDMI 版约 60 分钟，含 PYNQ 源码拉取与 HLS IP 重建）
-build\overlay_dma\build.bat
-build\overlay_hdmi\build.bat
+build\overlay_dma\build.bat            # DMA 版（Sobel，逐行/整帧对比）
+build\overlay_enhance\build.bat        # DMA 版（enhance，8 档逐位验证）
+build\overlay_hdmi_enhance\build.bat   # HDMI 交付位流（enhance + SOF + 配置 BRAM）
 
-# 5) 上板（把 board\<version>\ 下的文件传到板子同一目录）
+# 5) 上板（当前主演示：640×480 持续出图）
+tools\board\ensure_demo.ps1            # 没在跑就拉起常驻演示，并自动标定画面偏移
+#    之后双击 上传到开发板.bat 选图片/视频；tools\board\status.sh 看状态；
+#    tools\board\fix_offset.ps1 可单独重测偏移，tools\board\reset_board.ps1 一键复原
+
+#    历史通路（DMA 逐位验证 / Sobel HDMI），仍可复现：
 python3 sobel_dma.py                     # DMA 版：期望 COMPARE PASS (bit-exact)
 python3 hdmi_sobel.py --seconds 10       # HDMI 版：期望 RESULT: OK（画面需显示器/采集卡）
 python3 ps_sobel.py --input test_720p.png --metrics metrics.csv
@@ -171,7 +186,7 @@ python3 ps_sobel.py --input test_720p.png --metrics metrics.csv
 | 评分项 | 对应提交物 |
 | --- | --- |
 | 创新性与应用价值 30 | 完整 HDMI 视频处理系统、双通路验证方法、软硬件对比 |
-| 性能与资源优化 20 | `sim/perf/make_comparison.py` 生成的对比表 + `metrics.csv` 原始数据 |
-| 功能正确性与设计完整性 20 | 三个算子的 C 仿真（0 误差）、综合报告、DMA 逐位比对、HDMI 上板 |
+| 性能与资源优化 20 | `sim/perf/make_comparison.py` 生成的对比表 + `metrics.csv` 原始数据；口径汇总见 [`docs/facts.md`](docs/facts.md) |
+| 功能正确性与设计完整性 20 | enhance + 三个算子的 C 仿真（0 误差）、综合报告、DMA 逐位比对（8 档参数表）、HDMI 640×480 上板 |
 | 大模型协作与技能包 15 | [`report/ai_collaboration_log.md`](report/ai_collaboration_log.md) + `skill/` |
-| 文档质量与可复现性 15 | 本 README + `docs/` + 全脚本化构建 + 设计报告 |
+| 文档质量与可复现性 15 | 本 README + `docs/`（含事实基线 `docs/facts.md`）+ 全脚本化构建 + 设计报告 |

@@ -1,5 +1,8 @@
 # P3b：把算子插进 HDMI 视频流
 
+> **这是 2026-10-19/20 的方案与事实记录**；最终实现与当前状态见
+> `board/hdmi_stream_enhance/`、[`facts.md`](facts.md)、[`hdmi_status.md`](hdmi_status.md)。
+
 本文件记录**已经查证过**的事实和两条可选路线。没有查证的不写。
 
 ## 结论先说（已从"预研"变成"已验证"）

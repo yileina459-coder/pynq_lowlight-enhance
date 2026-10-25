@@ -1,5 +1,12 @@
 # enhance_hdmi — 真机 HDMI 增强通路
 
+> **这是该通路的构建与排查档案（按时间追加，截至 2026-10-23）。**
+> 当前交付状态与数字以 [`docs/facts.md`](../../docs/facts.md) 为准，偏移以
+> [`docs/output_offset.md`](../../docs/output_offset.md) 为准。
+> 阅读时注意：文中 **+0.171 / +0.289** 是中间位流（交付位流是 **+0.206**）；
+> **7 档 / 8 档**是当时快照（现在运行期是 **10 档**，逐位验证仍是 8 档旧表）；
+> **"偏移 45 px / SOF 已锚定"** 已被 2026-10-24 的实测取代（相位属于每一路像素流，启动后标定）。
+
 ```
 PS 写一帧到 DDR ──► VDMA MM2S ──► stamp_in ──► enhance ──► stamp_out
                                                               │
@@ -104,18 +111,15 @@ sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=
 
 ```
 board/hdmi_stream_enhance/
-├── enhance_hdmi.bit / .hwh  位流与硬件描述（WNS +0.171 ns）
+├── enhance_hdmi.bit / .hwh  交付位流与硬件描述（WNS +0.206 ns，含 SOF）
 ├── timing_impl.rpt / util_impl.rpt
 ├── base.xsa                 导出给 Vitis 的设计
-├── hdmi_live.py             共享库：预设表、pack()、write_preset()（含复位脉冲）
-├── hdmi_preset_only.py      **主演示**：写一帧 → 切预设定时循环（不复位、不重建输出）
-├── hdmi_show_image.py       显示自己的图片（裸 RGB 或 board 侧解码），可轮播预设
-├── hdmi_live_check.py       量化验证：切档期间连续写帧，统计有无卡顿
-├── hdmi_vdma_demo.py        备选演示：每次切预设都重写一帧
-├── hdmi_restore_hpd.py      工具：加载位流后恢复 Windows 的 2 号屏
+├── hdmi_live.py             共享库：10 档预设表、pack()、write_preset()、开输出、HPD
+├── hdmi_resident.py         **当前主演示**：常驻 / 单实例，逐帧应用 roll+预设，播放视频帧
+├── archive/                 旧入口（hdmi_preset_only / hdmi_show_image / hdmi_vdma_demo / hdmi_tour …）
 ├── evidence/                采集卡截图（按画面特征命名）+ 2×2 拼图
-├── diagnostics/             21 个排查脚本，每个对应一个具体问题
-└── notebooks/               Jupyter 版验证与演示（hdmi_panel.ipynb = 点按钮切预设）
+├── diagnostics/             排查脚本，每个对应一个具体问题
+└── notebooks/               Jupyter 版验证与演示（hdmi_panel.ipynb = 点按钮切预设，8 档旧表）
 ```
 
 ## 跑
@@ -132,10 +136,13 @@ board/hdmi_stream_enhance/
 ```bash
 cd /home/xilinx/jupyter_notebooks/hdmi_enh2
 
-# 主演示：640×480 测试图 + 8 档预设循环（切预设不中断流）
+# 常驻演示（当前主入口）：640×480，切图 / 切挡 / 播放视频都在它里面
 sudo env XILINX_XRT=/usr PATH=/usr/local/share/pynq-venv/bin:/usr/bin:/bin HOME=/root \
-  /usr/local/share/pynq-venv/bin/python3 hdmi_preset_only.py --cycle 15
+  /usr/local/share/pynq-venv/bin/python3 hdmi_resident.py --image testcard_640x480.png --preset clarity
 ```
+
+旧入口（`hdmi_preset_only.py`、`hdmi_vdma_demo.py`、`hdmi_tour.py`、`hdmi_show_image.py`）已移入
+`archive/`，只用于复现本文记录的历史方案。
 
 预期输出：
 
@@ -240,7 +247,8 @@ OBS 缩放锯齿（改 1:1 后仍闪）、写 DDR 撕裂（只写一帧仍闪）
 ## 2026-10-22 凌晨：切换不再闪（配置走 BRAM）
 
 位流已更新为 **memory-configured kernel**：`enhance_stream_cfg` 每像素从 BRAM 读一次
-64 位配置，切预设只是写一次 GPIO，不复位、不中断像素流。WNS **+0.289 ns**。
+64 位配置，切预设只是写一次 GPIO，不复位、不中断像素流。当时那一版 WNS **+0.289 ns**；
+交付位流加入 SOF 后为 **+0.206 ns**。
 
 实测（`hdmi_live_check.py`，150 秒、25 次切换、741 次写帧）：
 
@@ -251,10 +259,10 @@ latency values : [21]
 RESULT: LIVE SWITCH STABLE
 ```
 
-**主演示现在直接跑实时切换**：
+**当时的主演示**（`hdmi_preset_only.py`，现归档；当前主入口是 `hdmi_resident.py` + 上传面板）：
 
 ```bash
-sudo env ... python3 hdmi_preset_only.py --cycle 15      # 8 档循环，无黑屏
+sudo env ... python3 hdmi_preset_only.py --cycle 15      # 8 档循环（当时），无黑屏
 sudo env ... python3 hdmi_show_image.py --raw frame.bin --cycle 8   # 自己的图片
 ```
 
@@ -298,12 +306,17 @@ hl.raise_output_hpd(ol)   # 输出侧（关键）
 
 ## 水平偏移与"重启后彩条"（2026-10-22 晚）
 
+> **2026-10-24 更新**：下面的 45 px 是当时那一路流的读数，不是固定值。同一份交付位流在
+> 10-24 的另一路流上测得 **216.8 px**，`roll=218` 后残差 0–1 px；相位在一路流内稳定、
+> 随流启动变化。现在的做法是启动后自动标定（`tools\board\fix_offset.ps1`），不再用固定的 45。
+> 详见 [`docs/output_offset.md`](../../docs/output_offset.md)。
+
 **偏移 ~45 像素是设计特性，不是故障。** 纯流式流水线延迟像素但不延迟时基，
 `v_axi4s_vid_out` 按固定行时序开窗，于是整幅画面左移（行尾回卷）。实测 43–46 像素，
 正好等于"内核 21–25 拍 + 时间戳/解包/FIFO 约 20 像素"。
 
 ```bash
-# 补偿（推荐值由 tools/diag/calibrate_roll.py 从截图算出来，实测 45）
+# 补偿（当时的做法：推荐值由 tools/diag/calibrate_roll.py 从截图算出来，实测 45；脚本已归档）
 sudo env ... python3 hdmi_tour.py --image testcard_640x480.png --roll 45 --hold 30
 ```
 

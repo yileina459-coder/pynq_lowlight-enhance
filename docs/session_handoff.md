@@ -1,6 +1,47 @@
-# 当前状态快照（2026-10-22 晚）
+# 当前状态快照（滚动更新，最新 2026-10-24）
 
 给"下次接着干"用的一页纸。细节在各专题文档里，这里只写**现在在哪、下一步是什么**。
+**数字口径一律以 [`facts.md`](facts.md) 为准**；本文件往下是历史快照，保留原文。
+
+## 2026-10-24 当前状态（以此为准）
+
+### 板上在跑什么
+
+| 项 | 现状 |
+| --- | --- |
+| 位流 | `board/hdmi_stream_enhance/enhance_hdmi.bit`（MD5 `c9a27af6…`，WNS **+0.206 ns**，SOF + 配置 BRAM） |
+| 常驻进程 | `hdmi_resident.py`（单实例锁）；控制面 `/tmp/hdmi_{image,preset,roll,sof,play*}.txt` |
+| 输出 | 640×480@60；流水线 **21 拍 = 147 ns**；**10 档**预设运行期切换 |
+| 偏移 | 相位属于这一路流；启动后自动标定（本次 216.8 → 218），残差 **0–1 px** |
+| PC 入口 | `tools\board\ensure_demo.ps1`（拉起 + 标定）、`上传到开发板.bat`（图/视频）、`status.sh`、`reset_board.ps1`、`fix_offset.ps1` |
+
+### 关键数字
+
+| 项目 | 数值 | 来源 |
+| --- | --- | --- |
+| 输出分辨率 | 640×480 @60（本板上限，直通不可行） | `docs/facts.md` §2 |
+| 流水线深度 | **21 拍 = 147 ns** @142.857 MHz | HLS `Depth = 21`、`timing_impl.rpt` |
+| 片上时间戳 | 21–25 拍（只锁首拍，同轮内恒定） | `axis_cycle_stamp` |
+| 切预设 | 741 次写帧 / 150 s / 25 次切换，**0 次卡顿** | `hdmi_live_check.py` |
+| DMA 逐位一致 | 8 档（旧参数表）各 **0/2764800**，15.6 ms/帧（720p） | `board/enhance_dma/` |
+| Sobel PS vs PL | 3108.4 ms → 15.8 ms（**196.7×**，63.45 fps） | `report/comparison.md` |
+| 画面偏移 | 本次 216.8 px → `roll=218`，残差 0–1 px | [`output_offset.md`](output_offset.md) |
+| 纠错记录 | **55 条** | `report/ai_collaboration_log.md` |
+| 功耗 / 端到端 | **未测**（无功率计；直通未打通） | `docs/facts.md` §8 |
+
+### 下一步（按价值排序）
+
+1. **板子在线后补当前 10 档表的逐位验证**（现在只验过 8 档旧表；跑 `enhance_dma.py` 即可）。
+2. 可选：位流层根治偏移（真实帧边界 SOF / 接出 VDMA TUSER），重建约 35–60 分钟。
+3. 功耗：需 USB 功率计。
+4. 海报套 AMD 官方模板。
+5. 提交前跑 `python tools\check_consistency.py --strict`（口径门禁）。
+
+---
+
+> **以下是历史快照（2026-10-22 晚 → 10-23），保留原文以便追溯。**
+> 其中 WNS +0.289、偏移 43–46 px / 建议 45、"SOF 已把相位锚定"、"视频上传会清零 roll"
+> 等结论已被 [`facts.md`](facts.md) 与 [`output_offset.md`](output_offset.md) 取代，不要再引用。
 
 ---
 
@@ -44,7 +85,7 @@ Jupyter（`http://192.168.2.99:9090`，密码 `xilinx`）：`hdmi_panel.ipynb` �
 
 ---
 
-## 三、关键数字（写报告/答辩直接用）
+## 三、关键数字（2026-10-22 时点；当前见文首）
 
 | 项目 | 数值 | 来源 |
 | --- | --- | --- |
@@ -60,7 +101,7 @@ Jupyter（`http://192.168.2.99:9090`，密码 `xilinx`）：`hdmi_panel.ipynb` �
 
 ---
 
-## 四、剩余工作（按价值排序）
+## 四、剩余工作（2026-10-22 时点）
 
 | 优先 | 事项 | 工时 | 阻塞 |
 | --- | --- | --- | --- |
@@ -98,7 +139,7 @@ tools/                         构建/检查/测量/素材生成脚本
 
 ---
 
-## 七、恢复已验证位流
+## 七、恢复已验证位流（2026-10-22 时点）
 
 当前 `board/hdmi_stream_enhance/enhance_hdmi.bit`（WNS +0.289，配置走 BRAM）**已上板验证**。
 若要回到"端口配置 + 复位门控"的旧版本：
@@ -110,7 +151,7 @@ git checkout dcfc364 -- board/hdmi_stream_enhance/enhance_hdmi.bit \
 
 旧版需要 `PULSE_RESET = True`（`hdmi_live.py`）和 `--rebuild-output`（`hdmi_preset_only.py`）。
 
-## 2026-10-23 凌晨：当前状态与下一步
+## 2026-10-23 凌晨：当时状态与下一步
 
 ### 交付物状态
 

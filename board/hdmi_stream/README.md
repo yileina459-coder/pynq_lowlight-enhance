@@ -1,7 +1,10 @@
-# HDMI 流式 Sobel（主展示形态）
+# HDMI 流式 Sobel（P3b 历史验证）
+
+> 这是 P3b 的 Sobel 版 HDMI 通路（历史验证）；交付主通路是
+> [`../hdmi_stream_enhance/`](../hdmi_stream_enhance/)（enhance + VDMA 供帧，640×480@60）。
 
 这一版把 PYNQ 官方 base overlay 在 Vivado 2026.1 里重建，并把 Sobel 核插在
-`pixel_pack` 和 `pixel_unpack` 之间——视频流**不经过帧缓冲**，延迟大约一行。
+`pixel_pack` 和 `pixel_unpack` 之间——视频流**不经过帧缓冲**，流水线延迟 21 拍量级（147 ns）。
 
 ```text
 HDMI In ─ dvi2rgb ─ v_vid_in_axi4s ─ color_convert ─ pixel_pack ─┐
@@ -82,9 +85,9 @@ overlay 上不可用** —— 这是刻意的取舍：要低延迟直通，就�
 
 | | DMA 版（`board/dma_sobel/`） | HDMI 版（本目录） |
 | --- | --- | --- |
-| 用途 | 功能正确性的**数字证据**（与黄金参考逐位比对） | 作品的**展示形态**（实时视频） |
+| 用途 | 功能正确性的**数字证据**（与黄金参考逐位比对） | 作品的**展示形态**（流式视频） |
 | 需要显示器 | 不需要 | 需要（或采集卡） |
-| 延迟 | 一次 DMA 往返 + 每行一次传输开销 | 约一行 |
+| 延迟 | 一次 DMA 往返 + 每行一次传输开销 | 21 拍 = 147 ns |
 | 测出的帧率 | 偏低（受 DMA 每次传输开销拖累） | 真实的流式帧率 |
 
 两个版本用的是**同一个 HLS 核**，只是打包时的时钟约束不同（DMA 版 100 MHz，

@@ -77,6 +77,7 @@ python3 panel_selftest.py
 
 ## 已知边界
 
-- 这条通路证明的是**算法与集成**，不证明 HDMI 时序；端到端延迟和真实画面仍要等采集卡；
+- 这条通路证明的是**算法与集成**，不证明 HDMI 时序；HDMI 真机画面与延迟见
+  [`../hdmi_stream_enhance/`](../hdmi_stream_enhance/)，端到端延迟受本板 HDMI 直通限制仍未测；
 - `enhance_bounded` 没有单独的 C 仿真（流式版本的 csim 覆盖了同一套算术），
   它的正确性由这里的板上逐位比对来证明 —— 这比 csim 更强，但不是"仿真也过了"。
