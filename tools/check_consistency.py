@@ -2,18 +2,21 @@
 """Repository consistency check for the documentation.
 
 Why this exists
-    The project went through several rounds where a number changed (seven presets
-    became eight, 4.7x became 196.7x, "waiting for the capture card" became "HDMI
-    blocked, see hdmi_status.md"). Every round risked leaving a stale claim behind,
-    and a judge reading two documents that disagree is worse than one document with
-    a gap.
+    The project went through several rounds where a number changed (eight presets
+    became ten, the offset "0.3 px" became "per pixel stream, calibrate each start",
+    4.7x became 196.7x, "waiting for the capture card" became "HDMI blocked, see
+    hdmi_status.md"). Every round risked leaving a stale claim behind, and a judge
+    reading two documents that disagree is worse than one document with a gap.
 
-    This checks three cheap things that catch almost all of that:
+    This checks four cheap things that catch almost all of that:
 
       1. suspicious phrases that usually mean stale text
       2. markdown links whose target file does not exist
       3. a few numbers that must agree across documents, with the value that the
          code and the measurements actually produced
+      4. script encodings (.ps1 BOM / .bat ASCII)
+
+    The single source of truth for those numbers is docs/facts.md.
 
     python tools/check_consistency.py           # report
     python tools/check_consistency.py --strict  # non-zero exit on findings
@@ -30,19 +33,40 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Files that are chronological records rather than current claims. The log quotes
-# the numbers that were true at the time, so flagging it would be wrong.
-HISTORICAL = {"report/ai_collaboration_log.md"}
+# the numbers that were true at the time, so flagging it would be wrong. Each of these
+# files carries a banner saying which part is history and where the current baseline is.
+HISTORICAL = {
+    "report/ai_collaboration_log.md",
+    "docs/hdmi_status.md",
+    "docs/session_handoff.md",
+    "docs/video_demo.md",
+    "docs/p3b_plan.md",
+    "docs/dma_investigation.md",
+    "board/hdmi_stream_enhance/README.md",
+    "board/dma_sobel/README.md",
+    "board/hdmi_stream/README.md",
+    "board/hdmi_pattern/README.md",
+    "board/enhance_dma/README.md",
+}
 
 # Phrases that usually indicate something was left unfinished or that a fact has
 # moved on. Each entry is (pattern, why it is suspicious, allowed-if-line-contains).
 SUSPICIOUS = [
     (r"待采集卡", "the capture card has arrived; hdmi_status.md is the current state", ()),
-    (r"7 个预设", "there are eight presets since `document` was added", ()),
-    (r"7 预设", "there are eight presets since `document` was added", ()),
+    (r"7 个预设", "there are ten presets since `crisp` was added", ()),
+    (r"7 预设", "there are ten presets since `crisp` was added", ()),
+    (r"7 档", "the runtime table has ten presets; 7 was a 2026-10-21 snapshot",
+     ("当时", "历史", "旧", "归档")),
     (r"4\.7×", "the whole-frame measurement is 196.7x; 4.7x is the per-row figure",
      ("逐行", "per-row")),
-    (r"TODO|FIXME|XXX", "unfinished marker", ()),
-    (r"待补", "placeholder that should be filled or removed", ()),
+    (r"实时(增强|视频|出图|图像|工作)", "the camera-to-screen link is not open; say 持续出图 / 逐帧处理",
+     ("不写", "「实时」", "\"实时\"")),
+    (r"端到端延迟(只有|约)一行", "end-to-end latency was never measured", ("不写", "「", "历史")),
+    (r"0\.3 (像素|px)", "the offset is per pixel stream; the 0.3 px reading was one stream",
+     ("历史", "早期", "曾有", "一次", "不写", "统一", "旧")),
+    (r"\+0\.(289|354|171)", "the delivered bitstream is +0.206 ns; these were intermediate builds",
+     ("那一版", "中间版本", "历史", "当时", "旧", "本文中间")),
+    (r"未开始|待做|待补|TODO|FIXME|XXX", "unfinished marker", ()),
 ]
 
 # Numbers that must appear the same way everywhere they are quoted.
@@ -54,14 +78,18 @@ FORBIDDEN_NUMBERS = [
 
 # Values worth reporting so a human can eyeball drift; not errors by themselves.
 LANDMARKS = {
-    "preset count": r"8 个预设|eight presets",
+    "baseline (facts)": r"docs/facts\.md",
+    "runtime presets": r"10 档|10 个预设|ten presets",
+    "verified preset table": r"8 档|eight presets",
     "bit-exact channels": r"2764800",
-    "whole-frame means": r"15\.8 ms",
+    "enhance frame": r"15\.6 ms",
+    "sobel whole frame": r"15\.8 ms",
     "speed-up": r"196\.7",
     "dma latency": r"16 个像素时钟|16 pixel clocks",
-    "hdmi latency": r"21 个像素时钟|21 pixel clocks",
-    "hdmi WNS": r"\+0\.242",
-    "pattern WNS": r"\+0\.277",
+    "hdmi latency": r"21 拍|21 个像素时钟|21 pixel clocks",
+    "delivered WNS": r"\+0\.206",
+    "bitstream md5": r"c9a27af6",
+    "offset calibration": r"216\.8|218",
 }
 
 
@@ -70,7 +98,7 @@ def markdown_files() -> list[str]:
     for root, dirs, files in os.walk(REPO):
         dirs[:] = [d for d in dirs
                    if d not in {".git", ".tmp", ".work", "proj", "export", "iprepo",
-                                "__pycache__", "node_modules"}]
+                                "build", "__pycache__", "node_modules"}]
         for name in files:
             if name.endswith(".md"):
                 out.append(os.path.join(root, name))
@@ -95,6 +123,18 @@ def check_links(path: str) -> list[str]:
             problems.append(f"{os.path.relpath(path, REPO)}: link target missing -> {target}")
     return problems
 
+
+
+def check_baseline() -> list[str]:
+    """The facts page must exist and README must point at it."""
+    findings = []
+    facts = os.path.join(REPO, "docs", "facts.md")
+    if not os.path.exists(facts):
+        findings.append("docs/facts.md: missing - it is the single source of truth")
+    readme = os.path.join(REPO, "README.md")
+    if os.path.exists(readme) and "docs/facts.md" not in open(readme, encoding="utf-8").read():
+        findings.append("README.md: does not link docs/facts.md")
+    return findings
 
 
 def check_script_encodings() -> list[str]:
@@ -161,6 +201,7 @@ def main(argv=None) -> int:
         findings.extend(check_links(path))
 
     findings.extend(check_script_encodings())
+    findings.extend(check_baseline())
 
     if findings:
         print("findings:")

@@ -9,7 +9,7 @@
 |---|---|---|
 | 画面有撕裂、几段内容轮流出现 | `check_tearing.py` | 输出 `torn frames: 0` 才算正常 |
 | 周期性闪一下 | `watch_loop.py` | 跳变**周期**：等于视频时长是循环点；每 4 帧左右一次是帧缓冲残留 |
-| 画面位置偏了 | `measure_offset_screen.py` | 三个标记的平均偏移，`+0.3` 量级才算对齐 |
+| 画面位置偏了 | `measure_offset_screen.py` | 残差 **0–1 px** 才算对齐；标定用 `tools\board\fix_offset.ps1`（见 `docs/output_offset.md`） |
 | 想知道画面区在哪 | `find_video_rect.py` | 打印 `RECT=x0,y0,x1,y1` 并写文件 |
 | 面板识别类型不对 | `inspect_panel.py` | 读窗口里的"识别为…"文字 |
 | 需要回归测试面板按钮 | `test_video_gui.py` | 自动点击并截图 |
