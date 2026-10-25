@@ -87,7 +87,7 @@ def add_heading(slide, top, text):
     bar.fill.fore_color.rgb = ACCENT
     bar.line.fill.background()
     bar.shadow.inherit = False
-    return 0.95
+    return 0.86
 
 
 def main() -> int:
@@ -103,10 +103,10 @@ def main() -> int:
     head.shadow.inherit = False
 
     add_text(slide, MARGIN, 0.4, BODY_W,
-             "A One-Line-Latency Vision Enhancement Terminal",
+             "A Sub-Line-Latency Vision Enhancement Terminal",
              size=18, bold=True, color=WHITE)
     add_text(slide, MARGIN, 1.5, BODY_W,
-             "PYNQ-Z2  |  real-time enhancement for low-light imaging  |  2026 Embedded Chip & System Design Competition, "
+             "PYNQ-Z2  |  low-latency enhancement for low-light imaging  |  2026 Embedded Chip & System Design Competition, "
              "AMD track, self-selected topic (junior group)  |  Zynq-7000 XC7Z020  |  Vivado / Vitis HLS 2026.1",
              size=9, color=RGBColor(0xC8, 0xD8, 0xEA))
 
@@ -115,15 +115,14 @@ def main() -> int:
 
     sections = [
         ("Motivation",
-         "Night and dim-light imaging - surveillance, inspection, forensics, automotive night vision, industrial and microscopy work - operates on frames that are dark and low in contrast. Phone/PC pipelines take 100-300 ms from capture to display, which shows as lag and smear once the scene moves. Here the key metric is end-to-end latency, not frame rate, so the whole enhancement chain sits inside the pixel stream with no frame buffer."),
+         "Night and dim-light imaging - surveillance, inspection, forensics, automotive night vision, industrial and microscopy work - operates on frames that are dark and low in contrast. Phone/PC pipelines take 100-300 ms from capture to display, which shows as lag and smear once the scene moves. Here the key metric is latency, not frame rate, so the whole enhancement chain sits inside the pixel stream with no frame buffer. This work measures in-pipeline latency (21 clocks); end-to-end latency is not measured."),
         ("Architecture",
          "Main path:  PS frame -> VDMA -> enhance -> pixel_unpack -> HDMI OUT, with the kernel sitting in "
-         "the live pixel stream; measured 21 pixel clocks on the board, seven presets switched while "
+         "the live pixel stream; measured 21 pixel clocks (147 ns) on the board, ten presets switched while "
          "video keeps running.\n"
          "The frame source is the VDMA because this board's HDMI output only works at 640x480 "
-         "(800x600/720p/1080p consume no frames; the stock bitstream behaves identically - the pins are "
-         "unbuffered), while the HDMI input IP cannot run at 640x480. With no common mode, frames come "
-         "from DDR and the kernel still processes real pixels.\n"
+         "(800x600/720p/1080p consume no frames, as does the stock bitstream), while the HDMI input IP "
+         "cannot run at 640x480; frames therefore come from DDR and the kernel still processes real pixels.\n"
          "The enhance kernel runs local contrast -> tone curve -> binarise/invert -> split screen, "
          "all integer, one pixel per clock; 59 configuration bits are driven from the PS at "
          "run time.\n"
@@ -134,22 +133,22 @@ def main() -> int:
         ("Operators",
          "enhance: 3 BRAM, 2 DSP, 2168 FF, 1659 LUT (3%), II = 1, estimated Fmax 194.59 MHz at 7 ns. The operator family behind it - Sobel, 3x3 Gaussian, 3x3 sharpen - is hand-written HLS too (II = 1, 194.6 MHz, under 1.1k LUT each), and colour-space conversion reuses PYNQ's verified color_convert IP instead of being rewritten."),
         ("Correctness",
-         "enhance passes C simulation against an independently written C++ golden model in two configurations (contrast+split, and tone+binarise+invert+mono): 9216 beats each, 0 errors. Through the AXI-DMA path, all eight presets are compared channel by channel with the numpy model: 0 mismatches out of 2,764,800 channels each, at 15.6 ms per frame. A second pair of counters brackets the kernel and stamps the first beat in and out: the measured pipeline latency is 16 pixel clocks, i.e. 160 ns at 100 MHz - about 1% of a 720p60 line, which is what having no frame buffer buys. "
+         "enhance passes C simulation against an independently written C++ golden model in two configurations (contrast+split, and tone+binarise+invert+mono): 9216 beats each, 0 errors. Through the AXI-DMA path, all eight presets of the verified parameter table are compared channel by channel with the numpy model: 0 mismatches out of 2,764,800 channels each, at 15.6 ms per frame. A second pair of counters brackets the kernel and stamps the first beat in and out: the measured pipeline latency is 16 pixel clocks, i.e. 160 ns at 100 MHz - about 1% of a 720p60 line, which is what having no frame buffer buys. "
          "Border policy (horizontal replicate, vertical line-buffer state) is defined once and shared "
          "by hardware, testbench and Python model, which is why the comparison can use zero tolerance."),
         ("What Made It Work - and What Did Not",
          "A free-running kernel (ap_ctrl_none) never drains its pipeline when the input stops, so an "
-         "AXI-DMA transfer can never close and the DMA path needs a bounded variant (ap_ctrl_hs plus a "
-         "pixel count). The same property bit the other way: HLS registers loop-invariant inputs in the "
-         "pipeline prologue, so six of nine configuration parameters froze at power-up (see "
-         "binarize_read_reg_* in the netlist). A gate lets the PS reset only the kernel through a spare "
-         "configuration bit, so the preset is re-sampled - that is how seven presets switch live."),
+         "AXI-DMA transfer can never close; the DMA path needs a bounded variant (ap_ctrl_hs plus a "
+         "pixel count). The same property bit the other way: HLS moves loop-invariant inputs into the "
+         "pipeline prologue, so six of nine configuration parameters froze at power-up "
+         "(binarize_read_reg_* in the netlist). The fix moves the 59 bits into a dual-port BRAM read once "
+         "per pixel, which cannot be hoisted: a preset switch is one register write, with no reset and "
+         "no stream interruption."),
         ("Reusable PYNQ Skills and Reproducibility",
-         "Four board-independent skills ship with the project: overlay handoff linting (.hwh), "
-         "bit-exact image comparison, measurement collection with PS-vs-PL table generation, and "
-         "AXI-DMA helpers with cache maintenance and timeouts. Each documents scope, usage, failure "
-         "modes and what was verified. Everything is scripted: a clean machine rebuilds both "
-         "bitstreams with two commands."),
+         "Five board-independent skills ship with the project: overlay handoff linting (.hwh), "
+         "bit-exact image comparison, PS-vs-PL measurement collection, AXI-DMA helpers with cache "
+         "maintenance, and a pitfalls checklist. Each documents scope, usage, failure modes and what "
+         "was verified. Everything is scripted: a clean machine rebuilds both bitstreams with two commands."),
     ]
 
     for title, body in sections:
@@ -157,7 +156,7 @@ def main() -> int:
         layout.append((title, round(y, 2), round(need, 2)))
         y += add_heading(slide, y, title)
         y += add_text(slide, MARGIN, y, BODY_W, body)
-        y += 0.10
+        y += 0.08
 
     # results table + figure side by side
     y += 0.1
@@ -165,7 +164,7 @@ def main() -> int:
 
     rows = [
         ("Measured", "PS (Cortex-A9, numpy)", "PL (Zynq + DMA)"),
-        ("enhance, 8 presets", "-", "15.6 ms, 0/2.76M wrong"),
+        ("enhance, 8 (verified table)", "-", "15.6 ms, 0/2.76M wrong"),
         ("Pipeline latency", "-", "16 clocks = 160 ns"),
         ("Sobel frame time", "3108.4 ms", "15.8 ms (196.7x)"),
     ]
@@ -187,7 +186,7 @@ def main() -> int:
             run.font.color.rgb = WHITE if r == 0 else GREY
 
     if os.path.exists(FIGURE):
-        fig_w = 4.5
+        fig_w = 4.3
         fig_h = fig_w * 576 / 766
         slide.shapes.add_picture(FIGURE, Cm(MARGIN + table_w + 0.7), Cm(y),
                                  width=Cm(fig_w), height=Cm(fig_h))
