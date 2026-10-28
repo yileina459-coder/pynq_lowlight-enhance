@@ -34,8 +34,10 @@ $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $script = Join-Path $repo 'tools\board\align_output.py'
 
 # 与 show_image.ps1 用同一个 Python（Pillow + numpy 都装在它里面），找不到就退回 PATH 里的 python。
-$python = 'C:\Users\79171\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe'
-if (-not (Test-Path $python)) { $python = 'python' }
+$python = $env:PYTHON
+if (-not $python) { $python = (Get-Command python -ErrorAction SilentlyContinue).Source }
+if (-not $python) { $python = 'python' }
+if (-not $python) { throw 'python not found: add Python 3 to PATH or set $env:PYTHON' }
 
 if (-not (Test-Path $script)) { throw "缺少 $script" }
 

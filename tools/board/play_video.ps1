@@ -29,7 +29,7 @@
     rewriting the configuration, which does not interrupt the stream. In both cases -Preset is ignored.
 
 .EXAMPLE
-    tools\board\play_video.ps1 -Video C:\Users\79171\Desktop\clip.mp4
+    tools\board\play_video.ps1 -Video C:\path\to\clip.mp4
 
 .EXAMPLE
     tools\board\play_video.ps1 -Video clip.mp4 -Fps 24 -Seconds 10 -Preset clarity
@@ -68,7 +68,9 @@ param(
 # ... s in the future" on stderr for every frame. With 'Stop' that harmless warning aborts the run.
 $ErrorActionPreference = 'Continue'
 $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$python = 'C:\Users\79171\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe'
+$python = $env:PYTHON
+if (-not $python) { $python = (Get-Command python -ErrorAction SilentlyContinue).Source }
+if (-not $python) { $python = 'python' }
 $board = 'xilinx@192.168.2.99'
 $askpass = Join-Path $repo '.tmp\askpass\askpass.bat'
 # A fresh directory per upload. The resident reloads a clip only when the path it is told to play
@@ -111,7 +113,7 @@ if ($Replay) {
 }
 
 if (-not (Test-Path $Video)) { throw "no such video: $Video" }
-if (-not (Test-Path $python)) { throw "bundled python not found: $python" }
+if (-not $python) { throw 'python not found: add Python 3 to PATH or set $env:PYTHON' }
 
 # --- 1) decode here ---------------------------------------------------------------------
 $localFrames = Join-Path $repo '.tmp\frames'

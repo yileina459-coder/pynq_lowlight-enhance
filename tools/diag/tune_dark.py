@@ -22,6 +22,8 @@ import argparse
 import itertools
 import json
 import subprocess
+import os
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -42,7 +44,7 @@ def _repo_root() -> Path:
             return parent
     return here.parents[2] if len(here.parents) > 2 else here.parent
 
-PYTHON = r"C:\Users\79171\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe"
+PYTHON = os.environ.get("PYTHON") or shutil.which("python") or sys.executable
 REPO = _repo_root()
 sys.path.insert(0, str(REPO / "tools"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))

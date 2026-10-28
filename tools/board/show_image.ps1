@@ -23,7 +23,7 @@
     stretch fills the frame and distorts.
 
 .EXAMPLE
-    tools\board\show_image.ps1 -Image C:\Users\79171\Desktop\photo.jpg
+    tools\board\show_image.ps1 -Image C:\path\to\photo.jpg
 
 .EXAMPLE
     tools\board\show_image.ps1 -Image photo.jpg -Fit crop -Preset threshold
@@ -47,12 +47,14 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$python = 'C:\Users\79171\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe'
+$python = $env:PYTHON
+if (-not $python) { $python = (Get-Command python -ErrorAction SilentlyContinue).Source }
+if (-not $python) { $python = 'python' }
 $board = 'xilinx@192.168.2.99'
 $uploadDir = '/tmp/hdmi_uploads'
 $askpass = Join-Path $repo '.tmp\askpass\askpass.bat'
 
-if (-not (Test-Path $python)) { throw "bundled python not found: $python" }
+if (-not $python) { throw 'python not found: add Python 3 to PATH or set $env:PYTHON' }
 if (-not (Test-Path $askpass)) { throw "ssh helper missing: $askpass" }
 if (-not (Test-Path $Image)) { throw "no such picture: $Image" }
 

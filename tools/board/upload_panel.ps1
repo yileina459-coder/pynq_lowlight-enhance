@@ -31,7 +31,9 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$python = 'C:\Users\79171\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe'
+$python = $env:PYTHON
+if (-not $python) { $python = (Get-Command python -ErrorAction SilentlyContinue).Source }
+if (-not $python) { $python = 'python' }
 $board = 'xilinx@192.168.2.99'
 $askpass = Join-Path $repo '.tmp\askpass\askpass.bat'
 $showScript = Join-Path $repo 'tools\board\show_image.ps1'
@@ -305,7 +307,7 @@ function Get-Kind([string]$path) {
     if ($imageExt -contains $ext) { return 'image' }
     if ($videoExt -contains $ext) { return 'video' }
     if ($animExt -contains $ext) {
-        if (-not (Test-Path $python)) { return 'image' }
+        if (-not $python) { return 'image' }
         $frames = & $python -c "import sys;from PIL import Image;im=Image.open(sys.argv[1]);print(getattr(im,'n_frames',1))" $path 2>$null
         if ($LASTEXITCODE -eq 0 -and $frames -and [int]$frames -gt 1) { return 'video' }
         return 'image'

@@ -22,15 +22,15 @@
 ## 用法
 
 ```powershell
-cd C:\Users\79171\Desktop\FPGA
-powershell -NoProfile -ExecutionPolicy Bypass -File tools\board\show_image.ps1 -Image C:\Users\79171\Desktop\你的照片.jpg
+cd <仓库根目录>
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\board\show_image.ps1 -Image C:\path\to\你的照片.jpg
 ```
 
 预期输出：
 
 ```
 source 4032x3024 -> 640x480 (letterbox)
-wrote C:\Users\79171\Desktop\FPGA\.tmp\upload\mine_221308_640x480.png  mean=118.4  min=0  max=255
+wrote <仓库根目录>\.tmp\upload\mine_221308_640x480.png  mean=118.4  min=0  max=255
 OK - the board is now showing /tmp/hdmi_uploads/mine_221308_640x480.png
   image=/tmp/hdmi_uploads/mine_221308_640x480.png
   roll=218

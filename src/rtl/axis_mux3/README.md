@@ -64,7 +64,7 @@ Abnormal program termination (EXCEPTION_ACCESS_VIOLATION)
 在你这台机器的交互式终端里重跑（很可能就正常）：
 
 ```powershell
-cd C:\Users\79171\Desktop\FPGA\build\rtl\axis_mux3
+cd build\rtl\axis_mux3
 ..\..\..\tools\env\vivado.bat -mode batch -source run_sim.tcl
 ```
 
