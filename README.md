@@ -1,192 +1,127 @@
-# 低延迟视觉增强终端（PYNQ-Z2）
+# 低延迟视觉增强终端
 
-参赛厂商：AMD
+面向低照度图像观察的低延迟视觉增强终端，运行在 PYNQ-Z2（Zynq-7000 XC7Z020）上。
 
-参赛平台：AMD 7 Series FPGA / Zynq-7000 SoC（实际使用 PYNQ-Z2，XC7Z020）
+整条增强链放在可编程逻辑的像素流里，**不经过帧缓冲**，像素进多少出多少；片上双时间戳实测流水线延迟
+**16 个像素时钟 = 160 ns**，约为 720p60 一行时间的 1%。同一颗内核既能在 HDMI 通路上以 640×480@60
+持续出图，也能通过 AXI-DMA 整帧回环，与 NumPy 黄金模型**逐位比对**。
 
-开发方向：AMD 自主选题（初级组）
+![演示现场](report/assets/photos/setup_full_view.jpg)
 
-作品名称：低延迟视觉增强终端
+---
 
-作品简介：面向低照度图像观察的低延迟增强——整条增强链都在 PL 的像素流里完成，**不经过帧缓冲**，
-像素边走边算；片上双时间戳实测流水线延迟 **16 个像素时钟 = 160 ns**（约 720p60 一行的 1%）。
-核心算子 `enhance`（局部对比 → 色调曲线 → 二值/反色 → 分屏）由 Vitis HLS 实现，59 bit 参数在运行时
-由 PS 下发；参数含清晰度、拐点、双段增益、二值阈值、反色/单色、分屏位置。
+## 功能
 
-算子族另含 Sobel、高斯、锐化三个卷积核，用于构成"同一算法软硬件对比"的证据：AXI-DMA 通路
-上已做到与 numpy 黄金模型**逐位一致**，并测出 PS 3108.4 ms/帧 vs PL 15.8 ms/帧（196.7×）。
-色彩空间转换复用 PYNQ 官方 IP。帧源是 PS 预载的图像/视频帧，经 VDMA 送进像素通路；
-本板 HDMI 输出只支持 640×480、输入不支持该模式，摄像头直通未打通——完整口径见
-[docs/facts.md](docs/facts.md)。
+- **十档预设，运行中切换**：`pass` / `clarity` / `crisp` / `bright` / `reading` / `document` / `night` /
+  `invert` / `binarize` / `split`。参数存放在 PL 侧 BRAM，切换只是一次寄存器写，不复位、不中断像素流。
+- **左右分屏对比**：`split` 档在同一帧内给出原图与增强结果，位置可调。
+- **暗光阅读增强**：`document` 档在保住黑白极性的前提下提亮暗页（对比度 +158），适合书本、票据、铭牌。
+- **图像与视频上传**：主机一条命令或双击图标，把任意图片/视频推到板上显示。
+- **可验证性**：全链整数定点，配套独立编写的 NumPy 黄金模型，DMA 通路下 8 档参数表各 0/2,764,800
+  通道不一致——逐位一致，不是"看起来差不多"。
 
-## 上传自己的图片
-
-一条命令把任意图片显示到板子的 HDMI 输出上：
-
-`powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File tools\board\show_image.ps1 -Image 你的照片.jpg
-`
-
-不想用命令行：双击桌面的 **上传图片到开发板** 图标，或把图片直接拖到 上传图片.bat 上。
-
-详细用法（比例选项、预设切换、排查）见 [docs/image_upload.md](docs/image_upload.md)。
-
-## 当前状态
-
-**下次从哪接着干**：见 [docs/session_handoff.md](docs/session_handoff.md)（能跑什么 / 关键数字 / 剩余工作 / 踩过的坑）。
-
-进度主表见 [`docs/roadmap.md`](docs/roadmap.md)，环境事实见 [`docs/env.md`](docs/env.md)，
-**所有指标的唯一定义见 [`docs/facts.md`](docs/facts.md)**，设计报告见
-[`report/design_report.md`](report/design_report.md)。
-
-- [x] 初始化仓库与目录结构
-- [x] 工具链打通（Vivado / Vitis HLS 2026.1，冒烟工程见 `build/smoke/`）
-- [x] 流式算子：Sobel、Gaussian、Sharpen（均 II=1、C 仿真 0 误差、7 ns 下估计 194.59 MHz）
-- [x] 黄金参考与逐位比对工具（`sim/common/image_ops.py` + 各算子的 `golden_*.py`）
-- [x] DMA 版 Overlay 位流（`board/dma_sobel/`，WNS +3.086 ns）
-- [x] HDMI 版 Overlay 构建流程（重建 PYNQ base overlay 并插入算子，`build/overlay_hdmi/`）
-- [x] 通用 PYNQ Skill 三件（`skill/`）
-- [x] HDMI 版 Overlay 位流（WNS +0.207 ns @142.857 MHz，`.hwh` 离线校验通过）
-- [x] 板上实测：DMA 回环 **逐位一致**（0/2764800 通道），整帧 15.8 ms/帧
-- [x] PS/PL 对比数据：3108.4 ms → 15.8 ms（**196.7×**），见 `report/comparison.md`
-- [x] HDMI overlay 在板上加载成功、`pynq.lib.video` 绑定正常
-- [x] 增强核 `enhance`：C 仿真两种配置各 9216 拍 **0 误差**、II=1、估计 Fmax 194.59 MHz、
-      BRAM 3 / DSP 2 / FF 2168 / LUT 1659（3%）
-- [x] 增强核 **已在板上逐位验证**：8 档（验证参数表）各 0/2764800 通道不一致，15.6 ms/帧
-      （`board/enhance_dma/`，走 AXI-DMA，不需要显示器）
-- [x] 新增 `document` 预设：保住极性的暗页提亮（原 `reading` 在暗页上会把黑白翻转，
-      对比度 +41 → −51；新预设 → **+158**，见 `sim/enhance/tune_document_preset.py`）
-- [x] **增强核在 HDMI 通路上持续出图**：`board/hdmi_stream_enhance/`，WNS **+0.206 ns**（含 SOF 生成器）；采集卡实测 640×480、流水线 **21 拍**（片上单次测量 21–25 拍）；**切预设无黑屏**（配置走 BRAM，741 次写帧 0 卡顿），支持显示自己的图片；**画面偏移按每路像素流标定**（相位在一路流内稳定、随流启动变化；本次 216.8 px → `roll=218`，残差 0–1 px）；单实例运行 15 分钟 0 次写帧失败
-- [x] **Jupyter 交互面板**：`board/enhance_dma/panel.ipynb`（8 档一键切换、
-      实时显示帧时间/延迟/逐位比对，走 DMA 通路，不需要显示器）
-- [x] **输出画面水平偏移：已做成"每次演示启动自动标定"的流程，而不是一个猜出来的固定值**。实测相位在一路像素流内完全稳定
-      （换图 / 换挡位 / 0.2 s 重推都不变，见 [docs/output_offset.md](docs/output_offset.md)），只有像素流重启才会变，
-      所以 `tools\board\fix_offset.ps1` 测一次写一次，`ensure_demo.ps1` 拉起演示后自动调用；对真实画面做互相关校验残差 0–1 px。
-      补偿在常驻进程里逐帧应用，图片和视频共用同一个值；曾经"上传视频后又偏"是因为 `play_video.ps1` 的 `-Roll` 默认 0
-      把标定值写没了，现已改成默认保留板上的值
-- [x] **HDMI 输出打通并定位到硬件上限**（完整推导见 `docs/hdmi_status.md`）：
-      这块 PYNQ-Z2 的 HDMI 输出只有 **640×480** 能工作（800×600/720p/1080p 一帧都不消费、
-      不产生 TMDS，原厂 `base.bit` 行为相同）；HDMI 输入又无法工作在 640×480
-      （`dvi2rgb` 的 `kClkRange` 只接受 1/2/3，25.175 MHz 需要 5 档）。
-      因此帧源改为 **VDMA**：PS 写帧 → VDMA → 内核 → HDMI OUT，内核仍在真实像素通路上
-- [x] **修掉 HLS 配置锁存问题**：自由运行内核的 6 个配置参数被 HLS 在 prologue 锁存
-      （生成 RTL 里 `binarize_read_reg_*` 即证据）。先用 `enh_rst_gate` 让 PS 复位内核重新采样
-      （代价是当帧花屏一帧）；后来把配置搬进 BRAM（`enhance_stream_cfg`），切预设不再复位——
-      见上面「切预设无黑屏」那条
-- [ ] HDMI **直通**（笔记本 → 板子 → 显示）受上述两个硬件限制阻塞，不再作为交付路径
-- [x] 内部图案源 overlay（`board/hdmi_pattern/`，不依赖任何外部输入）
-- [x] **流水线延迟实测：16 个像素时钟 = 160 ns @100 MHz**（DMA 通路；HDMI 通路是 21 拍 = 147 ns。
-      `axis_cycle_stamp` 在内核前后各打一次时间戳；720p60 的一行是 17.2 µs，所以延迟只有一行的 1%，
-      原来说的「约一行」是上界）
-- [ ] 端到端延迟与功耗实测：HDMI 直通受硬件限制（见上），只能测 PL 内部延迟（HDMI 通路 21 拍）；功耗需外部功率计
-- [x] **参数化与 UI**：运行期切预设（常驻/上传路径 **10 档**；两个 Jupyter 面板仍是 8 档旧表）——
-      `board/enhance_dma/panel.ipynb`（DMA，逐位比对）与
-      `board/hdmi_stream_enhance/notebooks/hdmi_panel.ipynb`（HDMI，点按钮切预设）；
-      日常用 PowerShell 上传面板（图/视频同一个窗口）
-- [x] **一页英文 A4 海报**：`report/poster/poster.pptx`（由 `make_poster.py` 生成，配图为板子 HDMI 输出的 2×2 采集拼图）；拿到 AMD 官方模板后可直接套版
-
-## 技术栈
-
-- 硬件平台：PYNQ-Z2（Zynq-7000 XC7Z020）
-- 开发工具：Vivado / Vitis 2026.1（赛规允许 2025.2；本项目全程 2026.1）
-- PL 实现：Vitis HLS（enhance + Sobel / Gaussian / Sharpen 四个自研核）+ PYNQ 官方 IP（HDMI 子系统、色彩空间转换）
-- PS 实现：Python、Jupyter Notebook、PYNQ Overlay
-- UI：Jupyter 面板（ipywidgets）+ PowerShell 上传面板（图片/视频同一窗口）+ 桌面 .bat 入口
-
-## 目录结构
+## 系统架构
 
 ```
-.
-├── README.md                 # 项目简介 + 状态清单 + 复现步骤
-├── 上传到开发板.bat          # 双击打开统一上传面板（图片 / 视频）
-├── 上传图片.bat / 上传视频.bat  # 同上（保留原来习惯，实际打开同一个窗口）
-├── docs/                     # 事实基线（facts.md）、架构、路线图、HDMI 全部实测记录、偏移与视频说明
-├── src/
-│   ├── hls/                  # enhance（主算子 + 有界版）、sobel/gaussian/sharpen（算子族）
-│   └── rtl/                  # axis_cycle_stamp、enh_cfg_split、enh_rst_bridge、
-│                             # video_pattern_gen、axis_mux3、edid/
-├── sim/                      # numpy 黄金模型、离线预演、预设调参、性能对比表
-├── build/
-│   ├── smoke/                # 工具链冒烟
-│   ├── hls/                  # 每个算子的 HLS 工程脚本（流式 + 有界）
-│   ├── overlay_dma/          # DMA 版 overlay（Sobel）
-│   ├── overlay_enhance/      # DMA 版 overlay（enhance，8 档验证）
-│   ├── overlay_hdmi/         # HDMI 版 overlay（Sobel）
-│   ├── overlay_hdmi_enhance/ # HDMI 版 overlay（enhance + SOF + 配置 BRAM + EDID 定制）
-│   └── rtl/                  # 独立 RTL 的综合脚本
-├── board/
-│   ├── dma_sobel/            # DMA 版：Sobel 逐位比对
-│   ├── enhance_dma/          # 增强核：8 档（旧参数表）板上逐位比对 + Jupyter 面板
-│   ├── hdmi_stream/          # HDMI 版（Sobel 算子族）
-│   ├── hdmi_stream_enhance/  # **HDMI 版主通路**：640×480、21 拍、10 档预设可切（含更锐利的 crisp）、视频播放
-│   │   ├── enhance_hdmi.bit  #   交付位流（WNS +0.206 ns，含 SOF 内核）
-│   │   ├── hdmi_resident.py  #   常驻演示进程（独占 VDMA，切图/切挡/播放都在它里面）
-│   │   ├── hdmi_live.py      #   板级封装（找 IP、写预设、开输出、HPD）
-│   │   ├── evidence/         #   采集卡截图（真机证据）
-│   │   ├── diagnostics/      #   21 个排查脚本，按"回答什么问题"索引
-│   │   ├── archive/          #   被统一面板取代的旧入口（保留可追溯）
-│   │   └── notebooks/        #   Jupyter 版验证与演示
-│   ├── hdmi_pattern/         # 内部图案源（不依赖任何外部输入）
-│   └── ps_baseline/          # PS 软件基线
-├── data/                     # 测试图与各算子黄金参考
-├── skill/                    # 5 个可复用 Skill + 踩坑清单
-├── tools/
-│   ├── README.md             #   **工具目录地图，先看这个**
-│   ├── board/                #   上板入口：统一面板、上传、播放、复位、状态
-│   ├── diag/                 #   测量与诊断（撕裂、闪烁、偏移、面板自检）
-│   ├── archive/              #   已完成使命的一次性脚本（EDID/720p 试验等）
-│   └── *.py                  #   核心管线（转图、解码、选挡、评分）与仓库自检
-└── report/                   # 设计报告、协作记录、校赛材料、海报
+主机 ──网口/Jupyter──▶ PS(DDR 帧缓冲) ──VDMA──▶ ┌──────── PL ────────┐
+                                              │ 局部对比 → 两段色调  │
+                                              │ 曲线 → 二值/反色/    │──▶ HDMI TX ──▶ 采集卡/OBS
+                                              │ 单色 → 左右分屏      │
+                                              └────────────────────┘
+                     AXIS 时间戳（内核前后各一次）──▶ 延迟计数
 ```
 
-`tools/` 的完整说明见 [tools/README.md](tools/README.md)；视频播放与自动选挡见
-[docs/video_playback.md](docs/video_playback.md)。
+- 帧源为 PS 预载的图像/视频帧，经 VDMA 送入像素通路；PL 侧内核不访问 DDR。
+- 内核按 AXI-Stream 逐像素处理，II=1，流水线满后每拍出一像素。
+- 色彩空间转换与 HDMI 子系统复用 PYNQ 官方 IP。
 
+## 技术指标
 
-## 复现步骤
+| 项目 | 数值 |
+|---|---|
+| 器件 / 平台 | Zynq-7000 XC7Z020（PYNQ-Z2） |
+| 工具链 | Vitis HLS / Vivado 2026.1 |
+| 核心算子 `enhance` | II=1，194.59 MHz（7 ns 约束下估计） |
+| 资源占用 | LUT 1659（3%）、FF 2168、BRAM 3、DSP 2 |
+| 流水线延迟（DMA 通路） | 16 拍 = 160 ns @100 MHz |
+| 流水线延迟（HDMI 通路） | 21 拍 ≈ 147 ns |
+| 整帧吞吐（720p，DMA） | 15.6 ms/帧 ≈ 63 fps |
+| HDMI 输出 | 640×480@60，交付位流 WNS +0.206 ns @142.857 MHz |
+| 定点一致性 | 8 档参数表各 0/2,764,800 通道不一致 |
+| 软硬件对比（Sobel） | PS 3108.4 ms/帧 → PL 15.8 ms/帧，196.7× |
+| 预设切换 | 10 档，切一次寄存器写，741 次写帧 0 次卡顿 |
 
-前置：Vivado / Vitis HLS 2026.1，PYNQ-Z2 + PYNQ 3.1.x 镜像。环境细节与已知坑见
-[`docs/env.md`](docs/env.md)。
+指标定义与测量方法统一记录在 [docs/facts.md](docs/facts.md)。
+
+## 快速开始（上板）
+
+前置：PYNQ-Z2 + PYNQ 3.1.x 镜像，主机与板子同网段。
 
 ```powershell
-# 1) 工具链冒烟（各约 1 分钟）
-cd build\smoke\vivado ; ..\..\..\tools\env\vivado.bat -mode batch -nojournal -nolog -source synth_smoke.tcl
-cd build\smoke\hls    ; ..\..\..\tools\env\vitis_hls.bat -f run_hls.tcl
+# 1) 拉起演示（没在跑就启动常驻进程，并自动标定画面偏移）
+tools\board\ensure_demo.ps1
 
-# 2) 算子（C 仿真 + 综合 + 导出 IP），每个约 1-2 分钟
-tools\env\vitis_hls.bat -f build\hls\enhance\run_hls.tcl   # 主算子
+# 2) 上传一张图到 HDMI 输出
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\board\show_image.ps1 -Image 你的照片.jpg
+
+# 3) 看状态 / 复位
+tools\board\status.sh
+tools\board\reset_board.ps1
+```
+
+不想用命令行：双击 `上传到开发板.bat`，图片和视频在同一个窗口里。
+
+## 从源码重建
+
+```powershell
+# 算子（C 仿真 + 综合 + 导出 IP），每个约 1–2 分钟
+tools\env\vitis_hls.bat -f build\hls\enhance\run_hls.tcl
 tools\env\vitis_hls.bat -f build\hls\sobel\run_hls.tcl
 tools\env\vitis_hls.bat -f build\hls\gaussian\run_hls.tcl
 tools\env\vitis_hls.bat -f build\hls\sharpen\run_hls.tcl
 
-# 3) 软件黄金参考
-python sim\sobel\golden_sobel.py  --generate-test-image data\images\test_720p.png
-python sim\sobel\golden_sobel.py    --input data\images\test_720p.png --reference data\reference\sobel_720p.png    --border wrap
-python sim\gaussian\golden_gaussian.py --input data\images\test_720p.png --reference data\reference\gaussian_720p.png --border wrap
-python sim\sharpen\golden_sharpen.py   --input data\images\test_720p.png --reference data\reference\sharpen_720p.png  --border wrap
+# 黄金参考
+python sim\sobel\golden_sobel.py --input data\images\test_720p.png --reference data\reference\sobel_720p.png --border wrap
 
-# 4) Overlay 位流（DMA 版约 12 分钟；HDMI 版约 60 分钟，含 PYNQ 源码拉取与 HLS IP 重建）
-build\overlay_dma\build.bat            # DMA 版（Sobel，逐行/整帧对比）
-build\overlay_enhance\build.bat        # DMA 版（enhance，8 档逐位验证）
-build\overlay_hdmi_enhance\build.bat   # HDMI 交付位流（enhance + SOF + 配置 BRAM）
-
-# 5) 上板（当前主演示：640×480 持续出图）
-tools\board\ensure_demo.ps1            # 没在跑就拉起常驻演示，并自动标定画面偏移
-#    之后双击 上传到开发板.bat 选图片/视频；tools\board\status.sh 看状态；
-#    tools\board\fix_offset.ps1 可单独重测偏移，tools\board\reset_board.ps1 一键复原
-
-#    历史通路（DMA 逐位验证 / Sobel HDMI），仍可复现：
-python3 sobel_dma.py                     # DMA 版：期望 COMPARE PASS (bit-exact)
-python3 hdmi_sobel.py --seconds 10       # HDMI 版：期望 RESULT: OK（画面需显示器/采集卡）
-python3 ps_sobel.py --input test_720p.png --metrics metrics.csv
+# 位流（DMA 版约 12 分钟；HDMI 版约 60 分钟）
+build\overlay_enhance\build.bat
+build\overlay_hdmi_enhance\build.bat
 ```
 
-## 评分对应证据
+构建脚本全部签入仓库，可从零一条命令重建。
 
-| 评分项 | 对应提交物 |
-| --- | --- |
-| 创新性与应用价值 30 | 完整 HDMI 视频处理系统、双通路验证方法、软硬件对比 |
-| 性能与资源优化 20 | `sim/perf/make_comparison.py` 生成的对比表 + `metrics.csv` 原始数据；口径汇总见 [`docs/facts.md`](docs/facts.md) |
-| 功能正确性与设计完整性 20 | enhance + 三个算子的 C 仿真（0 误差）、综合报告、DMA 逐位比对（8 档参数表）、HDMI 640×480 上板 |
-| 大模型协作与技能包 15 | [`report/ai_collaboration_log.md`](report/ai_collaboration_log.md) + `skill/` |
-| 文档质量与可复现性 15 | 本 README + `docs/`（含事实基线 `docs/facts.md`）+ 全脚本化构建 + 设计报告 |
+## 目录结构
+
+```
+├── src/hls/        enhance 主算子；sobel / gaussian / sharpen 算子族
+├── src/rtl/        时间戳、配置分发、图案源、mux、EDID 等 RTL
+├── sim/            NumPy 黄金模型、离线预演、预设调参、性能对比
+├── build/          各算子的 HLS 工程与 overlay 构建脚本
+├── board/          板上运行脚本、交付位流、采集卡证据、Jupyter 面板
+├── tools/          主机端工具：上传、播放、偏移标定、转图、自检
+├── data/           测试图与黄金参考
+├── docs/           架构、指标基线、HDMI 实测、偏移与视频说明
+├── report/         设计报告、海报、汇报材料
+└── skill/          可复用的 PYNQ 诊断技能包
+```
+
+## 文档
+
+| 文档 | 内容 |
+|---|---|
+| [docs/facts.md](docs/facts.md) | 指标定义与测量口径（所有数字的唯一来源） |
+| [report/design_report.md](report/design_report.md) | 设计报告：架构、实现、验证、结果 |
+| [docs/hdmi_status.md](docs/hdmi_status.md) | HDMI 输出/输入的实测边界与推导 |
+| [docs/output_offset.md](docs/output_offset.md) | 画面偏移的成因与自动标定 |
+| [docs/video_playback.md](docs/video_playback.md) | 视频上传与播放、自动选档 |
+| [tools/README.md](tools/README.md) | 工具目录地图 |
+
+## 适用范围与设计边界
+
+- 帧源由主机经网络上传至板端 DDR，再由 VDMA 送入像素通路；本版本不依赖摄像头等外部输入设备。
+- HDMI 输出固定 640×480@60：该板卡与官方 IP 在更高分辨率下不产生有效 TMDS，本设计据此确定输出时序。
+- 延迟指标为 PL 内部流水线延迟（片上时间戳测得）；端到端延迟与整机功耗不在本版本指标范围内。
+
+## 许可
+
+除第三方 IP 与 PYNQ 官方组件（遵循其各自许可）外，本仓库代码可用于学习与研究用途。
