@@ -2,7 +2,7 @@
 
 ## 一个窗口，两种文件
 
-双击仓库根目录的 **upload_to_board.bat**（或原来的 upload_image.bat / upload_video.bat，它们现在都打开同一个窗口）。
+双击仓库根目录的 **upload_to_board.bat**，图片和视频都在同一个窗口里处理。
 
 选一个文件就行，程序按扩展名判断类型，只显示相关选项：
 
@@ -109,7 +109,7 @@ python tools\preview_enhance.py photo.jpg --sheet --out sheet.png
 `UPLOADED` 与 `STATE_IMAGE` 相同，才代表**板上真的换了图**；两个值不同说明常驻进程还没拾取，
 窗口会提示「未确认」，等 1–3 秒再看一次。
 
-（旧的 `upload_image.bat` / `upload_video.bat` 也打开同一个窗口，只是预选了类型。）
+（图片和视频共用一个入口，窗口会自己判断文件类型。）
 
 
 ## 为什么不用重启
