@@ -17,6 +17,15 @@ rem  Unicode; this launcher stays ASCII because cmd.exe reads .bat files in the
 rem  OEM code page and mangles anything else.
 rem ---------------------------------------------------------------------------
 setlocal
+
+if not exist "%~dp0tools\board\{rel}" (
+    echo.
+    echo This launcher has to sit in the repository root - it needs the tools\board folder next to it.
+    echo Put it back where it was, or make a Desktop shortcut to it instead of moving the file.
+    echo.
+    pause
+    exit /b 1
+)
 set "PS=powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0tools\board\upload_panel.ps1""
 
 if "%~1"=="" (
