@@ -225,7 +225,7 @@ tools\board\play_video.ps1 -Video x -Stop
 
 同一张书页（左：仅拉伸；右：平坦化 + 拉伸）——左边顶部一片惨白、底部字发暗，右边整页均匀：
 
-![对比](board/hdmi_stream_enhance/evidence/tuning/flatten_compare.png)
+![对比](../board/hdmi_stream_enhance/evidence/tuning/flatten_compare.png)
 
 **代价**：平坦化会让彩色内容略微发灰（它本来就是给文档用的）。彩色照片建议改用 `-Tone bright`。
 

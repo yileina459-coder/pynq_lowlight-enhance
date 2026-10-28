@@ -3,7 +3,7 @@
 
 Why this exists
     Measuring the offset used to need a human to take a screenshot and send it. The OBS preview is
-    on the same machine, so the agent can capture the screen itself and measure - which turns a
+    on the same machine, so the script can capture the screen itself and measure - which turns a
     round trip into a loop that can run unattended.
 
 How the frame is located
