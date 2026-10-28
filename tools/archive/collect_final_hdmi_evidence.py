@@ -22,7 +22,7 @@ import shutil
 
 from PIL import Image
 
-ATTACH = r"C:\Users\79171\.dsh\attachments\v1\objects"
+ATTACH = os.path.expandvars(r"%USERPROFILE%\.dsh\attachments\v1\objects")
 OUT = "board/hdmi_stream_enhance/evidence"
 
 FILES = {

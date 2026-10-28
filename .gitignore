@@ -79,3 +79,7 @@ build/**/csim/solution1/*.aps
 build/**/xsim/
 *.exe
 *.o
+
+# 一次性汇报变体（输入文件不在仓库内）
+report/slides/make_6min.py
+report/slides/preview_6min.png

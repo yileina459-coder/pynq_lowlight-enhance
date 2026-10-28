@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-"""Generate the one-page English A4 poster required for the final round.
+"""Generate the one-page English A4 poster of the project.
 
-The competition asks for a single-page English poster made with AMD's PPT
-template; the template is supplied by the organisers and is not in this
-repository, so this produces a plain A4 portrait slide with the same content,
-ready to be re-styled into the official template.
+This produces a plain A4 portrait slide whose content can be re-styled into any
+template; the layout is computed from the text, so nothing overflows.
 
 Layout is computed, not hand-placed: each block's height is estimated from the
 number of characters it has to fit, so the page cannot silently overflow when the
@@ -107,7 +105,7 @@ def main() -> int:
              size=18, bold=True, color=WHITE)
     add_text(slide, MARGIN, 1.5, BODY_W,
              "PYNQ-Z2  |  low-latency enhancement for low-light imaging  |  2026 Embedded Chip & System Design Competition, "
-             "AMD track, self-selected topic (junior group)  |  Zynq-7000 XC7Z020  |  Vivado / Vitis HLS 2026.1",
+             "Zynq-7000 XC7Z020  |  PYNQ-Z2  |  Vivado / Vitis HLS 2026.1",
              size=9, color=RGBColor(0xC8, 0xD8, 0xEA))
 
     y = 2.95

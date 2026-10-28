@@ -60,7 +60,7 @@ W, H = 13.333, 7.5
 M = 0.72
 CW = W - 2 * M
 
-SECTION = "低延迟视觉增强终端  ·  PYNQ-Z2  ·  2026 嵌入式芯片与系统设计竞赛"
+SECTION = "低延迟视觉增强终端  ·  PYNQ-Z2  ·  Zynq-7020"
 
 
 # --------------------------------------------------------------------------- primitives
@@ -226,7 +226,7 @@ def slide_cover(prs):
     box(s, 0, H - 0.16, W, 0.16, fill=ACCENT, shape=MSO_SHAPE.RECTANGLE)
 
     tf = frame(s, M + 0.18, 0.78, 11.6, 0.3)
-    line(tf, ("2026 全国大学生嵌入式芯片与系统设计竞赛  ·  FPGA 创新设计赛道  ·  AMD 自主选题（初级组）",
+    line(tf, ("技术方案与板级验证  ·  PYNQ-Z2（Zynq-7020）  ·  Vivado / Vitis HLS 2026.1",
               11.5, True, SKY), first=True, spacing=1.05)
 
     tf = frame(s, M + 0.18, 1.95, 11.4, 1.0)

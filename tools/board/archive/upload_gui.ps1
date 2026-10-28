@@ -32,7 +32,7 @@ Add-Type -AssemblyName System.Drawing
 
 $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $showScript = Join-Path $repo 'tools\board\show_image.ps1'
-$python = 'C:\Users\79171\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe'
+$python = if ($env:PYTHON) { $env:PYTHON } else { (Get-Command python -ErrorAction SilentlyContinue).Source }
 
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
