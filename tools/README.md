@@ -61,3 +61,8 @@
 - **脚本定位仓库根**：`tools/diag/` 与 `tools/archive/` 下的脚本用 `_repo_root()` 向上查找含 `.git`
   的目录来确定仓库根，不使用固定的 `parent.parent`。这样脚本所在层级调整后，仍能定位 `.tmp/`、
   `data/` 与 `tools/` 下的资源。新增脚本应沿用该写法；写死层级会在移动脚本后失效。
+- **Python 解释器**：`board/` 与 `diag/` 下的脚本依次取环境变量 `PYTHON`、PATH 上的 `python`，
+  需要 Pillow；不再绑定某一台机器的安装路径。
+- **一次性脚本**：`build/overlay_hdmi_enhance/*.tcl`、`report/slides/make_6min.py` 与
+  `tools/archive/`、`tools/board/archive/` 下的脚本保留了生成时的本机绝对路径，只作过程留痕，
+  不参与 `build.bat` 的常规重建流程。
