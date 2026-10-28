@@ -54,3 +54,5 @@ xlicdiag.rpt
 
 # PYNQ source trees fetched by the overlay builds (huge, re-fetchable)
 build/**/.work/
+
+dist/
