@@ -1,8 +1,7 @@
 # 系统架构（as-built，2026-10-24）
 
 > 本文描述**交付版本的实际结构**。早期设想（HDMI IN → 算子 → HDMI OUT 直通、四算子切换）
-> 保留在 [`../report/ai_collaboration_log.md`](../report/ai_collaboration_log.md) 与
-> [`p3b_plan.md`](p3b_plan.md)；所有指标的口径见 [`facts.md`](facts.md)。
+> 保留在 [`../report/ai_collaboration_log.md`](../report/ai_collaboration_log.md)；所有指标的口径见 [`facts.md`](facts.md)。
 
 ## 1. 两条通路
 

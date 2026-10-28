@@ -56,3 +56,18 @@ xlicdiag.rpt
 build/**/.work/
 
 dist/
+
+# 内部过程文档：不进公开仓库（本地保留）
+docs/amd_fpga_track_guide.pdf
+docs/amd_self_selected_topic_notes.pdf
+docs/final_submission_plan.md
+docs/submission_checklist.md
+docs/session_handoff.md
+docs/roadmap.md
+docs/p3b_plan.md
+docs/github_upload.md
+docs/code_package.md
+docs/video_shoot_list.md
+docs/video_demo.md
+report/school_round.md
+report/submission_text.md

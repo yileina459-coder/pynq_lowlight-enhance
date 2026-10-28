@@ -18,7 +18,7 @@ Why not HDMI (the two-day version)
     640x480, the input cannot lock 640x480, and a live link additionally needs a
     downscaler plus a clock-domain line buffer. None of that is required to show
     "a real video goes through the FPGA kernel and comes back changed", which is
-    what a school-round demo has to show. See docs/video_demo.md.
+    what a demo has to show. See docs/video_playback.md.
 
 Usage
     # on the board, DMA path (the real thing)
@@ -590,7 +590,7 @@ def main(argv=None) -> int:
             print(f"FAIL: missing module {exc.name!r}.")
             print("      enhance_dma.py imports golden_enhance (and sim/common/image_ops.py)")
             print("      at import time; copy them next to it, or use the deploy layout in")
-            print("      docs/video_demo.md. If panel.ipynb runs on the board, they are")
+            print("      docs/video_playback.md. If panel.ipynb runs on the board, they are")
             print("      already in place - check the working directory instead.")
             return 1
         except Exception as exc:  # noqa: BLE001

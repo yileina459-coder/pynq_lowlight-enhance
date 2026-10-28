@@ -1,6 +1,6 @@
 # 事实基线（2026-10-25 整理，测量截至 2026-10-24）
 
-> **本页是全仓库唯一的数字口径。** README、设计报告、校赛材料、提交文案、海报、PPT 里出现的
+> **本页是全仓库唯一的数字口径。** README、设计报告、海报、PPT 里出现的
 > 指标都应当与本页一致；不一致时以本页和它列出的证据文件为准，改文档而不是改数字。
 >
 > 时间线文档（[`hdmi_status.md`](hdmi_status.md)、[`../report/ai_collaboration_log.md`](../report/ai_collaboration_log.md)）
@@ -21,7 +21,7 @@
 | 资源（HLS 估计） | BRAM 3（1%）/ DSP 2 / FF 2168（2%）/ LUT 1659（3%），II=1，估计 Fmax **194.59 MHz**（5.139 ns @7 ns 约束） | `build/hls/enhance/…/csynth.rpt` |
 
 历史版本（+0.289 / +0.354 / +0.171）都是构建过程中的中间构建，**不是交付位流**；
-`session_handoff.md`、`board/hdmi_stream_enhance/README.md` 里这些旧值是时间线记录。
+`board/hdmi_stream_enhance/README.md` 里这些旧值是时间线记录。
 
 ## 2. 分辨率与数据通路
 
@@ -51,7 +51,7 @@
 两张表的 `night` / `document` 参数并不相同（`metrics_enhance.csv` 记的是旧表），
 所以只能写「8 档（DMA 验证用的那张参数表）逐位一致」，**不能**写成「10 档逐位一致」。
 `tools/check_presets.py` 只校验 `hdmi_live.py` 与 `preview_enhance.py` 两张表一致（10 档），
-不覆盖面板的旧表——这是已知差异，见 [`submission_checklist.md`](submission_checklist.md) 的限制项。
+不覆盖面板的旧表——这是已知差异。
 
 ## 5. 输出画面偏移
 

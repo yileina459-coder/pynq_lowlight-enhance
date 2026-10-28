@@ -98,7 +98,7 @@ def markdown_files() -> list[str]:
     for root, dirs, files in os.walk(REPO):
         dirs[:] = [d for d in dirs
                    if d not in {".git", ".tmp", ".work", "proj", "export", "iprepo",
-                                "build", "__pycache__", "node_modules"}]
+                                "build", "dist", "__pycache__", "node_modules"}]
         for name in files:
             if name.endswith(".md"):
                 out.append(os.path.join(root, name))
@@ -149,7 +149,7 @@ def check_script_encodings() -> list[str]:
     """
     findings: list[str] = []
     for path in sorted(pathlib.Path(REPO).rglob("*")):
-        if any(part in {".git", "build", ".tmp", "node_modules"} for part in path.parts):
+        if any(part in {".git", "build", "dist", ".tmp", "node_modules"} for part in path.parts):
             continue
         if not path.is_file():
             continue
