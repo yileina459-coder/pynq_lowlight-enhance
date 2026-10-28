@@ -67,7 +67,7 @@
 - 历史读数 0 / 45 / 89 / 0.3 px 都来自**别的像素流**（不同次启动），不是"同一路流里随机"；
   早期"每帧随机相位"的结论已确认是**测量缺陷**（截图抓错了 OBS 窗口）。
 - 修法：启动后测一次、写补偿、复测残差——`tools\board\fix_offset.ps1`（或双击根目录
-  **调整画面偏移.bat**），`ensure_demo.ps1` 拉起演示后自动调用。
+  **set_display_offset.bat**），`ensure_demo.ps1` 拉起演示后自动调用。
 - 视频上传不再清零标定：`play_video.ps1` 的 `-Roll` 默认 `-1` = 保留板上已有值。
 - 位流层面的根治（真实帧边界 SOF / 接出 VDMA 的 TUSER）仍需重建位流，本次未做。
 
@@ -90,7 +90,7 @@
 
 - 单实例（`hdmi_resident.py` 用 `fcntl.flock`）连续运行 **15 分钟，0 次 `writeframe` 失败**。
 - 启动流程：`tools\board\ensure_demo.ps1`（没跑就拉起，然后自动标定偏移）。
-- 日常操作：双击 **上传到开发板.bat**（图/视频同一个窗口）；`tools\board\status.sh` 看板上状态；
+- 日常操作：双击 **upload_to_board.bat**（图/视频同一个窗口）；`tools\board\status.sh` 看板上状态；
   `tools\board\reset_board.ps1` 一键恢复干净状态。
 - 采集卡丢锁后不能自恢复：像素流中断只能拔插 HDMI 线或重启板子，所以**演示只启动一次**。
 - 进程退出后画面回到彩条是正常现象（VDMA 停供），不是故障。

@@ -42,7 +42,7 @@ HDMI 版走 `ap_ctrl_none` 自由运行核（`enhance_body.inc` 被两个顶层�
 
 | 入口 | 作用 |
 | --- | --- |
-| `上传到开发板.bat` → `tools/board/upload_panel.ps1` | 图片/视频同一个窗口；识别类型、选比例/挡位/播放方式 |
+| `upload_to_board.bat` → `tools/board/upload_panel.ps1` | 图片/视频同一个窗口；识别类型、选比例/挡位/播放方式 |
 | `tools/board/show_image.ps1` | 命令行上传一张图（转码 → scp → 写控制文件 → 回读确认） |
 | `tools/board/play_video.ps1` | 解码、自动选挡、上传帧序列、按 fps 推流；`-Roll` 默认保留标定值 |
 | `tools/board/ensure_demo.ps1` | 检查/拉起板上常驻演示，然后自动标定偏移 |

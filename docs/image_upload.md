@@ -2,7 +2,7 @@
 
 ## 一个窗口，两种文件
 
-双击仓库根目录的 **上传到开发板.bat**（或原来的 上传图片.bat / 上传视频.bat，它们现在都打开同一个窗口）。
+双击仓库根目录的 **upload_to_board.bat**（或原来的 upload_image.bat / upload_video.bat，它们现在都打开同一个窗口）。
 
 选一个文件就行，程序按扩展名判断类型，只显示相关选项：
 
@@ -103,13 +103,13 @@ python tools\preview_enhance.py photo.jpg --sheet --out sheet.png
 
 ## 不用命令行：双击入口
 
-双击仓库根目录的 **上传到开发板.bat**（图片和视频同一个窗口，源码 `tools/board/upload_panel.ps1`）。
+双击仓库根目录的 **upload_to_board.bat**（图片和视频同一个窗口，源码 `tools/board/upload_panel.ps1`）。
 窗口里选文件、点「上传并显示」即可；下方日志会回读板上状态。
 
 `UPLOADED` 与 `STATE_IMAGE` 相同，才代表**板上真的换了图**；两个值不同说明常驻进程还没拾取，
 窗口会提示「未确认」，等 1–3 秒再看一次。
 
-（旧的 `上传图片.bat` / `上传视频.bat` 也打开同一个窗口，只是预选了类型。）
+（旧的 `upload_image.bat` / `upload_video.bat` 也打开同一个窗口，只是预选了类型。）
 
 
 ## 为什么不用重启

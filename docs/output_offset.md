@@ -86,7 +86,7 @@ tools\board\fix_offset.ps1            # 测 → 写 /tmp/hdmi_roll.txt → 复�
 tools\board\fix_offset.ps1 -Measure   # 只报当前环绕量
 ```
 
-或者双击根目录的 **调整画面偏移.bat**。运行约 10 秒，期间画面会闪一下八色彩条，结束后恢复原画面。
+或者双击根目录的 **set_display_offset.bat**。运行约 10 秒，期间画面会闪一下八色彩条，结束后恢复原画面。
 
 - `tools/board/align_output.py` —— 本体：截图、判读、写补偿、验残差；OBS 窗口用完会放回原位。
 - `tools/board/fix_offset.ps1` —— 薄封装，负责找 Python（与 `show_image.ps1` 同一个）。

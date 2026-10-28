@@ -1,7 +1,7 @@
 # archive - 被取代的板上入口
 
 这些是早期为不同演示场景各写一个入口时留下的脚本。它们**能跑，但不再是入口**：
-现在所有图片/视频都走 `tools/board/upload_panel.ps1`（双击根目录的 `上传到开发板.bat`），
+现在所有图片/视频都走 `tools/board/upload_panel.ps1`（双击根目录的 `upload_to_board.bat`），
 它调用 `show_image.ps1` / `play_video.ps1`，播放与切图都在 `hdmi_resident.py` 一个进程里完成
 ——这是唯一不会打断像素流的做法。
 

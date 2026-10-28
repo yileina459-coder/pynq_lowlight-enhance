@@ -6,7 +6,7 @@
 
 | 位置 | 作用 |
 |---|---|
-| `board/upload_panel.ps1` | **统一上传面板**（图片 / 视频）。双击根目录的 `上传到开发板.bat` 打开它 |
+| `board/upload_panel.ps1` | **统一上传面板**（图片 / 视频）。双击根目录的 `upload_to_board.bat` 打开它 |
 | `board/show_image.ps1` | 命令行上传一张图并显示 |
 | `board/play_video.ps1` | 命令行播放一段视频（`-Auto clip` / `-Auto adaptive` / `-Preset`） |
 | `board/reset_board.ps1` | 一键恢复干净状态（停播放、清排帧、设图片和挡位、回读确认） |

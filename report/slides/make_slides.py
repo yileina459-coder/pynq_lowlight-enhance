@@ -32,7 +32,7 @@ from pptx.util import Emu, Inches as In, Pt
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
-OUT = os.path.join(HERE, "低延迟视觉增强终端_5分钟汇报.pptx")
+OUT = os.path.join(HERE, "low_latency_vision_5min.pptx")
 TMP = os.path.join(REPO, ".tmp", "slides")
 
 EVID = os.path.join(REPO, "board", "hdmi_stream_enhance", "evidence")
