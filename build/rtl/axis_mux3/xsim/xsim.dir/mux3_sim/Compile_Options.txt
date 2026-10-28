@@ -1,1 +1,0 @@
--debug "typical" "tb_axis_mux3" -s "mux3_sim" 

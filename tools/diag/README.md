@@ -13,7 +13,7 @@
 | 想知道画面区在哪 | `find_video_rect.py` | 打印 `RECT=x0,y0,x1,y1` 并写文件 |
 | 面板识别类型不对 | `inspect_panel.py` | 读窗口里的"识别为…"文字 |
 | 需要回归测试面板按钮 | `test_video_gui.py` | 自动点击并截图 |
-| 想自动调参数 | `tune_dark.py` | 在板上试组合、截图、评分、排序 |
+| 想自动调参数 | `tune_dark.py` | 在板上试组合、截图、打分、排序 |
 | 标定 `--roll` | `calibrate_roll.py` | 参照图与建议补偿值 |
 | 其它截图测量 | `measure_capture_offset.py` / `measure_from_screen.py` / `measure_bars.py` / `measure_residual.py` | 各自的数字定义见文件头 |
 

@@ -23,8 +23,8 @@
 | `preview_enhance.py` | 内核的精确复现，无需上板就能看到处理效果 |
 | `make_video_frames.py` | 视频解码成帧序列（MP4 走 ffmpeg，GIF/WebP 走 Pillow） |
 | `analyze_video.py` | 逐帧给每个挡位打分，选出"整段一个挡位"或"按场景切换"的排程 |
-| `score_capture.py` | 可读性评分（对比度、边缘、过曝、平均亮度） |
-| `rank_tones.py` | 离线比较各条提亮曲线，用同一套评分 |
+| `score_capture.py` | 可读性打分（对比度、边缘、过曝、平均亮度） |
+| `rank_tones.py` | 离线比较各条提亮曲线，用同一套打分 |
 | `make_frame.py` / `make_testcard.py` | 生成测试图 |
 
 ## 三、仓库自检
@@ -47,7 +47,7 @@
 | `measure_capture_offset.py` / `measure_from_screen.py` / `measure_bars.py` | 其它截图测量 |
 | `measure_residual.py` | 测量处理后的残留差异 |
 | `calibrate_roll.py` | 标定 `--roll` 补偿值 |
-| `tune_dark.py` | 自动在板上试参数、截图、评分、排序 |
+| `tune_dark.py` | 自动在板上试参数、截图、打分、排序 |
 | `inspect_panel.py` | 用 UI Automation 读上传面板里的文字（验证"识别为图片/视频"） |
 | `test_video_gui.py` | 自动点击面板按钮并截图（UI 回归用） |
 

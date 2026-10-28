@@ -48,7 +48,7 @@ document    252.0            94.1         +158.0   ← 新增预设
 ```
 
 `document` 预设的 kneee 大于纸面亮度，于是整页落在同一段斜率上，极性得以保持。
-参数由 `sim/enhance/tune_document_preset.py` 在可复现的暗页上搜索得到（评分函数：
+参数由 `sim/enhance/tune_document_preset.py` 在可复现的暗页上搜索得到（打分函数：
 正对比度、少黑像素、少过曝）。**这是合成页上的结果，真实画面到货后应重新标定。**
 
 ## 交互面板

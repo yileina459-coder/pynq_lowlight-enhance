@@ -71,3 +71,11 @@ docs/video_shoot_list.md
 docs/video_demo.md
 report/school_round.md
 report/submission_text.md
+
+# 编译 / 仿真产物：换机无效，不入库
+build/**/csim/solution1/csim/
+build/**/csim/solution1/.autopilot/
+build/**/csim/solution1/*.aps
+build/**/xsim/
+*.exe
+*.o
